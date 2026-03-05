@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  esm      = "true"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model notification_logs {
+  notification_id String       @id @db.Uuid
+  user_id         String       @db.Uuid
+  template_id     String       @db.VarChar(100)
+  channel         channel_enum
+  status          status_enum? @default(PENDING)
+  metadata        Json?
+  provider_ref    String?      @db.VarChar(255)
+  sent_at         DateTime?    @db.Timestamp(6)
+  error_details   String?
+}
+
+model templates {
+  template_id  String       @db.VarChar(100)
+  version      Int
+  channel_type channel_enum
+  subject_line String?      @db.VarChar(255)
+  content_body String
+  locale       String?      @default("en") @db.VarChar(10)
+  is_active    Boolean?     @default(true)
+  created_at   DateTime?    @default(now()) @db.Timestamp(6)
+
+  @@id([template_id, version])
+}
+
+model user_preferences {
+  user_id    String    @id @db.Uuid
+  channels   Json      @default("{\"sms\": false, \"push\": true, \"email\": true}")
+  categories Json      @default("{\"orders\": true, \"marketing\": true}")
+  timezone   String?   @default("UTC") @db.VarChar(50)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+enum channel_enum {
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum status_enum {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}

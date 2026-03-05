@@ -1,0 +1,16 @@
+# Dependency folders
+node_modules/
+dist/
+bin/
+
+# Environment secrets (NEVER PUSH THESE)
+.env
+*.env
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Prisma generated files
+/worker/node_modules/.prisma
