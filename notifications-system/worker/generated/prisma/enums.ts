@@ -26,3 +26,11 @@ export const status_enum = {
 } as const
 
 export type status_enum = (typeof status_enum)[keyof typeof status_enum]
+
+
+export const in_app_status = {
+  UNREAD: 'UNREAD',
+  READ: 'READ'
+} as const
+
+export type in_app_status = (typeof in_app_status)[keyof typeof in_app_status]

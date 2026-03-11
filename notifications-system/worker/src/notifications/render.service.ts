@@ -7,19 +7,32 @@ export class RenderService {
   /**
    * Transforms raw MJML + Data into final responsive HTML
    */
-  render(templateMjml: string, context: any): string {
-    // 1. Handlebars: Replace {{name}} or {{orderId}} with real values
-    const hbTemplate = handlebars.compile(templateMjml);
-    const interpolatedMjml = hbTemplate(context);
+  render(templateMjml: string, context: Record<string, any>): string {
+    try {
+      const hbTemplate = handlebars.compile(templateMjml);
+      const interpolatedMjml = hbTemplate(context);
 
-    // 2. MJML: Convert the markup into email-ready HTML
-    const { html, errors } = mjml2html(interpolatedMjml);
-    
-    if (errors.length > 0) {
-      // Log errors but return html anyway (best effort)
-      console.warn('MJML Rendering Warnings:', errors);
+      const { html, errors } = mjml2html(interpolatedMjml, {
+        validationLevel: "soft",
+      });
+
+      if (errors?.length) {
+        console.warn("MJML warnings:", errors);
+      }
+
+      return html;
+    } catch (err) {
+      console.error("MJML render failed:", err);
+      throw err;
     }
-    
-    return html;
   }
+
+  /**
+   * Transforms raw text Handlebars safely without invoking MJML HTML XML parsers
+   */
+  renderText(templateString: string, context: Record<string, any>): string {
+    const hbTemplate = handlebars.compile(templateString);
+    return hbTemplate(context);
+  }
+
 }

@@ -43,6 +43,9 @@ export type TemplatesMinAggregateOutputType = {
   locale: string | null
   is_active: boolean | null
   created_at: Date | null
+  tenant_id: string | null
+  event_type: string | null
+  target_ws_channel: string | null
 }
 
 export type TemplatesMaxAggregateOutputType = {
@@ -54,6 +57,9 @@ export type TemplatesMaxAggregateOutputType = {
   locale: string | null
   is_active: boolean | null
   created_at: Date | null
+  tenant_id: string | null
+  event_type: string | null
+  target_ws_channel: string | null
 }
 
 export type TemplatesCountAggregateOutputType = {
@@ -65,6 +71,9 @@ export type TemplatesCountAggregateOutputType = {
   locale: number
   is_active: number
   created_at: number
+  tenant_id: number
+  event_type: number
+  target_ws_channel: number
   _all: number
 }
 
@@ -86,6 +95,9 @@ export type TemplatesMinAggregateInputType = {
   locale?: true
   is_active?: true
   created_at?: true
+  tenant_id?: true
+  event_type?: true
+  target_ws_channel?: true
 }
 
 export type TemplatesMaxAggregateInputType = {
@@ -97,6 +109,9 @@ export type TemplatesMaxAggregateInputType = {
   locale?: true
   is_active?: true
   created_at?: true
+  tenant_id?: true
+  event_type?: true
+  target_ws_channel?: true
 }
 
 export type TemplatesCountAggregateInputType = {
@@ -108,6 +123,9 @@ export type TemplatesCountAggregateInputType = {
   locale?: true
   is_active?: true
   created_at?: true
+  tenant_id?: true
+  event_type?: true
+  target_ws_channel?: true
   _all?: true
 }
 
@@ -206,6 +224,9 @@ export type TemplatesGroupByOutputType = {
   locale: string | null
   is_active: boolean | null
   created_at: Date | null
+  tenant_id: string | null
+  event_type: string | null
+  target_ws_channel: string | null
   _count: TemplatesCountAggregateOutputType | null
   _avg: TemplatesAvgAggregateOutputType | null
   _sum: TemplatesSumAggregateOutputType | null
@@ -240,6 +261,9 @@ export type templatesWhereInput = {
   locale?: Prisma.StringNullableFilter<"templates"> | string | null
   is_active?: Prisma.BoolNullableFilter<"templates"> | boolean | null
   created_at?: Prisma.DateTimeNullableFilter<"templates"> | Date | string | null
+  tenant_id?: Prisma.UuidNullableFilter<"templates"> | string | null
+  event_type?: Prisma.StringNullableFilter<"templates"> | string | null
+  target_ws_channel?: Prisma.StringNullableFilter<"templates"> | string | null
 }
 
 export type templatesOrderByWithRelationInput = {
@@ -251,6 +275,9 @@ export type templatesOrderByWithRelationInput = {
   locale?: Prisma.SortOrderInput | Prisma.SortOrder
   is_active?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  tenant_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  event_type?: Prisma.SortOrderInput | Prisma.SortOrder
+  target_ws_channel?: Prisma.SortOrderInput | Prisma.SortOrder
 }
 
 export type templatesWhereUniqueInput = Prisma.AtLeast<{
@@ -266,6 +293,9 @@ export type templatesWhereUniqueInput = Prisma.AtLeast<{
   locale?: Prisma.StringNullableFilter<"templates"> | string | null
   is_active?: Prisma.BoolNullableFilter<"templates"> | boolean | null
   created_at?: Prisma.DateTimeNullableFilter<"templates"> | Date | string | null
+  tenant_id?: Prisma.UuidNullableFilter<"templates"> | string | null
+  event_type?: Prisma.StringNullableFilter<"templates"> | string | null
+  target_ws_channel?: Prisma.StringNullableFilter<"templates"> | string | null
 }, "template_id_version">
 
 export type templatesOrderByWithAggregationInput = {
@@ -277,6 +307,9 @@ export type templatesOrderByWithAggregationInput = {
   locale?: Prisma.SortOrderInput | Prisma.SortOrder
   is_active?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  tenant_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  event_type?: Prisma.SortOrderInput | Prisma.SortOrder
+  target_ws_channel?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.templatesCountOrderByAggregateInput
   _avg?: Prisma.templatesAvgOrderByAggregateInput
   _max?: Prisma.templatesMaxOrderByAggregateInput
@@ -296,6 +329,9 @@ export type templatesScalarWhereWithAggregatesInput = {
   locale?: Prisma.StringNullableWithAggregatesFilter<"templates"> | string | null
   is_active?: Prisma.BoolNullableWithAggregatesFilter<"templates"> | boolean | null
   created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"templates"> | Date | string | null
+  tenant_id?: Prisma.UuidNullableWithAggregatesFilter<"templates"> | string | null
+  event_type?: Prisma.StringNullableWithAggregatesFilter<"templates"> | string | null
+  target_ws_channel?: Prisma.StringNullableWithAggregatesFilter<"templates"> | string | null
 }
 
 export type templatesCreateInput = {
@@ -307,6 +343,9 @@ export type templatesCreateInput = {
   locale?: string | null
   is_active?: boolean | null
   created_at?: Date | string | null
+  tenant_id?: string | null
+  event_type?: string | null
+  target_ws_channel?: string | null
 }
 
 export type templatesUncheckedCreateInput = {
@@ -318,6 +357,9 @@ export type templatesUncheckedCreateInput = {
   locale?: string | null
   is_active?: boolean | null
   created_at?: Date | string | null
+  tenant_id?: string | null
+  event_type?: string | null
+  target_ws_channel?: string | null
 }
 
 export type templatesUpdateInput = {
@@ -329,6 +371,9 @@ export type templatesUpdateInput = {
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tenant_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  event_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  target_ws_channel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type templatesUncheckedUpdateInput = {
@@ -340,6 +385,9 @@ export type templatesUncheckedUpdateInput = {
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tenant_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  event_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  target_ws_channel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type templatesCreateManyInput = {
@@ -351,6 +399,9 @@ export type templatesCreateManyInput = {
   locale?: string | null
   is_active?: boolean | null
   created_at?: Date | string | null
+  tenant_id?: string | null
+  event_type?: string | null
+  target_ws_channel?: string | null
 }
 
 export type templatesUpdateManyMutationInput = {
@@ -362,6 +413,9 @@ export type templatesUpdateManyMutationInput = {
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tenant_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  event_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  target_ws_channel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type templatesUncheckedUpdateManyInput = {
@@ -373,6 +427,9 @@ export type templatesUncheckedUpdateManyInput = {
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tenant_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  event_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  target_ws_channel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type templatesTemplate_idVersionCompoundUniqueInput = {
@@ -389,6 +446,9 @@ export type templatesCountOrderByAggregateInput = {
   locale?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
+  event_type?: Prisma.SortOrder
+  target_ws_channel?: Prisma.SortOrder
 }
 
 export type templatesAvgOrderByAggregateInput = {
@@ -404,6 +464,9 @@ export type templatesMaxOrderByAggregateInput = {
   locale?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
+  event_type?: Prisma.SortOrder
+  target_ws_channel?: Prisma.SortOrder
 }
 
 export type templatesMinOrderByAggregateInput = {
@@ -415,6 +478,9 @@ export type templatesMinOrderByAggregateInput = {
   locale?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
+  event_type?: Prisma.SortOrder
+  target_ws_channel?: Prisma.SortOrder
 }
 
 export type templatesSumOrderByAggregateInput = {
@@ -444,6 +510,9 @@ export type templatesSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   locale?: boolean
   is_active?: boolean
   created_at?: boolean
+  tenant_id?: boolean
+  event_type?: boolean
+  target_ws_channel?: boolean
 }, ExtArgs["result"]["templates"]>
 
 export type templatesSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -455,6 +524,9 @@ export type templatesSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   locale?: boolean
   is_active?: boolean
   created_at?: boolean
+  tenant_id?: boolean
+  event_type?: boolean
+  target_ws_channel?: boolean
 }, ExtArgs["result"]["templates"]>
 
 export type templatesSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -466,6 +538,9 @@ export type templatesSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   locale?: boolean
   is_active?: boolean
   created_at?: boolean
+  tenant_id?: boolean
+  event_type?: boolean
+  target_ws_channel?: boolean
 }, ExtArgs["result"]["templates"]>
 
 export type templatesSelectScalar = {
@@ -477,9 +552,12 @@ export type templatesSelectScalar = {
   locale?: boolean
   is_active?: boolean
   created_at?: boolean
+  tenant_id?: boolean
+  event_type?: boolean
+  target_ws_channel?: boolean
 }
 
-export type templatesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"template_id" | "version" | "channel_type" | "subject_line" | "content_body" | "locale" | "is_active" | "created_at", ExtArgs["result"]["templates"]>
+export type templatesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"template_id" | "version" | "channel_type" | "subject_line" | "content_body" | "locale" | "is_active" | "created_at" | "tenant_id" | "event_type" | "target_ws_channel", ExtArgs["result"]["templates"]>
 
 export type $templatesPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "templates"
@@ -493,6 +571,9 @@ export type $templatesPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     locale: string | null
     is_active: boolean | null
     created_at: Date | null
+    tenant_id: string | null
+    event_type: string | null
+    target_ws_channel: string | null
   }, ExtArgs["result"]["templates"]>
   composites: {}
 }
@@ -924,6 +1005,9 @@ export interface templatesFieldRefs {
   readonly locale: Prisma.FieldRef<"templates", 'String'>
   readonly is_active: Prisma.FieldRef<"templates", 'Boolean'>
   readonly created_at: Prisma.FieldRef<"templates", 'DateTime'>
+  readonly tenant_id: Prisma.FieldRef<"templates", 'String'>
+  readonly event_type: Prisma.FieldRef<"templates", 'String'>
+  readonly target_ws_channel: Prisma.FieldRef<"templates", 'String'>
 }
     
 

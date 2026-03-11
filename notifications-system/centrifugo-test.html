@@ -1,30 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Centrifugo Test Client</title>
     <script src="https://unpkg.com/centrifuge@5.0.0/dist/centrifuge.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
-        #logs { background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 5px; height: 400px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; }
-        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 15px; font-weight: bold; background: #ffebee; color: #c62828; }
-        .connected { background: #e8f5e9; color: #2e7d32; }
-        button { background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin: 10px 0; }
-        button:hover { background: #1976D2; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        #logs {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        button:hover {
+            background: #1976D2;
+        }
     </style>
 </head>
+
 <body>
     <h1>Real-time Notifications Test</h1>
     <p>Status: <span id="status" class="status-badge">Disconnected</span></p>
-    
+
     <div>
         <h3>Settings</h3>
         <label>User ID (must match what the token was generated for):</label><br>
-        <input type="text" id="userId" value="b5dae3e8-2d5d-6f3c-cd3c-3c4d5e6f7a8b" style="width: 300px; padding: 8px; margin-bottom: 10px;">
+        <input type="text" id="userId" value="b5dae3e8-2d5d-6f3c-cd3c-3c4d5e6f7a8b"
+            style="width: 300px; padding: 8px; margin-bottom: 10px;">
         <br>
         <label>JWT Token:</label><br>
-        <input type="text" id="token" placeholder="Paste your generated JWT here" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+        <input type="text" id="token" placeholder="Paste your generated JWT here"
+            style="width: 100%; padding: 8px; margin-bottom: 10px;">
         <br>
         <button onclick="connect()">Connect</button>
         <button onclick="disconnect()" style="background: #f44336;">Disconnect</button>
@@ -55,7 +100,7 @@
         function connect() {
             const token = document.getElementById('token').value;
             const userId = document.getElementById('userId').value;
-            
+
             if (!token) {
                 alert("Please paste the JWT token first.");
                 return;
@@ -70,45 +115,28 @@
                 token: token
             });
 
-            centrifuge.on('connecting', function(ctx) {
+            centrifuge.on('connecting', function (ctx) {
                 updateStatus('Connecting...');
                 log(`Connecting... (Reason: ${ctx.reason})`);
             });
 
-            centrifuge.on('connected', function(ctx) {
+            centrifuge.on('connected', function (ctx) {
                 updateStatus('Connected');
                 log('Successfully connected to Centrifugo!');
-                
-                // 2. Subscribe to the personal channel (single-tenant style)
-                // The hash (#) separator is common in single-tenant to isolate users
-                const channelName = `personal_events#${userId}`;
-                log(`Attempting to subscribe to: ${channelName}`);
-                
-                const sub = centrifuge.newSubscription(channelName);
-                
-                sub.on('publication', function(ctx) {
-                    log(`📥 NEW NOTIFICATION: \n${JSON.stringify(ctx.data, null, 2)}`);
-                    
-                    // Here you would normally update the UI (show a toast, add to inbox drop-down, etc.)
-                    if(ctx.data.title) {
-                        if (Notification.permission === "granted") {
-                           new Notification(ctx.data.title, { body: ctx.data.body });
-                        }
-                    }
-                });
-
-                sub.on('subscribed', function(ctx) {
-                    log(`✅ Subscribed to ${ctx.channel}`);
-                });
-
-                sub.on('error', function(err) {
-                    log(`❌ Subscription ERORR: ${err.message}`);
-                });
-
-                sub.subscribe();
             });
 
-            centrifuge.on('disconnected', function(ctx) {
+            // Listen for messages arriving on server-side subscriptions
+            centrifuge.on('publication', function (ctx) {
+                log(`📥 NEW NOTIFICATION on ${ctx.channel}: \n${JSON.stringify(ctx.data, null, 2)}`);
+
+                if (ctx.data.title) {
+                    if (Notification.permission === "granted") {
+                        new Notification(ctx.data.title, { body: ctx.data.body });
+                    }
+                }
+            });
+
+            centrifuge.on('disconnected', function (ctx) {
                 updateStatus('Disconnected');
                 log(`Disconnected from server: ${ctx.reason}`);
             });
@@ -129,4 +157,5 @@
         }
     </script>
 </body>
+
 </html>

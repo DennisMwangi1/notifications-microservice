@@ -4,6 +4,7 @@ go 1.25.7
 
 require (
 	github.com/centrifugal/centrifuge-go v0.10.11 // indirect
+	github.com/centrifugal/gocent/v3 v3.4.0 // indirect
 	github.com/centrifugal/protocol v0.16.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

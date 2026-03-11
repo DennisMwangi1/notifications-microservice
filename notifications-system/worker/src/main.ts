@@ -2,24 +2,69 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
-import { NotificationsModule } from './notifications/notifications.module';
+import { AppModule } from './app.module';
+import { Kafka } from 'kafkajs';
 
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    NotificationsModule,
-    {
-      transport: Transport.KAFKA,
-      options: {
-        client: {
-          brokers: [process.env.KAFKA_BROKER],
-        },
-        consumer: {
-          groupId: 'notification-worker-group'
-        },
-      } as any,
-    },
-  );
-  await app.listen();
-  console.log('Notification worker is listening on Kafka');
+  const kafka = new Kafka({
+    clientId: 'admin',
+    brokers: [process.env.KAFKA_BROKER || 'localhost:9092'],
+  });
+
+  const admin = kafka.admin();
+  let adminConnected = false;
+
+  while (!adminConnected) {
+    try {
+      await admin.connect();
+      console.log('Admin connected to Kafka successfully');
+
+      await admin.createTopics({
+        topics: [
+          { topic: 'tenant.event.received' },
+          { topic: 'notification.dispatch' }
+        ],
+      });
+      console.log('Ensured system topics exist');
+
+      await admin.disconnect();
+      adminConnected = true;
+    } catch (e: any) {
+      console.error('Kafka broker not quite ready, retrying admin connection in 5 seconds...', e.message);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+
+  // Create standard HTTP API
+  const app = await NestFactory.create(AppModule);
+
+  // Enable CORS so external projects' frontends can fetch tokens
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+  });
+
+  // Attach Kafka Microservice
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.KAFKA,
+    options: {
+      client: {
+        brokers: [process.env.KAFKA_BROKER || 'localhost:9092'],
+      },
+      consumer: {
+        groupId: 'notification-worker-group'
+      },
+    } as any,
+  });
+
+  // Start the Kafka listener
+  await app.startAllMicroservices();
+  console.log('Notification Microservice connected to Kafka.');
+
+  // Open HTTP Port for Project Integration (Auth, Webhooks)
+  const port = process.env.PORT || 3001;
+  await app.listen(port);
+  console.log(`Notification API HTTP Server is running on port ${port}`);
 }
 bootstrap();

@@ -28,7 +28,12 @@ export type notification_logs = Prisma.notification_logsModel
  */
 export type templates = Prisma.templatesModel
 /**
- * Model user_preferences
+ * Model in_app_notifications
  * 
  */
-export type user_preferences = Prisma.user_preferencesModel
+export type in_app_notifications = Prisma.in_app_notificationsModel
+/**
+ * Model tenants
+ * 
+ */
+export type tenants = Prisma.tenantsModel

@@ -67,11 +67,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - CENTRIFUGO_TOKEN_HMAC_SECRET_KEY=${CENTRIFUGO_SECRET}
-      - CENTRIFUGO_API_KEY=${CENTRIFUGO_API_KEY}
-      - CENTRIFUGO_REDIS_ADDRESS=redis:6379
-      - CENTRIFUGO_ENGINE=redis
-    command: centrifugo
+      - CENTRIFUGO_ENGINE_REDIS_ADDRESS=redis:6379
+      - CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY=${CENTRIFUGO_SECRET}
+      - CENTRIFUGO_HTTP_API_KEY=${CENTRIFUGO_API_KEY}
+    volumes:
+      - ./centrifugo/config.yaml:/centrifugo/config.yaml
+    command: centrifugo --config /centrifugo/config.yaml
 
 volumes:
   postgres_data:

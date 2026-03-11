@@ -386,7 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   notification_logs: 'notification_logs',
   templates: 'templates',
-  user_preferences: 'user_preferences'
+  in_app_notifications: 'in_app_notifications',
+  tenants: 'tenants'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -402,7 +403,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "notification_logs" | "templates" | "user_preferences"
+    modelProps: "notification_logs" | "templates" | "in_app_notifications" | "tenants"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -554,77 +555,151 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    user_preferences: {
-      payload: Prisma.$user_preferencesPayload<ExtArgs>
-      fields: Prisma.user_preferencesFieldRefs
+    in_app_notifications: {
+      payload: Prisma.$in_app_notificationsPayload<ExtArgs>
+      fields: Prisma.in_app_notificationsFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.user_preferencesFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload> | null
+          args: Prisma.in_app_notificationsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.user_preferencesFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>
+          args: Prisma.in_app_notificationsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>
         }
         findFirst: {
-          args: Prisma.user_preferencesFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload> | null
+          args: Prisma.in_app_notificationsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.user_preferencesFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>
+          args: Prisma.in_app_notificationsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>
         }
         findMany: {
-          args: Prisma.user_preferencesFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>[]
+          args: Prisma.in_app_notificationsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>[]
         }
         create: {
-          args: Prisma.user_preferencesCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>
+          args: Prisma.in_app_notificationsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>
         }
         createMany: {
-          args: Prisma.user_preferencesCreateManyArgs<ExtArgs>
+          args: Prisma.in_app_notificationsCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.user_preferencesCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>[]
+          args: Prisma.in_app_notificationsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>[]
         }
         delete: {
-          args: Prisma.user_preferencesDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>
+          args: Prisma.in_app_notificationsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>
         }
         update: {
-          args: Prisma.user_preferencesUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>
+          args: Prisma.in_app_notificationsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>
         }
         deleteMany: {
-          args: Prisma.user_preferencesDeleteManyArgs<ExtArgs>
+          args: Prisma.in_app_notificationsDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.user_preferencesUpdateManyArgs<ExtArgs>
+          args: Prisma.in_app_notificationsUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.user_preferencesUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>[]
+          args: Prisma.in_app_notificationsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>[]
         }
         upsert: {
-          args: Prisma.user_preferencesUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_preferencesPayload>
+          args: Prisma.in_app_notificationsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$in_app_notificationsPayload>
         }
         aggregate: {
-          args: Prisma.User_preferencesAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateUser_preferences>
+          args: Prisma.In_app_notificationsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateIn_app_notifications>
         }
         groupBy: {
-          args: Prisma.user_preferencesGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.User_preferencesGroupByOutputType>[]
+          args: Prisma.in_app_notificationsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.In_app_notificationsGroupByOutputType>[]
         }
         count: {
-          args: Prisma.user_preferencesCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.User_preferencesCountAggregateOutputType> | number
+          args: Prisma.in_app_notificationsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.In_app_notificationsCountAggregateOutputType> | number
+        }
+      }
+    }
+    tenants: {
+      payload: Prisma.$tenantsPayload<ExtArgs>
+      fields: Prisma.tenantsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.tenantsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.tenantsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>
+        }
+        findFirst: {
+          args: Prisma.tenantsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.tenantsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>
+        }
+        findMany: {
+          args: Prisma.tenantsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>[]
+        }
+        create: {
+          args: Prisma.tenantsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>
+        }
+        createMany: {
+          args: Prisma.tenantsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.tenantsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>[]
+        }
+        delete: {
+          args: Prisma.tenantsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>
+        }
+        update: {
+          args: Prisma.tenantsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>
+        }
+        deleteMany: {
+          args: Prisma.tenantsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.tenantsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.tenantsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>[]
+        }
+        upsert: {
+          args: Prisma.tenantsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenantsPayload>
+        }
+        aggregate: {
+          args: Prisma.TenantsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTenants>
+        }
+        groupBy: {
+          args: Prisma.tenantsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TenantsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.tenantsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TenantsCountAggregateOutputType> | number
         }
       }
     }
@@ -690,21 +765,39 @@ export const TemplatesScalarFieldEnum = {
   content_body: 'content_body',
   locale: 'locale',
   is_active: 'is_active',
-  created_at: 'created_at'
+  created_at: 'created_at',
+  tenant_id: 'tenant_id',
+  event_type: 'event_type',
+  target_ws_channel: 'target_ws_channel'
 } as const
 
 export type TemplatesScalarFieldEnum = (typeof TemplatesScalarFieldEnum)[keyof typeof TemplatesScalarFieldEnum]
 
 
-export const User_preferencesScalarFieldEnum = {
+export const In_app_notificationsScalarFieldEnum = {
+  id: 'id',
   user_id: 'user_id',
-  channels: 'channels',
-  categories: 'categories',
-  timezone: 'timezone',
-  updated_at: 'updated_at'
+  project_source: 'project_source',
+  type: 'type',
+  title: 'title',
+  body: 'body',
+  status: 'status',
+  created_at: 'created_at'
 } as const
 
-export type User_preferencesScalarFieldEnum = (typeof User_preferencesScalarFieldEnum)[keyof typeof User_preferencesScalarFieldEnum]
+export type In_app_notificationsScalarFieldEnum = (typeof In_app_notificationsScalarFieldEnum)[keyof typeof In_app_notificationsScalarFieldEnum]
+
+
+export const TenantsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  api_key: 'api_key',
+  allowed_channels: 'allowed_channels',
+  created_at: 'created_at',
+  is_active: 'is_active'
+} as const
+
+export type TenantsScalarFieldEnum = (typeof TenantsScalarFieldEnum)[keyof typeof TenantsScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -721,13 +814,6 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
-
-
-export const JsonNullValueInput = {
-  JsonNull: JsonNull
-} as const
-
-export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -853,6 +939,20 @@ export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'in_app_status'
+ */
+export type Enumin_app_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'in_app_status'>
+    
+
+
+/**
+ * Reference to a field of type 'in_app_status[]'
+ */
+export type ListEnumin_app_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'in_app_status[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -962,7 +1062,8 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   notification_logs?: Prisma.notification_logsOmit
   templates?: Prisma.templatesOmit
-  user_preferences?: Prisma.user_preferencesOmit
+  in_app_notifications?: Prisma.in_app_notificationsOmit
+  tenants?: Prisma.tenantsOmit
 }
 
 /* Types for Logging */
