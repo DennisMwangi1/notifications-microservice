@@ -58,7 +58,7 @@ enum in_app_status {
 model in_app_notifications {
   id             String        @id @default(uuid()) @db.Uuid
   user_id        String        @db.Uuid
-  project_source String
+  tenant_id      String        @db.Uuid
   type           String
   title          String
   body           String

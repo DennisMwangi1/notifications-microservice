@@ -30,7 +30,6 @@ export class EventsController {
             ...payload,
             tenantId: tenant.id,
             tenantName: tenant.name,
-            project_source: tenant.api_key, // Used downstream for the in-app bell routing
             eventType: eventType // Pass the original trigger string downstream
         };
 

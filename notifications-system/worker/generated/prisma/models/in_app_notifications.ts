@@ -27,7 +27,7 @@ export type AggregateIn_app_notifications = {
 export type In_app_notificationsMinAggregateOutputType = {
   id: string | null
   user_id: string | null
-  project_source: string | null
+  tenant_id: string | null
   type: string | null
   title: string | null
   body: string | null
@@ -38,7 +38,7 @@ export type In_app_notificationsMinAggregateOutputType = {
 export type In_app_notificationsMaxAggregateOutputType = {
   id: string | null
   user_id: string | null
-  project_source: string | null
+  tenant_id: string | null
   type: string | null
   title: string | null
   body: string | null
@@ -49,7 +49,7 @@ export type In_app_notificationsMaxAggregateOutputType = {
 export type In_app_notificationsCountAggregateOutputType = {
   id: number
   user_id: number
-  project_source: number
+  tenant_id: number
   type: number
   title: number
   body: number
@@ -62,7 +62,7 @@ export type In_app_notificationsCountAggregateOutputType = {
 export type In_app_notificationsMinAggregateInputType = {
   id?: true
   user_id?: true
-  project_source?: true
+  tenant_id?: true
   type?: true
   title?: true
   body?: true
@@ -73,7 +73,7 @@ export type In_app_notificationsMinAggregateInputType = {
 export type In_app_notificationsMaxAggregateInputType = {
   id?: true
   user_id?: true
-  project_source?: true
+  tenant_id?: true
   type?: true
   title?: true
   body?: true
@@ -84,7 +84,7 @@ export type In_app_notificationsMaxAggregateInputType = {
 export type In_app_notificationsCountAggregateInputType = {
   id?: true
   user_id?: true
-  project_source?: true
+  tenant_id?: true
   type?: true
   title?: true
   body?: true
@@ -168,7 +168,7 @@ export type in_app_notificationsGroupByArgs<ExtArgs extends runtime.Types.Extens
 export type In_app_notificationsGroupByOutputType = {
   id: string
   user_id: string
-  project_source: string
+  tenant_id: string
   type: string
   title: string
   body: string
@@ -200,7 +200,7 @@ export type in_app_notificationsWhereInput = {
   NOT?: Prisma.in_app_notificationsWhereInput | Prisma.in_app_notificationsWhereInput[]
   id?: Prisma.UuidFilter<"in_app_notifications"> | string
   user_id?: Prisma.UuidFilter<"in_app_notifications"> | string
-  project_source?: Prisma.StringFilter<"in_app_notifications"> | string
+  tenant_id?: Prisma.UuidFilter<"in_app_notifications"> | string
   type?: Prisma.StringFilter<"in_app_notifications"> | string
   title?: Prisma.StringFilter<"in_app_notifications"> | string
   body?: Prisma.StringFilter<"in_app_notifications"> | string
@@ -211,7 +211,7 @@ export type in_app_notificationsWhereInput = {
 export type in_app_notificationsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  project_source?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   body?: Prisma.SortOrder
@@ -225,7 +225,7 @@ export type in_app_notificationsWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.in_app_notificationsWhereInput[]
   NOT?: Prisma.in_app_notificationsWhereInput | Prisma.in_app_notificationsWhereInput[]
   user_id?: Prisma.UuidFilter<"in_app_notifications"> | string
-  project_source?: Prisma.StringFilter<"in_app_notifications"> | string
+  tenant_id?: Prisma.UuidFilter<"in_app_notifications"> | string
   type?: Prisma.StringFilter<"in_app_notifications"> | string
   title?: Prisma.StringFilter<"in_app_notifications"> | string
   body?: Prisma.StringFilter<"in_app_notifications"> | string
@@ -236,7 +236,7 @@ export type in_app_notificationsWhereUniqueInput = Prisma.AtLeast<{
 export type in_app_notificationsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  project_source?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   body?: Prisma.SortOrder
@@ -253,7 +253,7 @@ export type in_app_notificationsScalarWhereWithAggregatesInput = {
   NOT?: Prisma.in_app_notificationsScalarWhereWithAggregatesInput | Prisma.in_app_notificationsScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"in_app_notifications"> | string
   user_id?: Prisma.UuidWithAggregatesFilter<"in_app_notifications"> | string
-  project_source?: Prisma.StringWithAggregatesFilter<"in_app_notifications"> | string
+  tenant_id?: Prisma.UuidWithAggregatesFilter<"in_app_notifications"> | string
   type?: Prisma.StringWithAggregatesFilter<"in_app_notifications"> | string
   title?: Prisma.StringWithAggregatesFilter<"in_app_notifications"> | string
   body?: Prisma.StringWithAggregatesFilter<"in_app_notifications"> | string
@@ -264,7 +264,7 @@ export type in_app_notificationsScalarWhereWithAggregatesInput = {
 export type in_app_notificationsCreateInput = {
   id?: string
   user_id: string
-  project_source: string
+  tenant_id: string
   type: string
   title: string
   body: string
@@ -275,7 +275,7 @@ export type in_app_notificationsCreateInput = {
 export type in_app_notificationsUncheckedCreateInput = {
   id?: string
   user_id: string
-  project_source: string
+  tenant_id: string
   type: string
   title: string
   body: string
@@ -286,7 +286,7 @@ export type in_app_notificationsUncheckedCreateInput = {
 export type in_app_notificationsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  project_source?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
@@ -297,7 +297,7 @@ export type in_app_notificationsUpdateInput = {
 export type in_app_notificationsUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  project_source?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
@@ -308,7 +308,7 @@ export type in_app_notificationsUncheckedUpdateInput = {
 export type in_app_notificationsCreateManyInput = {
   id?: string
   user_id: string
-  project_source: string
+  tenant_id: string
   type: string
   title: string
   body: string
@@ -319,7 +319,7 @@ export type in_app_notificationsCreateManyInput = {
 export type in_app_notificationsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  project_source?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
@@ -330,7 +330,7 @@ export type in_app_notificationsUpdateManyMutationInput = {
 export type in_app_notificationsUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  project_source?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
@@ -341,7 +341,7 @@ export type in_app_notificationsUncheckedUpdateManyInput = {
 export type in_app_notificationsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  project_source?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   body?: Prisma.SortOrder
@@ -352,7 +352,7 @@ export type in_app_notificationsCountOrderByAggregateInput = {
 export type in_app_notificationsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  project_source?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   body?: Prisma.SortOrder
@@ -363,7 +363,7 @@ export type in_app_notificationsMaxOrderByAggregateInput = {
 export type in_app_notificationsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  project_source?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   body?: Prisma.SortOrder
@@ -384,7 +384,7 @@ export type DateTimeFieldUpdateOperationsInput = {
 export type in_app_notificationsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   user_id?: boolean
-  project_source?: boolean
+  tenant_id?: boolean
   type?: boolean
   title?: boolean
   body?: boolean
@@ -395,7 +395,7 @@ export type in_app_notificationsSelect<ExtArgs extends runtime.Types.Extensions.
 export type in_app_notificationsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   user_id?: boolean
-  project_source?: boolean
+  tenant_id?: boolean
   type?: boolean
   title?: boolean
   body?: boolean
@@ -406,7 +406,7 @@ export type in_app_notificationsSelectCreateManyAndReturn<ExtArgs extends runtim
 export type in_app_notificationsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   user_id?: boolean
-  project_source?: boolean
+  tenant_id?: boolean
   type?: boolean
   title?: boolean
   body?: boolean
@@ -417,7 +417,7 @@ export type in_app_notificationsSelectUpdateManyAndReturn<ExtArgs extends runtim
 export type in_app_notificationsSelectScalar = {
   id?: boolean
   user_id?: boolean
-  project_source?: boolean
+  tenant_id?: boolean
   type?: boolean
   title?: boolean
   body?: boolean
@@ -425,7 +425,7 @@ export type in_app_notificationsSelectScalar = {
   created_at?: boolean
 }
 
-export type in_app_notificationsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "project_source" | "type" | "title" | "body" | "status" | "created_at", ExtArgs["result"]["in_app_notifications"]>
+export type in_app_notificationsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "tenant_id" | "type" | "title" | "body" | "status" | "created_at", ExtArgs["result"]["in_app_notifications"]>
 
 export type $in_app_notificationsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "in_app_notifications"
@@ -433,7 +433,7 @@ export type $in_app_notificationsPayload<ExtArgs extends runtime.Types.Extension
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     user_id: string
-    project_source: string
+    tenant_id: string
     type: string
     title: string
     body: string
@@ -864,7 +864,7 @@ export interface Prisma__in_app_notificationsClient<T, Null = never, ExtArgs ext
 export interface in_app_notificationsFieldRefs {
   readonly id: Prisma.FieldRef<"in_app_notifications", 'String'>
   readonly user_id: Prisma.FieldRef<"in_app_notifications", 'String'>
-  readonly project_source: Prisma.FieldRef<"in_app_notifications", 'String'>
+  readonly tenant_id: Prisma.FieldRef<"in_app_notifications", 'String'>
   readonly type: Prisma.FieldRef<"in_app_notifications", 'String'>
   readonly title: Prisma.FieldRef<"in_app_notifications", 'String'>
   readonly body: Prisma.FieldRef<"in_app_notifications", 'String'>

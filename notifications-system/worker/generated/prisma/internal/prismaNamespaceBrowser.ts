@@ -108,7 +108,7 @@ export type TemplatesScalarFieldEnum = (typeof TemplatesScalarFieldEnum)[keyof t
 export const In_app_notificationsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
-  project_source: 'project_source',
+  tenant_id: 'tenant_id',
   type: 'type',
   title: 'title',
   body: 'body',

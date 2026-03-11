@@ -25,7 +25,7 @@ export class NotificationsController implements OnModuleInit {
   }
   @MessagePattern('tenant.event.received')
   async handleTenantEvent(@Payload() data: any) {
-    const { userId, eventType, tenantId, project_source, ...payloadData } = data;
+    const { userId, eventType, tenantId, ...payloadData } = data;
 
     console.log(`📩 Received generic event '${eventType}' for Tenant ID: ${tenantId}`);
 
@@ -105,8 +105,8 @@ export class NotificationsController implements OnModuleInit {
 
         // Save to Persistent Bell Payload History
         await this.prisma.$executeRaw`
-          INSERT INTO in_app_notifications (id, user_id, project_source, type, title, body, status)
-          VALUES (${notificationId}::uuid, ${userId}::uuid, ${project_source}, ${eventType}, ${dynamicSubject}, ${finalPushBody}, 'UNREAD')
+          INSERT INTO in_app_notifications (id, user_id, tenant_id, type, title, body, status)
+          VALUES (${notificationId}::uuid, ${userId}::uuid, ${tenantId}::uuid, ${eventType}, ${dynamicSubject}, ${finalPushBody}, 'UNREAD')
         `;
 
         // Send strictly to WebSocket Pipe (Do not trigger an email provider)
@@ -137,7 +137,7 @@ export class NotificationsController implements OnModuleInit {
     const notifications = await this.prisma.in_app_notifications.findMany({
       where: {
         user_id: userId,
-        project_source: tenantId,
+        tenant_id: tenantId,
       },
       orderBy: { created_at: 'desc' },
       take: 50,
@@ -160,7 +160,7 @@ export class NotificationsController implements OnModuleInit {
       where: {
         id: notificationId,
         user_id: userId,
-        project_source: tenantId,
+        tenant_id: tenantId,
       },
       data: {
         status: 'READ'
