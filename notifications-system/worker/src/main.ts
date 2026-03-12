@@ -63,7 +63,7 @@ async function bootstrap() {
   console.log('Notification Microservice connected to Kafka.');
 
   // Open HTTP Port for Project Integration (Auth, Webhooks)
-  const port = process.env.PORT || 3001;
+  const port = process.env.PORT || 4000;
   await app.listen(port);
   console.log(`Notification API HTTP Server is running on port ${port}`);
 }

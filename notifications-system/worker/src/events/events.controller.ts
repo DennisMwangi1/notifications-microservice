@@ -16,20 +16,20 @@ export class EventsController {
             throw new UnauthorizedException('Missing apiKey, eventType, or payload');
         }
 
-        // Authenticate the requesting tenant
-        const tenant = await prisma.tenants.findUnique({
-            where: { api_key: apiKey }
+        const cleanKey = apiKey.trim();
+        const tenant = await prisma.tenants.findFirst({
+            where: { api_key: cleanKey }
         });
 
         if (!tenant || !tenant.is_active) {
+            console.error(`Webhook Auth Failed. Received Key: ${cleanKey}`);
             throw new UnauthorizedException('Invalid or inactive API key');
         }
 
         // Inject tenant identity into payload for downstream consumers
         const enrichedPayload = {
             ...payload,
-            tenantId: tenant.id,
-            tenantName: tenant.name,
+            tenant: tenant,
             eventType: eventType // Pass the original trigger string downstream
         };
 

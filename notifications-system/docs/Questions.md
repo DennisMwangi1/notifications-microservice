@@ -140,3 +140,84 @@ This architecture completely decouples Centrifugo from 3rd-party providers.
 
 **Summary of the Solution:**
 By defining a `channel_type` ENUM and allowing **multiple templates per event**, the engine becomes fully omnichannel. A single `"service.applied"` webhook can simultaneously fire off an Email (MJML), an SMS (Text), and a Centrifugo popup (JSON), each using a completely different database template explicitly tied to that Tenant!
+
+---
+
+### Q7: The admin panel is confusing. When configuring a new tenant, how do I know which channels to subscribe to? What is the difference between In-App, SMS, and Email events, and are we using WebSockets for all of them?
+
+**Answer:**
+Let's clear this up, because it is a critical distinction to make when using the Admin Control Plane!
+
+**1. Are we using WebSockets for Emails and SMS?**
+**No, absolutely not.** 
+WebSockets (and the Centrifugo *channels* we keep mentioning) are **exclusively** used for **In-App (PUSH)** notifications. This is the real-time pipe that makes a live bell icon popup on the user's screen instantly without them refreshing the browser.
+- **Emails** are dispatched via traditional HTTP API calls to providers like SendGrid or AWS SES.
+- **SMS** messages are dispatched via HTTP API calls to telecom providers like Twilio or Africa's Talking.
+Neither of those touch WebSockets or Centrifugo channels.
+
+**2. What is the difference between the three in the system?**
+When your Content Team creates a template in the Admin UI, they choose a Delivery Medium:
+*   **EMAIL:** The engine compiles the MJML rich-text body into HTML, skips Centrifugo entirely, and queues the HTML for the Email provider.
+*   **SMS:** The engine compiles plain-text Handlebars strings, skips Centrifugo, and queues it for the SMS provider.
+*   **PUSH (In-App):** The engine saves the payload to the `in_app_notifications` PostgreSQL table (so offline users can fetch it later via the REST API), and immediately pushes it down the **Centrifugo WebSocket Channel** so the user's active browser tab receives it live.
+
+**3. So, what should I put in the "Allowed WebSocket Namespaces" field when onboarding a Tenant?**
+When you create a new Project/Tenant in the Admin UI, that field defines their real-time security boundaries. 
+*   **If the tenant will ONLY send Emails/SMS:** You can leave this field completely blank. 
+*   **If the tenant wants live In-App popups:** You need to define their boundaries. For example, if it's the TMaaS project, you might type `tmaas_alerts, tmaas_chat`. 
+
+This simply tells our Auth API: *"When a user logs into the TMaaS frontend, generate a secure JWT that ONLY allows their browser to listen to `tmaas_alerts` and `tmaas_chat`."* 
+
+Later, when the Content Team creates a **PUSH** template specifically for TMaaS, the Admin UI asks them for a *"Target WebSocket Namespace"*. They will type `tmaas_alerts`, and the engine seamlessly connects the dots, securely routing that specific event down that specific real-time pipe!
+
+
+### Q8: I forsee the admin UI in routing matrix and templating being very bloated and complex. If we take this configuration for TMaaS as an example, we have to create a template for each event type, and then for each event type we have to create a template for each delivery medium. That's a lot of templates! Is there a way to simplify this? Can we decouple the templating system to have reusable global template for generic push notifications? For example, service applied succesfully is just operation succesfull generically. Same goes for rejected, approved, etc. We need template reuse so as to simplify the admin UI and make it less bloated and complex.
+
+**Answer:**
+This is an incredibly sharp observation. You have accurately identified the primary scaling bottleneck in standard notification systems ("Template Bloat"). If a platform has 50 event types across 3 channels, that's 150 templates to manage for *one* tenant. With 10 tenants, it becomes a nightmare of 1,500 templates.
+
+To solve this and keep the Admin UI radically simple, we must implement a **"Global Fallback & Variable Overload"** architecture. Here is exactly how we decouple the system:
+
+#### 1. The "Global Default" Templates
+Instead of forcing the Content Team to create a template for every single event string (e.g., `tmaas.service.applied`, `tmaas.request.approved`), we create broad, generic **Global Templates**.
+The database `templates` table already supports setting the `tenant_id` to `NULL` (making it a global template usable by anyone). We expand this by allowing the `event_type` to also be a generic wildcard or categorization (e.g., `global.success`, `global.warning`, `global.alert`).
+
+*   **Global Success Template (Email):** A beautifully designed Green HTML template.
+*   **Global Warning Template (Email):** A Yellow HTML template.
+*   **Global Alert Template (Push):** A standard JSON bell-icon popup.
+
+#### 2. Variable Overloading (The Core Trick)
+How does a generic `global.success` template know that a service was applied versus a contract being signed? It relies entirely on the Webhook JSON `payload`.
+
+We design the Global Templates to be completely "dumb". They just render whatever strings are passed into them:
+**Global Success Push Template:**
+*   Title: `{{title}}`
+*   Body: `{{message}}`
+
+Now, the TMaaS backend does the heavy lifting. Instead of relying on the microservice to store the exact words "Service Applied", the TMaaS backend passes the copy directly in the webhook:
+
+```json
+// TMaaS Backend Webhook
+{
+  "apiKey": "TMAAS_KEY",
+  "eventType": "global.success", // Routes to the generic template
+  "payload": {
+    "userId": "uuid",
+    "title": "Service Applied!",
+    "message": "Your deep cleaning service was successfully scheduled."
+  }
+}
+```
+
+#### 3. The Resolution Hierarchy (Best of Both Worlds)
+By implementing this, we don't lose the ability to create highly customized, specific templates when we *do* need them. The NestJS Worker's database query will follow a strict **Resolution Hierarchy**:
+
+When an event fires (e.g., `tmaas.marketing.campaign`), the engine tries to resolve it in this exact order:
+1. **Tenant Override:** Is there an active template mapped exactly to `tenant_id = 'TMAAS'` and `event_type = 'tmaas.marketing.campaign'`? *(Use it!)*
+2. **Tenant Fallback:** Is there an active template mapped to `tenant_id = 'TMAAS'` and `event_type = 'global.alert'`? *(Use it!)*
+3. **Global System Default:** Is there a generic template mapped to `tenant_id = NULL` and `event_type = 'global.alert'`? *(Use it!)*
+4. **Drop:** Log an error; no template found in the matrix.
+
+**The Result:**
+Your Content Team only needs to configure **3-5 Global Templates** (Success, Warning, Error, Info) per delivery channel. TMaaS can immediately route 95% of their events through those generic templates by just changing the copy in their webhook `.payload`. 
+You only ever open the Admin UI to create a specific `tmaas.xxx` template when TMaaS explicitly requests a drastically different custom visual design (like a complex marketing HTML blast) for a specific event!

@@ -83,4 +83,34 @@ export class TemplatesController {
 
         return { success: true, message: 'Template version deactivated successfully', data: template };
     }
+
+    // 4. Reactivate a previously deactivated version (Rollback)
+    @Put(':template_id/version/:version/reactivate')
+    async reactivateTemplate(
+        @Param('template_id') templateId: string,
+        @Param('version') version: string
+    ) {
+        const template = await prisma.templates.update({
+            where: {
+                template_id_version: {
+                    template_id: templateId,
+                    version: parseInt(version, 10)
+                }
+            },
+            data: { is_active: true }
+        });
+
+        return { success: true, message: 'Template version reactivated successfully', data: template };
+    }
+
+    // 5. Fetch the entire version history for a specific template
+    @Get(':template_id/versions')
+    async getTemplateVersions(@Param('template_id') templateId: string) {
+        const versions = await prisma.templates.findMany({
+            where: { template_id: templateId },
+            orderBy: { version: 'desc' }
+        });
+
+        return { success: true, data: versions };
+    }
 }

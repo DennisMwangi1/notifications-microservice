@@ -20,8 +20,8 @@ The Notifications Microservice follows a strict philosophy: **You provide the da
 
 Before you can write any code, you need to be onboarded onto the Notifications Engine. Request the following from the Core Notifications Team:
 
-1. **Tenant API Key:** Your secure key to trigger webhooks. Keep this safely in your `.env` file.
-2. **Tenant ID (UUID):** Your public identifier, which your frontend will use to fetch notification history.
+1. **Tenant API Key (BACKEND ONLY):** Your heavily privileged secret key used to launch email/push webhooks. **Never expose this to a browser.** Keep this safely hidden in your backend server's `.env` file.
+2. **Tenant ID (PUBLIC FRONTEND):** Your public UUID identifier. Because you cannot expose your secret API Key to a browser, your React/Angular frontend uses this ID to safely fetch users' unread notification history (`GET /api/v1/notifications/{tenantId}/{userId}`). It poses zero security risk.
 3. **Template Configurations:** Sit down with the Notifications Team to define what events you will fire (e.g., `service.applied`) and design the corresponding Templates (Email MJML, plain text SMS, or short JSON for In-App Push).
 
 ---
@@ -57,11 +57,43 @@ Content-Type: application/json
 
 ---
 
-## 4. Step 2: Implementing Real-Time UI Popups (Frontend)
+## 4. Step 2: Email and SMS Delivery (Optional)
 
-To display live pop-up notifications the second your backend fires an event, your frontend (React, Vue, Angular) needs to connect to our **Centrifugo WebSocket Server**. 
+If your Content Team has configured an **EMAIL** or **SMS** template for your event in the Admin UI, the Microservice needs to know exactly where to send it.
 
-### 4.1. Requesting a Real-Time Token
+Because our engine is completely decoupled from your database, **you** must provide the user's contact information dynamically inside the `payload` object when firing the webhook. 
+
+If a template is active for either channel, ensure these specific keys are included in your webhook:
+
+```json
+{
+  "apiKey": "YOUR_SECRET_TENANT_API_KEY",
+  "eventType": "service.applied",
+  "payload": {
+    "userId": "uuid-of-the-recipient",
+    
+    // Required for EMAIL Templates:
+    "recipientEmail": "customer@example.com",
+    
+    // Required for SMS Templates (Must include Country Code):
+    "recipientPhone": "+12345678900",
+    
+    // ... any other custom template variables (e.g., amount, serviceName)
+  }
+}
+```
+
+*Note: If the Content Team created an Email template, but you forget to include `recipientEmail` in the payload, the microservice will log an error and gracefully drop that specific email job while continuing to process the In-App and SMS notifications.*
+
+---
+
+## 5. Step 3: Implementing Real-Time UI Popups (Frontend)
+
+*(Note: If your project only leverages our microservice for Email and SMS delivery, you can skip Step 2 and Step 3 entirely! WebSockets are used **exclusively** for live In-App Push popups).*
+
+To display live pop-up notifications the second your backend fires an In-App event, your frontend (React, Vue, Angular) needs to connect to our **Centrifugo WebSocket Server**. 
+
+### 5.1. Requesting a Real-Time Token
 Your frontend cannot connect to Centrifugo directly. It must first request a secure JSON Web Token (JWT) from our Auth bridge.
 
 **API Endpoint: `POST /api/v1/auth/realtime-token`**
@@ -69,7 +101,7 @@ Your frontend cannot connect to Centrifugo directly. It must first request a sec
 **Request Body:**
 ```json
 {
-  "tenantId": "YOUR_PUBLIC_TENANT_API_KEY",
+  "tenantId": "YOUR_PUBLIC_PROJECT_ID", // Find this in the Admin UI Tenants Page (Looks like a UUID)
   "userId": "uuid-of-the-logged-in-user"
 }
 ```
@@ -80,19 +112,19 @@ Your frontend cannot connect to Centrifugo directly. It must first request a sec
   "token": "eyJhbGciOiJIUz...",
   "channels": [
     "global_system#uuid-of-the-logged-in-user",
-    "tmaas_notifications#uuid-of-the-logged-in-user"
+    "tmaas_alerts#uuid-of-the-logged-in-user"
   ]
 }
 ```
 
-### 4.2. Connecting to the WebSocket Pipe
+### 5.2. Connecting to the WebSocket Pipe
 Install the `centrifuge` JavaScript SDK in your frontend application. Pass the generated JWT, and instruct it to loop through and subscribe to the `channels` provided in the HTTP response.
 
 ```javascript
 import { Centrifuge } from 'centrifuge';
 
 const centrifuge = new Centrifuge('ws://notifications.yourdomain.com/connection/websocket', {
-    token: response.token // The JWT from Step 4.1
+    token: response.token // The JWT from Step 5.1
 });
 
 // Autonomously subscribe to all allowed channels returned by the API
@@ -113,13 +145,13 @@ centrifuge.connect();
 
 ---
 
-## 5. Step 3: Integrating the "Notification Bell" History (Frontend)
+## 6. Step 4: Integrating the "Notification Bell" History (Frontend)
 
 What happens if the user was offline when you triggered the event? Our microservice automatically backed it up to a persistent PostgreSQL database! 
 
 Your frontend should implement a "Notification Bell" icon that pulls this offline history down upon login.
 
-### 5.1. Fetching Unread History
+### 6.1. Fetching Unread History
 When your application loads, hit this endpoint to populate the User's notification feed.
 
 **API Endpoint: `GET /api/v1/notifications/{tenantId}/{userId}`**
@@ -141,7 +173,7 @@ When your application loads, hit this endpoint to populate the User's notificati
 }
 ```
 
-### 5.2. Marking a Notification as Read
+### 6.2. Marking a Notification as Read
 When the user physically clicks on a notification in the UI drop-down feed, fire a request to mark it as read, removing the red dot from their bell icon.
 
 **API Endpoint: `PUT /api/v1/notifications/{tenantId}/{userId}/{notificationId}/read`**
@@ -150,7 +182,7 @@ When the user physically clicks on a notification in the UI drop-down feed, fire
 
 ---
 
-## 6. Project Checklist
+## 7. Project Checklist
 
 Before moving to production, ensure your project team has validated:
 - [ ] You are not exposing your Tenant API Key in your client-side frontend code.

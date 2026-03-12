@@ -18,13 +18,13 @@ export class AuthController {
             throw new Error('CENTRIFUGO_SECRET is not configured');
         }
 
-        // Fetch the tenant from the database using their API Key (tenantId)
+        const cleanKey = tenantId.trim();
         const tenant = await prisma.tenants.findUnique({
-            where: { api_key: tenantId }
+            where: { id: cleanKey }
         });
 
         if (!tenant || !tenant.is_active) {
-            throw new UnauthorizedException('Invalid or inactive tenantId API key');
+            throw new UnauthorizedException('Invalid or inactive Property ID / API Key');
         }
 
         // 1. Define global channels that every token receives

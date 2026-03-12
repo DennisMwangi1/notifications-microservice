@@ -25,22 +25,32 @@ export class NotificationsController implements OnModuleInit {
   }
   @MessagePattern('tenant.event.received')
   async handleTenantEvent(@Payload() data: any) {
-    const { userId, eventType, tenantId, ...payloadData } = data;
-
-    console.log(`📩 Received generic event '${eventType}' for Tenant ID: ${tenantId}`);
+    const { userId, eventType, tenant, ...payloadData } = data;
+    let templates;
+    console.log(`📩 Received generic event '${eventType}' for Tenant ID: ${tenant.id}`);
 
     // 1. Fetch ALL Templates for this Tenant and Event Type (The Delivery Matrix)
-    const templates = await this.prisma.templates.findMany({
-      where: {
-        tenant_id: tenantId,
-        event_type: eventType,
-        is_active: true,
-      },
-      orderBy: { version: 'desc' },
-    });
+    if (eventType.startsWith('global.')) {
+      templates = await this.prisma.templates.findMany({
+        where: {
+          event_type: eventType,
+          is_active: true,
+        },
+        orderBy: { version: 'desc' },
+      });
+    } else {
+      templates = await this.prisma.templates.findMany({
+        where: {
+          tenant_id: tenant.id,
+          event_type: eventType,
+          is_active: true,
+        },
+        orderBy: { version: 'desc' },
+      });
+    }
 
     if (!templates || templates.length === 0) {
-      console.error(`❌ No Templates for Event '${eventType}' and Tenant '${tenantId}' found in DB`);
+      console.error(`❌ No Templates for Event '${eventType}' and Tenant '${tenant.id}' found in DB`);
       return;
     }
 
@@ -65,7 +75,7 @@ export class NotificationsController implements OnModuleInit {
           actionType: 'EMAIL',
           notificationId: notificationId,
           userId: userId,
-          recipient: "user@example.com", // Normally fetch from user profile
+          recipient: payloadData.recipientEmail || "error_no_email_provided@system", // Dynamically fetch from payload
           subject: dynamicSubject,
           body: finalHtml,
           provider: "SENDGRID"
@@ -87,7 +97,7 @@ export class NotificationsController implements OnModuleInit {
           actionType: 'SMS',
           notificationId: notificationId,
           userId: userId,
-          recipient: "+1234567890", // Normally fetch from user profile
+          recipient: payloadData.recipientPhone || "+10000000000", // Dynamically fetch from payload
           subject: dynamicSubject,
           body: finalSmsText,
           provider: "TWILIO"
@@ -103,10 +113,16 @@ export class NotificationsController implements OnModuleInit {
         // Dynamically resolve the real-time boundary strictly using the template's DB instruction!
         const wsChannel = template.target_ws_channel ? `${template.target_ws_channel}#${userId}` : `global_system#${userId}`;
 
+        // Derive the visual category from the event type prefix for frontend styling
+        // e.g. global.success → success, global.warning → warning, tmaas.request.approved → info
+        const eventParts = eventType.split('.');
+        const knownCategories = ['success', 'warning', 'alert', 'error', 'info'];
+        const category = knownCategories.includes(eventParts[1]) ? eventParts[1] : 'info';
+
         // Save to Persistent Bell Payload History
         await this.prisma.$executeRaw`
           INSERT INTO in_app_notifications (id, user_id, tenant_id, type, title, body, status)
-          VALUES (${notificationId}::uuid, ${userId}::uuid, ${tenantId}::uuid, ${eventType}, ${dynamicSubject}, ${finalPushBody}, 'UNREAD')
+          VALUES (${notificationId}::uuid, ${userId}::uuid, ${tenant.id}::uuid, ${eventType}, ${dynamicSubject}, ${finalPushBody}, 'UNREAD')
         `;
 
         // Send strictly to WebSocket Pipe (Do not trigger an email provider)
@@ -116,6 +132,8 @@ export class NotificationsController implements OnModuleInit {
           userId: userId,
           subject: dynamicSubject,
           body: finalPushBody,
+          category: category,
+          eventType: eventType,
           wsChannel: wsChannel
         });
       }
