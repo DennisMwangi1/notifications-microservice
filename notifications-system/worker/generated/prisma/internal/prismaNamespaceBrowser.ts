@@ -75,6 +75,7 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 export const Notification_logsScalarFieldEnum = {
   notification_id: 'notification_id',
+  tenant_id: 'tenant_id',
   user_id: 'user_id',
   template_id: 'template_id',
   channel: 'channel',
@@ -123,7 +124,10 @@ export const TenantsScalarFieldEnum = {
   id: 'id',
   name: 'name',
   api_key: 'api_key',
+  webhook_secret: 'webhook_secret',
   allowed_channels: 'allowed_channels',
+  sender_email: 'sender_email',
+  sender_name: 'sender_name',
   created_at: 'created_at',
   is_active: 'is_active'
 } as const

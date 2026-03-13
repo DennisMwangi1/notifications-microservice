@@ -31,8 +31,11 @@ export interface CreateTemplateDto {
 export interface EmailDispatchPayload {
     actionType: 'EMAIL';
     notificationId: string;
+    tenantId: string;
     userId: string;
     recipient: string;
+    senderEmail?: string | null;
+    senderName?: string | null;
     subject: string;
     body: string;
     provider: string;
@@ -41,6 +44,7 @@ export interface EmailDispatchPayload {
 export interface SmsDispatchPayload {
     actionType: 'SMS';
     notificationId: string;
+    tenantId: string;
     userId: string;
     recipient: string;
     subject: string;
@@ -51,6 +55,7 @@ export interface SmsDispatchPayload {
 export interface RealtimeDispatchPayload {
     actionType: 'REALTIME';
     notificationId: string;
+    tenantId: string;
     userId: string;
     subject: string;
     body: string;

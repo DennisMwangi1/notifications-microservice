@@ -37,7 +37,9 @@ async function bootstrap() {
   }
 
   // Create standard HTTP API
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
 
   // Enable CORS so external projects' frontends can fetch tokens
   app.enableCors({

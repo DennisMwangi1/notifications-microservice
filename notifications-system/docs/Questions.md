@@ -221,3 +221,97 @@ When an event fires (e.g., `tmaas.marketing.campaign`), the engine tries to reso
 **The Result:**
 Your Content Team only needs to configure **3-5 Global Templates** (Success, Warning, Error, Info) per delivery channel. TMaaS can immediately route 95% of their events through those generic templates by just changing the copy in their webhook `.payload`. 
 You only ever open the Admin UI to create a specific `tmaas.xxx` template when TMaaS explicitly requests a drastically different custom visual design (like a complex marketing HTML blast) for a specific event!
+
+---
+
+### Q9: In the dashboard, under channel distribution, delivery status and dispatch log, are we not logging in-app logs as well? This is as well for the notification logs, we are not recording in-app pushes.
+
+**Answer:**
+This is a keen observation! Yes, you are perfectly correct that currently, the dashboard and standard dispatch logs primarily reflect traditional third-party delivery channels (like Email and SMS). In-app push notifications (routed through Centrifugo WebSockets) are processed differently, leading to this visibility gap.
+
+Here is why this happens and how we must architect the solution to achieve total omnichannel observability:
+
+**Why In-App Pushes Are Missing from Dispatch Logs:**
+1. **Fire-and-Forget Architecture:** Email and SMS APIs return an immediate HTTP message ID confirming the dispatch, which the worker easily logs. In contrast, pushing to a Centrifugo channel is a "fire-and-forget" broadcast to a WebSocket topic. There isn't a traditional 3rd-party delivery confirmation.
+2. **Table Separation:** We persist the actual in-app notifications in a dedicated `in_app_notifications` table (so offline users can fetch their unseen bells later via REST API), while general dispatch logs are tracking the outgoing HTTP requests to external providers.
+
+**The Solution for the Dashboard:**
+To unify the dashboard metrics (Channel Distribution, Delivery Status, and Dispatch Logs), we must treat Centrifugo/In-App exactly like any other delivery provider in our telemetry:
+
+1. **Unified Dispatch Logging:** When the worker resolves an `IN_APP` template and pushes the payload to the Go Gateway, it must *also* insert a standard record into the main `notification_logs` (or `dispatch_logs`) table with the medium set to `IN_APP` and status set to `DISPATCHED`.
+2. **Read Receipts for Accurate Delivery Status:** To get true "Delivery/Read Status" for in-app pushes, the tenant's frontend application must send back an acknowledgment (e.g., `PATCH /api/v1/notifications/{id}/read`) when the user actually views or clicks the popup. This updates the central log from `DISPATCHED` to `DELIVERED/READ`.
+3. **Analytics Normalization:** Once all outgoing actions (Email, SMS, and In-App) write to the exact same centralized `notification_logs` table, the admin dashboard's SQL queries for "Channel Distribution" and "Dispatch Logs" will automatically and naturally include "In-App" alongside the others.
+
+By standardizing the logging interface across all delivery mediums, In-App metrics will become a first-class citizen in the dashboard!
+
+---
+
+### Q10: Since in-app notifications will be in the thousands if not hundred thousands as we span across multiple projects, does keeping a log make sense?
+
+**Answer:**
+This is a brilliant architectural question! You've identified a massive scalability trap. 
+
+While logging every single Email (which costs money) and SMS (which costs more money) is necessary for auditing and billing, storing a distinct relational database row for every single Centrifugo in-app push (which is virtually free and extremely high-volume) will absolutely bloat and crash your primary database.
+
+Logging every single push directly into a PostgreSQL `dispatch_logs` table **does not make sense at scale.**
+
+Here is how we must handle high-volume in-app analytics without bottlenecking the system:
+
+**1. Aggregated Metrics (For the Dashboard Charts):**
+Instead of the dashboard running a `COUNT()` across a massive table of 50 million in-app pushes, we use **counters**. 
+When the worker fires an in-app notification, it shouldn't write a log row. Instead, it increments a Redis counter (e.g., `INCR tenant:123:in_app_dispatched:2026-03-13`). 
+A CRON job or separate background worker periodically flushes these Redis counters into a `daily_channel_metrics` table. Your dashboard then queries this small, aggregated table to instantly draw the "Channel Distribution" pie charts.
+
+**2. Offload Raw Logs to a Data Lake/OLAP (For Auditing & Billing):**
+If you *must* keep a granular log of every single push for compliance, debugging, or tenant billing, do not put it in your transactional database (PostgreSQL/MySQL). 
+Instead, the worker should publish a lightweight "dispatch event" to a Kafka topic. A separate consumer then dumps these events in batches into cheaper, column-oriented storage designed for big data (like ClickHouse, AWS S3 via Firehose, or BigQuery). 
+
+**3. The User Inbox (`in_app_notifications` table):**
+Do not confuse the architectural "dispatch log" with the user's "notification bell" history. We still need to persist the actual notification in the `in_app_notifications` table so the user can see it when they open their app later. However, this table must have a strict **TTL (Time-To-Live)**. We should run a background cron job that violently prunes (deletes) any in-app notification older than 30 or 60 days to prevent infinite table growth.
+
+**Summary:**
+You are completely right. For high-volume in-app pushes, standard 1-to-1 relational logging is an anti-pattern. We must use **Redis counters for dashboard aggregations**, **OLAP/S3 for raw log archival**, and **aggressive expiration dates (TTL)** for the actual notification payloads!
+
+---
+
+### Q11: How do I setup SendGrid and how will we be configuring senders for different projects?
+
+**Answer:**
+Setting up SendGrid in a multi-tenant environment requires a two-step configuration: global credentials for the engine and tenant-specific overrides for the "From" address.
+
+**1. The Global Connection (The Engine):**
+Inside the microservice's `.env` file, we configure the primary **Sendgrid API Key**. This key allows the NestJS worker to authenticate with the SendGrid servers.
+```bash
+SENDGRID_API_KEY=SG.xxxxxxxxxxxxxx
+```
+
+**2. Configuring Senders by Project (The "From" Address):**
+Even though we use one API Key, the email should appear to come from the specific project (e.g., `support@tmaas.africa` vs `no-reply@ecommerce.com`). 
+*   **Domain Authentication:** Before you can send as `tmaas.africa`, you must go to the SendGrid dashboard and perform **Domain Authentication** (adding CNAME records to the project's DNS). This proves to mail servers that our engine has permission to send on behalf of that domain.
+*   **Tenant Metadata:** We store a `sender_email` and `sender_name` column in our `tenants` database table.
+*   **Dynamic Dispatch:** When the worker compiles an email for TMaaS, it doesn't use a hardcoded address. It fetches the `sender_email` from the TMaaS tenant row and passes it into the SendGrid SDK's `from` field.
+
+**Summary:** We use one global API Key for infrastructure, but we use database-driven "From" addresses and SendGrid Domain Authentication to ensure each project maintains its own brand identity and high deliverability.
+
+---
+
+### Q12: How will this work for projects vs products in terms of multi-tenancy? Can products share a setup while projects need dedicated ones?
+
+**Answer:**
+This is an important distinction for the platform's commercial and technical structure. "Tenancy" in our engine is a flexible boundary that handles both our internal platforms and external client builds.
+
+**1. Products (Internal Platforms Created by Us - e.g., TMaaS):**
+These are platforms built and managed internally. For these, we can use a **Product-Level Tenant** model.
+*   **Logical Isolation:** Even though we built it, TMaaS is a "Product" that should have its own Tenant ID. This ensures its notifications, templates, and analytics are distinct from other internal products we might launch later.
+*   **Shared Infrastructure:** Multiple internal products can share our primary system resources while maintaining separate "logical" setups in the database to keep their branding and communication rules clean.
+
+**2. Projects (External Platforms Built for Clients):**
+These are platforms built specifically for external clients. These **must have dedicated Tenant IDs (Dedicated Setups)**.
+*   **Strict Isolation:** Since these belong to clients, they require total isolation. They get their own API Keys, their own set of `allowed_channels`, and their own dedicated sender configurations.
+*   **Security & Billing:** Dedicated setups allow us to strictly control client access and accurately track usage for billing purposes without any data leakage between different clients' systems.
+
+**The Strategy:**
+*   **Products (Us):** Each platform we create (like TMaaS) gets a self-managed tenant entry. This keeps our internal products organized but under our direct control.
+*   **Projects (Clients):** Each client project receives a strictly isolated, dedicated tenant setup.
+
+The system is designed to handle both simultaneously! Whether it's a product we own or a project we built for someone else, each receives a configuration row in the `tenants` table that defines its specific boundaries and capabilities.

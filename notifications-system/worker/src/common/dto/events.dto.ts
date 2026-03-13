@@ -35,4 +35,6 @@ export interface EnrichedKafkaPayload {
 export interface TenantIdentity {
     id: string;
     name: string;
+    sender_email?: string | null;
+    sender_name?: string | null;
 }

@@ -220,16 +220,16 @@ Add WhatsApp as a 4th channel type alongside EMAIL/SMS/PUSH using the WhatsApp B
 
 Allow exporting template sets as JSON and importing them into other environments or sharing across tenants.
 
-### 17. Webhook Signature Verification
-**Priority:** P3 — Low (but becomes P1 in production)
-**Components:** Events Controller
+### ✅ 17. Webhook Signature Verification
+**Priority:** P1 (Completed)
+**Components:** Events Controller, Security Service
 
-Currently authentication is API-key-in-body. A more secure approach would be HMAC signature verification via headers.
+Successfully implemented HMAC-SHA256 signature verification via headers to secure incoming webhook calls.
 
-**What to build:**
-- [ ] Sign webhook payloads with `X-Nucleus-Signature` header using HMAC-SHA256
-- [ ] Verify signature server-side before processing
-- [ ] Provide SDK helpers for integration teams
+**What was built:**
+- [x] Sign webhook payloads with `X-Nucleus-Signature` header using HMAC-SHA256
+- [x] Verify signature server-side before processing (SecurityService + NestJS rawBody)
+- [x] Provide SDK helpers for integration teams (`SDK-Helpers.md`)
 
 ### 18. Health Check & Monitoring Endpoints
 **Priority:** P3 — Low

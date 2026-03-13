@@ -10,6 +10,7 @@ datasource db {
 
 model notification_logs {
   notification_id String       @id @db.Uuid
+  tenant_id       String       @db.Uuid
   user_id         String       @db.Uuid
   template_id     String       @db.VarChar(100)
   channel         channel_enum
@@ -70,7 +71,10 @@ model tenants {
   id               String   @id @default(uuid()) @db.Uuid
   name             String
   api_key          String   @unique
+  webhook_secret   String?  @unique @db.VarChar(255)
   allowed_channels String[] // e.g. ["ecommerce_store", "support_chat"]
+  sender_email     String?  @db.VarChar(255)
+  sender_name      String?  @db.VarChar(255)
   created_at       DateTime @default(now()) @db.Timestamp(6)
   is_active        Boolean  @default(true)
 }

@@ -28,6 +28,9 @@ export type TenantsMinAggregateOutputType = {
   id: string | null
   name: string | null
   api_key: string | null
+  webhook_secret: string | null
+  sender_email: string | null
+  sender_name: string | null
   created_at: Date | null
   is_active: boolean | null
 }
@@ -36,6 +39,9 @@ export type TenantsMaxAggregateOutputType = {
   id: string | null
   name: string | null
   api_key: string | null
+  webhook_secret: string | null
+  sender_email: string | null
+  sender_name: string | null
   created_at: Date | null
   is_active: boolean | null
 }
@@ -44,7 +50,10 @@ export type TenantsCountAggregateOutputType = {
   id: number
   name: number
   api_key: number
+  webhook_secret: number
   allowed_channels: number
+  sender_email: number
+  sender_name: number
   created_at: number
   is_active: number
   _all: number
@@ -55,6 +64,9 @@ export type TenantsMinAggregateInputType = {
   id?: true
   name?: true
   api_key?: true
+  webhook_secret?: true
+  sender_email?: true
+  sender_name?: true
   created_at?: true
   is_active?: true
 }
@@ -63,6 +75,9 @@ export type TenantsMaxAggregateInputType = {
   id?: true
   name?: true
   api_key?: true
+  webhook_secret?: true
+  sender_email?: true
+  sender_name?: true
   created_at?: true
   is_active?: true
 }
@@ -71,7 +86,10 @@ export type TenantsCountAggregateInputType = {
   id?: true
   name?: true
   api_key?: true
+  webhook_secret?: true
   allowed_channels?: true
+  sender_email?: true
+  sender_name?: true
   created_at?: true
   is_active?: true
   _all?: true
@@ -153,7 +171,10 @@ export type TenantsGroupByOutputType = {
   id: string
   name: string
   api_key: string
+  webhook_secret: string | null
   allowed_channels: string[]
+  sender_email: string | null
+  sender_name: string | null
   created_at: Date
   is_active: boolean
   _count: TenantsCountAggregateOutputType | null
@@ -183,7 +204,10 @@ export type tenantsWhereInput = {
   id?: Prisma.UuidFilter<"tenants"> | string
   name?: Prisma.StringFilter<"tenants"> | string
   api_key?: Prisma.StringFilter<"tenants"> | string
+  webhook_secret?: Prisma.StringNullableFilter<"tenants"> | string | null
   allowed_channels?: Prisma.StringNullableListFilter<"tenants">
+  sender_email?: Prisma.StringNullableFilter<"tenants"> | string | null
+  sender_name?: Prisma.StringNullableFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolFilter<"tenants"> | boolean
 }
@@ -192,7 +216,10 @@ export type tenantsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   api_key?: Prisma.SortOrder
+  webhook_secret?: Prisma.SortOrderInput | Prisma.SortOrder
   allowed_channels?: Prisma.SortOrder
+  sender_email?: Prisma.SortOrderInput | Prisma.SortOrder
+  sender_name?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
 }
@@ -200,20 +227,26 @@ export type tenantsOrderByWithRelationInput = {
 export type tenantsWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   api_key?: string
+  webhook_secret?: string
   AND?: Prisma.tenantsWhereInput | Prisma.tenantsWhereInput[]
   OR?: Prisma.tenantsWhereInput[]
   NOT?: Prisma.tenantsWhereInput | Prisma.tenantsWhereInput[]
   name?: Prisma.StringFilter<"tenants"> | string
   allowed_channels?: Prisma.StringNullableListFilter<"tenants">
+  sender_email?: Prisma.StringNullableFilter<"tenants"> | string | null
+  sender_name?: Prisma.StringNullableFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolFilter<"tenants"> | boolean
-}, "id" | "api_key">
+}, "id" | "api_key" | "webhook_secret">
 
 export type tenantsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   api_key?: Prisma.SortOrder
+  webhook_secret?: Prisma.SortOrderInput | Prisma.SortOrder
   allowed_channels?: Prisma.SortOrder
+  sender_email?: Prisma.SortOrderInput | Prisma.SortOrder
+  sender_name?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   _count?: Prisma.tenantsCountOrderByAggregateInput
@@ -228,7 +261,10 @@ export type tenantsScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"tenants"> | string
   name?: Prisma.StringWithAggregatesFilter<"tenants"> | string
   api_key?: Prisma.StringWithAggregatesFilter<"tenants"> | string
+  webhook_secret?: Prisma.StringNullableWithAggregatesFilter<"tenants"> | string | null
   allowed_channels?: Prisma.StringNullableListFilter<"tenants">
+  sender_email?: Prisma.StringNullableWithAggregatesFilter<"tenants"> | string | null
+  sender_name?: Prisma.StringNullableWithAggregatesFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolWithAggregatesFilter<"tenants"> | boolean
 }
@@ -237,7 +273,10 @@ export type tenantsCreateInput = {
   id?: string
   name: string
   api_key: string
+  webhook_secret?: string | null
   allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
   created_at?: Date | string
   is_active?: boolean
 }
@@ -246,7 +285,10 @@ export type tenantsUncheckedCreateInput = {
   id?: string
   name: string
   api_key: string
+  webhook_secret?: string | null
   allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
   created_at?: Date | string
   is_active?: boolean
 }
@@ -255,7 +297,10 @@ export type tenantsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -264,7 +309,10 @@ export type tenantsUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -273,7 +321,10 @@ export type tenantsCreateManyInput = {
   id?: string
   name: string
   api_key: string
+  webhook_secret?: string | null
   allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
   created_at?: Date | string
   is_active?: boolean
 }
@@ -282,7 +333,10 @@ export type tenantsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -291,7 +345,10 @@ export type tenantsUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -308,7 +365,10 @@ export type tenantsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   api_key?: Prisma.SortOrder
+  webhook_secret?: Prisma.SortOrder
   allowed_channels?: Prisma.SortOrder
+  sender_email?: Prisma.SortOrder
+  sender_name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
 }
@@ -317,6 +377,9 @@ export type tenantsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   api_key?: Prisma.SortOrder
+  webhook_secret?: Prisma.SortOrder
+  sender_email?: Prisma.SortOrder
+  sender_name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
 }
@@ -325,6 +388,9 @@ export type tenantsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   api_key?: Prisma.SortOrder
+  webhook_secret?: Prisma.SortOrder
+  sender_email?: Prisma.SortOrder
+  sender_name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
 }
@@ -348,7 +414,10 @@ export type tenantsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   id?: boolean
   name?: boolean
   api_key?: boolean
+  webhook_secret?: boolean
   allowed_channels?: boolean
+  sender_email?: boolean
+  sender_name?: boolean
   created_at?: boolean
   is_active?: boolean
 }, ExtArgs["result"]["tenants"]>
@@ -357,7 +426,10 @@ export type tenantsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   id?: boolean
   name?: boolean
   api_key?: boolean
+  webhook_secret?: boolean
   allowed_channels?: boolean
+  sender_email?: boolean
+  sender_name?: boolean
   created_at?: boolean
   is_active?: boolean
 }, ExtArgs["result"]["tenants"]>
@@ -366,7 +438,10 @@ export type tenantsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   id?: boolean
   name?: boolean
   api_key?: boolean
+  webhook_secret?: boolean
   allowed_channels?: boolean
+  sender_email?: boolean
+  sender_name?: boolean
   created_at?: boolean
   is_active?: boolean
 }, ExtArgs["result"]["tenants"]>
@@ -375,12 +450,15 @@ export type tenantsSelectScalar = {
   id?: boolean
   name?: boolean
   api_key?: boolean
+  webhook_secret?: boolean
   allowed_channels?: boolean
+  sender_email?: boolean
+  sender_name?: boolean
   created_at?: boolean
   is_active?: boolean
 }
 
-export type tenantsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "api_key" | "allowed_channels" | "created_at" | "is_active", ExtArgs["result"]["tenants"]>
+export type tenantsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "api_key" | "webhook_secret" | "allowed_channels" | "sender_email" | "sender_name" | "created_at" | "is_active", ExtArgs["result"]["tenants"]>
 
 export type $tenantsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "tenants"
@@ -389,7 +467,10 @@ export type $tenantsPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     id: string
     name: string
     api_key: string
+    webhook_secret: string | null
     allowed_channels: string[]
+    sender_email: string | null
+    sender_name: string | null
     created_at: Date
     is_active: boolean
   }, ExtArgs["result"]["tenants"]>
@@ -818,7 +899,10 @@ export interface tenantsFieldRefs {
   readonly id: Prisma.FieldRef<"tenants", 'String'>
   readonly name: Prisma.FieldRef<"tenants", 'String'>
   readonly api_key: Prisma.FieldRef<"tenants", 'String'>
+  readonly webhook_secret: Prisma.FieldRef<"tenants", 'String'>
   readonly allowed_channels: Prisma.FieldRef<"tenants", 'String[]'>
+  readonly sender_email: Prisma.FieldRef<"tenants", 'String'>
+  readonly sender_name: Prisma.FieldRef<"tenants", 'String'>
   readonly created_at: Prisma.FieldRef<"tenants", 'DateTime'>
   readonly is_active: Prisma.FieldRef<"tenants", 'Boolean'>
 }

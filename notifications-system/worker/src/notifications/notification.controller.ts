@@ -10,7 +10,10 @@ import { EmailDispatchPayload, SmsDispatchPayload, RealtimeDispatchPayload } fro
 export class NotificationsController implements OnModuleInit {
   private prisma = prisma;
 
-  constructor(private readonly renderService: RenderService, @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka) { }
+  constructor(
+    private readonly renderService: RenderService,
+    @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka
+  ) { }
 
   async onModuleInit() {
     let connected = false;
@@ -61,15 +64,16 @@ export class NotificationsController implements OnModuleInit {
       const notificationId = randomUUID();
 
       // -----------------------------
-      // 🚀 BRANCH A: EMAIL TEMPLATE
+      // 🚀 BRANCH A: EMAIL TEMPLATE (KAFKA -> GO GATEWAY)
       // -----------------------------
       if (template.channel_type === 'EMAIL') {
         const finalHtml = this.renderService.render(template.content_body, payloadData as Record<string, unknown>);
 
-        // R4: Use Prisma typed create() instead of raw SQL
+        // Initialize log as PENDING
         await this.prisma.notification_logs.create({
           data: {
             notification_id: notificationId,
+            tenant_id: tenant.id,
             user_id: userId,
             template_id: template.template_id,
             channel: 'EMAIL',
@@ -77,16 +81,19 @@ export class NotificationsController implements OnModuleInit {
             metadata: data as object,
           }
         });
-
         const emailPayload: EmailDispatchPayload = {
           actionType: 'EMAIL',
           notificationId,
+          tenantId: tenant.id,
           userId,
           recipient: (payloadData.recipientEmail as string) || "error_no_email_provided@system",
+          senderEmail: tenant.sender_email,
+          senderName: tenant.sender_name,
           subject: dynamicSubject,
           body: finalHtml,
-          provider: "SENDGRID"
+          provider: "RESEND"
         };
+
         this.kafkaClient.emit('notification.dispatch', emailPayload);
       }
 
@@ -100,6 +107,7 @@ export class NotificationsController implements OnModuleInit {
         await this.prisma.notification_logs.create({
           data: {
             notification_id: notificationId,
+            tenant_id: tenant.id,
             user_id: userId,
             template_id: template.template_id,
             channel: 'SMS',
@@ -111,6 +119,7 @@ export class NotificationsController implements OnModuleInit {
         const smsPayload: SmsDispatchPayload = {
           actionType: 'SMS',
           notificationId,
+          tenantId: tenant.id,
           userId,
           recipient: (payloadData.recipientPhone as string) || "+10000000000",
           subject: dynamicSubject,
@@ -148,6 +157,7 @@ export class NotificationsController implements OnModuleInit {
         const realtimePayload: RealtimeDispatchPayload = {
           actionType: 'REALTIME',
           notificationId,
+          tenantId: tenant.id,
           userId,
           subject: dynamicSubject,
           body: finalPushBody,

@@ -26,6 +26,7 @@ export type AggregateNotification_logs = {
 
 export type Notification_logsMinAggregateOutputType = {
   notification_id: string | null
+  tenant_id: string | null
   user_id: string | null
   template_id: string | null
   channel: $Enums.channel_enum | null
@@ -37,6 +38,7 @@ export type Notification_logsMinAggregateOutputType = {
 
 export type Notification_logsMaxAggregateOutputType = {
   notification_id: string | null
+  tenant_id: string | null
   user_id: string | null
   template_id: string | null
   channel: $Enums.channel_enum | null
@@ -48,6 +50,7 @@ export type Notification_logsMaxAggregateOutputType = {
 
 export type Notification_logsCountAggregateOutputType = {
   notification_id: number
+  tenant_id: number
   user_id: number
   template_id: number
   channel: number
@@ -62,6 +65,7 @@ export type Notification_logsCountAggregateOutputType = {
 
 export type Notification_logsMinAggregateInputType = {
   notification_id?: true
+  tenant_id?: true
   user_id?: true
   template_id?: true
   channel?: true
@@ -73,6 +77,7 @@ export type Notification_logsMinAggregateInputType = {
 
 export type Notification_logsMaxAggregateInputType = {
   notification_id?: true
+  tenant_id?: true
   user_id?: true
   template_id?: true
   channel?: true
@@ -84,6 +89,7 @@ export type Notification_logsMaxAggregateInputType = {
 
 export type Notification_logsCountAggregateInputType = {
   notification_id?: true
+  tenant_id?: true
   user_id?: true
   template_id?: true
   channel?: true
@@ -169,6 +175,7 @@ export type notification_logsGroupByArgs<ExtArgs extends runtime.Types.Extension
 
 export type Notification_logsGroupByOutputType = {
   notification_id: string
+  tenant_id: string
   user_id: string
   template_id: string
   channel: $Enums.channel_enum
@@ -202,6 +209,7 @@ export type notification_logsWhereInput = {
   OR?: Prisma.notification_logsWhereInput[]
   NOT?: Prisma.notification_logsWhereInput | Prisma.notification_logsWhereInput[]
   notification_id?: Prisma.UuidFilter<"notification_logs"> | string
+  tenant_id?: Prisma.UuidFilter<"notification_logs"> | string
   user_id?: Prisma.UuidFilter<"notification_logs"> | string
   template_id?: Prisma.StringFilter<"notification_logs"> | string
   channel?: Prisma.Enumchannel_enumFilter<"notification_logs"> | $Enums.channel_enum
@@ -214,6 +222,7 @@ export type notification_logsWhereInput = {
 
 export type notification_logsOrderByWithRelationInput = {
   notification_id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   channel?: Prisma.SortOrder
@@ -229,6 +238,7 @@ export type notification_logsWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.notification_logsWhereInput | Prisma.notification_logsWhereInput[]
   OR?: Prisma.notification_logsWhereInput[]
   NOT?: Prisma.notification_logsWhereInput | Prisma.notification_logsWhereInput[]
+  tenant_id?: Prisma.UuidFilter<"notification_logs"> | string
   user_id?: Prisma.UuidFilter<"notification_logs"> | string
   template_id?: Prisma.StringFilter<"notification_logs"> | string
   channel?: Prisma.Enumchannel_enumFilter<"notification_logs"> | $Enums.channel_enum
@@ -241,6 +251,7 @@ export type notification_logsWhereUniqueInput = Prisma.AtLeast<{
 
 export type notification_logsOrderByWithAggregationInput = {
   notification_id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   channel?: Prisma.SortOrder
@@ -259,6 +270,7 @@ export type notification_logsScalarWhereWithAggregatesInput = {
   OR?: Prisma.notification_logsScalarWhereWithAggregatesInput[]
   NOT?: Prisma.notification_logsScalarWhereWithAggregatesInput | Prisma.notification_logsScalarWhereWithAggregatesInput[]
   notification_id?: Prisma.UuidWithAggregatesFilter<"notification_logs"> | string
+  tenant_id?: Prisma.UuidWithAggregatesFilter<"notification_logs"> | string
   user_id?: Prisma.UuidWithAggregatesFilter<"notification_logs"> | string
   template_id?: Prisma.StringWithAggregatesFilter<"notification_logs"> | string
   channel?: Prisma.Enumchannel_enumWithAggregatesFilter<"notification_logs"> | $Enums.channel_enum
@@ -271,6 +283,7 @@ export type notification_logsScalarWhereWithAggregatesInput = {
 
 export type notification_logsCreateInput = {
   notification_id: string
+  tenant_id: string
   user_id: string
   template_id: string
   channel: $Enums.channel_enum
@@ -283,6 +296,7 @@ export type notification_logsCreateInput = {
 
 export type notification_logsUncheckedCreateInput = {
   notification_id: string
+  tenant_id: string
   user_id: string
   template_id: string
   channel: $Enums.channel_enum
@@ -295,6 +309,7 @@ export type notification_logsUncheckedCreateInput = {
 
 export type notification_logsUpdateInput = {
   notification_id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
@@ -307,6 +322,7 @@ export type notification_logsUpdateInput = {
 
 export type notification_logsUncheckedUpdateInput = {
   notification_id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
@@ -319,6 +335,7 @@ export type notification_logsUncheckedUpdateInput = {
 
 export type notification_logsCreateManyInput = {
   notification_id: string
+  tenant_id: string
   user_id: string
   template_id: string
   channel: $Enums.channel_enum
@@ -331,6 +348,7 @@ export type notification_logsCreateManyInput = {
 
 export type notification_logsUpdateManyMutationInput = {
   notification_id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
@@ -343,6 +361,7 @@ export type notification_logsUpdateManyMutationInput = {
 
 export type notification_logsUncheckedUpdateManyInput = {
   notification_id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
@@ -355,6 +374,7 @@ export type notification_logsUncheckedUpdateManyInput = {
 
 export type notification_logsCountOrderByAggregateInput = {
   notification_id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   channel?: Prisma.SortOrder
@@ -367,6 +387,7 @@ export type notification_logsCountOrderByAggregateInput = {
 
 export type notification_logsMaxOrderByAggregateInput = {
   notification_id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   channel?: Prisma.SortOrder
@@ -378,6 +399,7 @@ export type notification_logsMaxOrderByAggregateInput = {
 
 export type notification_logsMinOrderByAggregateInput = {
   notification_id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   channel?: Prisma.SortOrder
@@ -411,6 +433,7 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
 
 export type notification_logsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   notification_id?: boolean
+  tenant_id?: boolean
   user_id?: boolean
   template_id?: boolean
   channel?: boolean
@@ -423,6 +446,7 @@ export type notification_logsSelect<ExtArgs extends runtime.Types.Extensions.Int
 
 export type notification_logsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   notification_id?: boolean
+  tenant_id?: boolean
   user_id?: boolean
   template_id?: boolean
   channel?: boolean
@@ -435,6 +459,7 @@ export type notification_logsSelectCreateManyAndReturn<ExtArgs extends runtime.T
 
 export type notification_logsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   notification_id?: boolean
+  tenant_id?: boolean
   user_id?: boolean
   template_id?: boolean
   channel?: boolean
@@ -447,6 +472,7 @@ export type notification_logsSelectUpdateManyAndReturn<ExtArgs extends runtime.T
 
 export type notification_logsSelectScalar = {
   notification_id?: boolean
+  tenant_id?: boolean
   user_id?: boolean
   template_id?: boolean
   channel?: boolean
@@ -457,13 +483,14 @@ export type notification_logsSelectScalar = {
   error_details?: boolean
 }
 
-export type notification_logsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"notification_id" | "user_id" | "template_id" | "channel" | "status" | "metadata" | "provider_ref" | "sent_at" | "error_details", ExtArgs["result"]["notification_logs"]>
+export type notification_logsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"notification_id" | "tenant_id" | "user_id" | "template_id" | "channel" | "status" | "metadata" | "provider_ref" | "sent_at" | "error_details", ExtArgs["result"]["notification_logs"]>
 
 export type $notification_logsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "notification_logs"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     notification_id: string
+    tenant_id: string
     user_id: string
     template_id: string
     channel: $Enums.channel_enum
@@ -896,6 +923,7 @@ export interface Prisma__notification_logsClient<T, Null = never, ExtArgs extend
  */
 export interface notification_logsFieldRefs {
   readonly notification_id: Prisma.FieldRef<"notification_logs", 'String'>
+  readonly tenant_id: Prisma.FieldRef<"notification_logs", 'String'>
   readonly user_id: Prisma.FieldRef<"notification_logs", 'String'>
   readonly template_id: Prisma.FieldRef<"notification_logs", 'String'>
   readonly channel: Prisma.FieldRef<"notification_logs", 'channel_enum'>

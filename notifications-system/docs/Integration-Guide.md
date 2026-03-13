@@ -22,7 +22,8 @@ Before you can write any code, you need to be onboarded onto the Notifications E
 
 1. **Tenant API Key (BACKEND ONLY):** Your heavily privileged secret key used to launch email/push webhooks. **Never expose this to a browser.** Keep this safely hidden in your backend server's `.env` file.
 2. **Tenant ID (PUBLIC FRONTEND):** Your public UUID identifier. Because you cannot expose your secret API Key to a browser, your React/Angular frontend uses this ID to safely fetch users' unread notification history (`GET /api/v1/notifications/{tenantId}/{userId}`). It poses zero security risk.
-3. **Template Configurations:** Sit down with the Notifications Team to define what events you will fire (e.g., `service.applied`) and design the corresponding Templates (Email MJML, plain text SMS, or short JSON for In-App Push).
+3. **Webhook Secret (OPTIONAL - HIGH SECURITY):** An optional secret used to sign your webhook payloads with HMAC-SHA256. If you configure a secret, our server will reject any request that doesn't include a valid `X-Nucleus-Signature` header. This is the gold standard for prevents spoofing.
+4. **Template Configurations:** Sit down with the Notifications Team to define what events you will fire (e.g., `service.applied`) and design the corresponding Templates (Email MJML, plain text SMS, or short JSON for In-App Push).
 
 ---
 
@@ -54,6 +55,22 @@ Content-Type: application/json
 ```
 
 *Note: Any arbitrary keys you pass inside `payload` (like `serviceName` or `amount`) will automatically be injected into your dynamic Email/Push templates by the microservice.*
+
+### 3.1 Webhook HMAC Security (Optional but Recommended)
+
+For production environments, we support signature verification to ensure requests truly originated from your backend.
+
+1. **Configure a Secret:** Provide your project's Webhook Secret to the Notifications Team.
+2. **Sign Your Payload:** Generate an HMAC-SHA256 hash of your **raw JSON request body** using your secret as the key.
+3. **Send in Header:** Include the resulting hex string in the `X-Nucleus-Signature` header.
+
+**Headers:**
+```http
+Content-Type: application/json
+X-Nucleus-Signature: <your_computed_hmac_hex>
+```
+
+Refer to the [SDK Helpers Guide](./SDK-Helpers.md) for a ready-to-use TypeScript snippet for signing your payloads.
 
 ---
 

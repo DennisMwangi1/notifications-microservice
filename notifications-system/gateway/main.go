@@ -14,6 +14,7 @@ import (
 
 	"github.com/centrifugal/gocent/v3"
 	_ "github.com/lib/pq"
+	"github.com/resend/resend-go/v2"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -21,8 +22,11 @@ import (
 type NotificationPayload struct {
 	ActionType     string `json:"actionType"`
 	NotificationID string `json:"notificationId"`
+	TenantID       string `json:"tenantId"`
 	UserID         string `json:"userId"`
 	Recipient      string `json:"recipient"`
+	SenderEmail    string `json:"senderEmail"`
+	SenderName     string `json:"senderName"`
 	Subject        string `json:"subject"`
 	Body           string `json:"body"`
 	Provider       string `json:"provider"`
@@ -47,6 +51,13 @@ func main() {
 		log.Printf("Warning: Database ping failed: %v", err)
 	}
 	fmt.Println("Connected to PostgreSQL for Audit Logs")
+
+	// Initialize Resend Client
+	resendAPIKey := os.Getenv("RESEND_API_KEY")
+	if resendAPIKey == "" {
+		resendAPIKey = "re_Q8AGvT6y_NJbKrpcey1ke4dRq7HhQhMFe"
+	}
+	resendClient := resend.NewClient(resendAPIKey)
 
 	// R3: Centrifugo address from environment
 	centrifugoURL := os.Getenv("CENTRIFUGO_API_URL")
@@ -104,10 +115,10 @@ func main() {
 			}
 
 			wg.Add(1)
-			go func(p NotificationPayload, database *sql.DB, c *gocent.Client) {
+			go func(p NotificationPayload, database *sql.DB, c *gocent.Client, r *resend.Client) {
 				defer wg.Done()
-				processNotification(p, database, c)
-			}(payload, db, cClient)
+				processNotification(p, database, c, r)
+			}(payload, db, cClient, resendClient)
 		}
 	}()
 
@@ -138,14 +149,40 @@ func main() {
 	fmt.Println("Go gateway shutdown complete.")
 }
 
-func processNotification(payload NotificationPayload, db *sql.DB, cClient *gocent.Client) {
+func processNotification(payload NotificationPayload, db *sql.DB, cClient *gocent.Client, resendClient *resend.Client) {
+	fmt.Printf("Full Payload: %v\n", payload)
 
 	// BRANCH A: Email Operations
 	if payload.ActionType == "EMAIL" {
-		fmt.Printf("📧 Sending EMAIL to %s via %s...\n", payload.Recipient, payload.Provider)
-		time.Sleep(2 * time.Second) // Simulated API call
-		fmt.Printf("✅ Successfully sent EMAIL to %s!\n", payload.Recipient)
-		updateAuditLog(payload.NotificationID, db, "SENT")
+		fromEmail := payload.SenderEmail
+		if fromEmail == "" {
+			fromEmail = "onboarding@resend.dev"
+		}
+		fromName := payload.SenderName
+		if fromName == "" {
+			fromName = "Notification System"
+		}
+
+		fmt.Printf("📧 Sending EMAIL to %s via Resend...\n", payload.Recipient)
+
+		params := &resend.SendEmailRequest{
+			From:    fmt.Sprintf("%s <%s>", fromName, fromEmail),
+			To:      []string{payload.Recipient},
+			Subject: payload.Subject,
+			Html:    payload.Body,
+		}
+
+		sent, err := resendClient.Emails.Send(params)
+		if err != nil {
+			log.Printf("❌ Failed to send email to %s: %v\n", payload.Recipient, err)
+			updateAuditLog(payload.NotificationID, db, "FAILED")
+			// Optional: store error details in logs if we had an error column
+			return
+		}
+
+		fmt.Printf("✅ Successfully sent EMAIL to %s! Resend ID: %s\n", payload.Recipient, sent.Id)
+		updateAuditLogWithRef(payload.NotificationID, db, "SENT", sent.Id)
+
 	} else if payload.ActionType == "SMS" {
 		// BRANCH B: SMS Operations
 		fmt.Printf("📱 Sending SMS to %s via %s...\n", payload.Recipient, payload.Provider)
@@ -187,6 +224,23 @@ func processNotification(payload NotificationPayload, db *sql.DB, cClient *gocen
 func updateAuditLog(notificationID string, db *sql.DB, status string) {
 	if notificationID != "" {
 		providerRef := "sim_" + fmt.Sprintf("%d", time.Now().Unix())
+		_, err := db.Exec(`
+			UPDATE notification_logs 
+			SET status = $1, sent_at = NOW(), provider_ref = $2 
+			WHERE notification_id = $3`,
+			status, providerRef, notificationID)
+
+		if err != nil {
+			log.Printf("Failed to update audit log for %s: %v\n", notificationID, err)
+		} else {
+			fmt.Printf("Audit log updated to %s for %s\n", status, notificationID)
+		}
+	}
+}
+
+// updateAuditLogWithRef specifically handles updating with an external provider reference
+func updateAuditLogWithRef(notificationID string, db *sql.DB, status string, providerRef string) {
+	if notificationID != "" {
 		_, err := db.Exec(`
 			UPDATE notification_logs 
 			SET status = $1, sent_at = NOW(), provider_ref = $2 
