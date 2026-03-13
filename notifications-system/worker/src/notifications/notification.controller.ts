@@ -3,6 +3,8 @@ import { ClientKafka, MessagePattern, Payload } from '@nestjs/microservices';
 import { RenderService } from './render.service';
 import prisma from '../config/prisma.config';
 import { randomUUID } from 'crypto';
+import { EnrichedKafkaPayload } from '../common/dto/events.dto';
+import { EmailDispatchPayload, SmsDispatchPayload, RealtimeDispatchPayload } from '../common/dto/admin.dto';
 
 @Controller()
 export class NotificationsController implements OnModuleInit {
@@ -23,119 +25,137 @@ export class NotificationsController implements OnModuleInit {
       }
     }
   }
+
   @MessagePattern('tenant.event.received')
-  async handleTenantEvent(@Payload() data: any) {
+  async handleTenantEvent(@Payload() data: EnrichedKafkaPayload) {
     const { userId, eventType, tenant, ...payloadData } = data;
-    let templates;
     console.log(`📩 Received generic event '${eventType}' for Tenant ID: ${tenant.id}`);
 
-    // 1. Fetch ALL Templates for this Tenant and Event Type (The Delivery Matrix)
-    if (eventType.startsWith('global.')) {
-      templates = await this.prisma.templates.findMany({
-        where: {
-          event_type: eventType,
-          is_active: true,
-        },
-        orderBy: { version: 'desc' },
-      });
-    } else {
-      templates = await this.prisma.templates.findMany({
-        where: {
-          tenant_id: tenant.id,
-          event_type: eventType,
-          is_active: true,
-        },
-        orderBy: { version: 'desc' },
-      });
-    }
+    // R5: Fetch only the LATEST active version per channel_type using distinct grouping
+    // This prevents processing duplicate channels when multiple versions exist
+    const whereClause = eventType.startsWith('global.')
+      ? { event_type: eventType, is_active: true }
+      : { tenant_id: tenant.id, event_type: eventType, is_active: true };
+
+    const allTemplates = await this.prisma.templates.findMany({
+      where: whereClause,
+      orderBy: { version: 'desc' },
+    });
+
+    // R5: Keep only the latest version per channel_type to avoid duplicate dispatches
+    const seenChannels = new Set<string>();
+    const templates = allTemplates.filter(tpl => {
+      if (seenChannels.has(tpl.channel_type)) return false;
+      seenChannels.add(tpl.channel_type);
+      return true;
+    });
 
     if (!templates || templates.length === 0) {
       console.error(`❌ No Templates for Event '${eventType}' and Tenant '${tenant.id}' found in DB`);
       return;
     }
 
-    // 2. Iterate through the Matrix and conditionally dispatch based on Template type!
+    // Iterate through the delivery matrix and dispatch per channel
     for (const template of templates) {
-      // Safely render the text fields without MJML
-      const dynamicSubject = this.renderService.renderText(template.subject_line || 'Notification', payloadData).replace(/<[^>]*>?/gm, '');
+      const dynamicSubject = this.renderService.renderText(template.subject_line || 'Notification', payloadData as Record<string, unknown>).replace(/<[^>]*>?/gm, '');
       const notificationId = randomUUID();
 
       // -----------------------------
       // 🚀 BRANCH A: EMAIL TEMPLATE
       // -----------------------------
       if (template.channel_type === 'EMAIL') {
-        const finalHtml = this.renderService.render(template.content_body, { ...payloadData }); // Pass through heavy MJML Engine
+        const finalHtml = this.renderService.render(template.content_body, payloadData as Record<string, unknown>);
 
-        await this.prisma.$executeRaw`
-          INSERT INTO notification_logs (notification_id, user_id, template_id, channel, status, metadata)
-          VALUES (${notificationId}::uuid, ${userId}::uuid, ${template.template_id}, 'EMAIL', 'PENDING', ${JSON.stringify(data)}::jsonb)
-        `;
+        // R4: Use Prisma typed create() instead of raw SQL
+        await this.prisma.notification_logs.create({
+          data: {
+            notification_id: notificationId,
+            user_id: userId,
+            template_id: template.template_id,
+            channel: 'EMAIL',
+            status: 'PENDING',
+            metadata: data as object,
+          }
+        });
 
-        this.kafkaClient.emit('notification.dispatch', {
+        const emailPayload: EmailDispatchPayload = {
           actionType: 'EMAIL',
-          notificationId: notificationId,
-          userId: userId,
-          recipient: payloadData.recipientEmail || "error_no_email_provided@system", // Dynamically fetch from payload
+          notificationId,
+          userId,
+          recipient: (payloadData.recipientEmail as string) || "error_no_email_provided@system",
           subject: dynamicSubject,
           body: finalHtml,
           provider: "SENDGRID"
-        });
+        };
+        this.kafkaClient.emit('notification.dispatch', emailPayload);
       }
 
       // -----------------------------
       // 🚀 BRANCH B: SMS TEMPLATE
       // -----------------------------
       else if (template.channel_type === 'SMS') {
-        const finalSmsText = this.renderService.renderText(template.content_body, { ...payloadData }); // Text engine only
+        const finalSmsText = this.renderService.renderText(template.content_body, payloadData as Record<string, unknown>);
 
-        await this.prisma.$executeRaw`
-          INSERT INTO notification_logs (notification_id, user_id, template_id, channel, status, metadata)
-          VALUES (${notificationId}::uuid, ${userId}::uuid, ${template.template_id}, 'SMS', 'PENDING', ${JSON.stringify(data)}::jsonb)
-        `;
+        // R4: Use Prisma typed create() instead of raw SQL
+        await this.prisma.notification_logs.create({
+          data: {
+            notification_id: notificationId,
+            user_id: userId,
+            template_id: template.template_id,
+            channel: 'SMS',
+            status: 'PENDING',
+            metadata: data as object,
+          }
+        });
 
-        this.kafkaClient.emit('notification.dispatch', {
+        const smsPayload: SmsDispatchPayload = {
           actionType: 'SMS',
-          notificationId: notificationId,
-          userId: userId,
-          recipient: payloadData.recipientPhone || "+10000000000", // Dynamically fetch from payload
+          notificationId,
+          userId,
+          recipient: (payloadData.recipientPhone as string) || "+10000000000",
           subject: dynamicSubject,
           body: finalSmsText,
           provider: "TWILIO"
-        });
+        };
+        this.kafkaClient.emit('notification.dispatch', smsPayload);
       }
 
       // -----------------------------
       // 🚀 BRANCH C: IN-APP (PUSH) TEMPLATE
       // -----------------------------
       else if (template.channel_type === 'PUSH') {
-        const finalPushBody = this.renderService.renderText(template.content_body, { ...payloadData }); // Text engine only
-
-        // Dynamically resolve the real-time boundary strictly using the template's DB instruction!
+        const finalPushBody = this.renderService.renderText(template.content_body, payloadData as Record<string, unknown>);
         const wsChannel = template.target_ws_channel ? `${template.target_ws_channel}#${userId}` : `global_system#${userId}`;
 
         // Derive the visual category from the event type prefix for frontend styling
-        // e.g. global.success → success, global.warning → warning, tmaas.request.approved → info
         const eventParts = eventType.split('.');
         const knownCategories = ['success', 'warning', 'alert', 'error', 'info'];
         const category = knownCategories.includes(eventParts[1]) ? eventParts[1] : 'info';
 
-        // Save to Persistent Bell Payload History
-        await this.prisma.$executeRaw`
-          INSERT INTO in_app_notifications (id, user_id, tenant_id, type, title, body, status)
-          VALUES (${notificationId}::uuid, ${userId}::uuid, ${tenant.id}::uuid, ${eventType}, ${dynamicSubject}, ${finalPushBody}, 'UNREAD')
-        `;
+        // R4: Use Prisma typed create() instead of raw SQL
+        await this.prisma.in_app_notifications.create({
+          data: {
+            id: notificationId,
+            user_id: userId,
+            tenant_id: tenant.id,
+            type: eventType,
+            title: dynamicSubject,
+            body: finalPushBody,
+            status: 'UNREAD',
+          }
+        });
 
-        // Send strictly to WebSocket Pipe (Do not trigger an email provider)
-        this.kafkaClient.emit('notification.dispatch', {
+        const realtimePayload: RealtimeDispatchPayload = {
           actionType: 'REALTIME',
-          notificationId: notificationId,
-          userId: userId,
+          notificationId,
+          userId,
           subject: dynamicSubject,
           body: finalPushBody,
-          category: category,
-          eventType: eventType,
-          wsChannel: wsChannel
-        });
+          category,
+          eventType,
+          wsChannel
+        };
+        this.kafkaClient.emit('notification.dispatch', realtimePayload);
       }
     }
   }

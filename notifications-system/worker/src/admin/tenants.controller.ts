@@ -1,13 +1,14 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException } from '@nestjs/common';
 import prisma from '../config/prisma.config';
 import { randomBytes } from 'crypto';
+import { CreateTenantDto, UpdateTenantDto } from '../common/dto/admin.dto';
 
 @Controller('api/v1/admin/tenants')
 export class TenantsController {
 
     // 1. Create a brand new tenant (Project Onboarding)
     @Post()
-    async createTenant(@Body() body: { name: string; allowed_channels: string[] }) {
+    async createTenant(@Body() body: CreateTenantDto) {
         const { name, allowed_channels } = body;
 
         // Generate a secure, 64-character hex string to act as the Tenant API Key
@@ -49,7 +50,7 @@ export class TenantsController {
 
     // 4. Update tenant configuration (like modifying their allowed Centrifugo channels)
     @Put(':id')
-    async updateTenant(@Param('id') id: string, @Body() body: { name?: string; allowed_channels?: string[], is_active?: boolean }) {
+    async updateTenant(@Param('id') id: string, @Body() body: UpdateTenantDto) {
         const tenant = await prisma.tenants.update({
             where: { id },
             data: body

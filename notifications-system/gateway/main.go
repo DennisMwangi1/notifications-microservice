@@ -17,6 +17,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// R8: Updated struct to include Category and EventType fields forwarded by the NestJS worker
 type NotificationPayload struct {
 	ActionType     string `json:"actionType"`
 	NotificationID string `json:"notificationId"`
@@ -26,10 +27,12 @@ type NotificationPayload struct {
 	Body           string `json:"body"`
 	Provider       string `json:"provider"`
 	WsChannel      string `json:"wsChannel"`
+	Category       string `json:"category"`
+	EventType      string `json:"eventType"`
 }
 
 func main() {
-	// Connect to Database
+	// R3: All addresses resolved from environment variables with sensible defaults
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
 		dbURL = "postgres://admin:password@localhost:5432/notification_db?sslmode=disable"
@@ -45,27 +48,34 @@ func main() {
 	}
 	fmt.Println("Connected to PostgreSQL for Audit Logs")
 
-	// 1a. Configure Centrifugo client
+	// R3: Centrifugo address from environment
+	centrifugoURL := os.Getenv("CENTRIFUGO_API_URL")
+	if centrifugoURL == "" {
+		centrifugoURL = "http://localhost:8000/api"
+	}
 	centrifugoAPIKey := os.Getenv("CENTRIFUGO_API_KEY")
 	if centrifugoAPIKey == "" {
-		centrifugoAPIKey = "a2aacce4575007dc18c1c2b5b1174f08" // Default from .env
+		centrifugoAPIKey = "a2aacce4575007dc18c1c2b5b1174f08"
 	}
 	cClient := gocent.New(gocent.Config{
-		Addr: "http://localhost:8000/api",
+		Addr: centrifugoURL,
 		Key:  centrifugoAPIKey,
 	})
-	fmt.Println("Centrifugo HTTP Client initialized")
+	fmt.Printf("Centrifugo HTTP Client initialized → %s\n", centrifugoURL)
 
-	// 2. Configure the kafka reader
+	// R3: Kafka broker address from environment
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	if kafkaBroker == "" {
+		kafkaBroker = "localhost:9092"
+	}
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{"localhost:9092"},
+		Brokers:  []string{kafkaBroker},
 		Topic:    "notification.dispatch",
 		GroupID:  "go-gateway-group",
-		MinBytes: 1,    // 10KB
-		MaxBytes: 10e6, // 10MB
+		MinBytes: 1,
+		MaxBytes: 10e6,
 	})
-
-	fmt.Println("Go gateway is standing by for dispatch")
+	fmt.Printf("Go gateway is standing by for dispatch (Kafka: %s)\n", kafkaBroker)
 
 	// Set up channel to listen for Interrupt or Terminate signals
 	sigchan := make(chan os.Signal, 1)
@@ -80,7 +90,6 @@ func main() {
 		for {
 			message, err := reader.ReadMessage(ctx)
 			if err != nil {
-				// If the context was cancelled, break the loop
 				if ctx.Err() != nil {
 					return
 				}
@@ -94,7 +103,6 @@ func main() {
 				continue
 			}
 
-			// Add to waitgroup and execute processNotification concurrently
 			wg.Add(1)
 			go func(p NotificationPayload, database *sql.DB, c *gocent.Client) {
 				defer wg.Done()
@@ -107,15 +115,13 @@ func main() {
 	<-sigchan
 	fmt.Println("\nTermination signal received. Shutting down gracefully...")
 
-	// Cancel context to stop reading new messages
 	cancel()
 
-	// Close the reader so it properly leaves the group
 	if err := reader.Close(); err != nil {
 		log.Printf("Failed to close kafka reader: %v", err)
 	}
 
-	// Wait for all ongoing emails to finish sending, with a timeout
+	// Wait for all ongoing dispatches to finish, with a timeout
 	c := make(chan struct{})
 	go func() {
 		defer close(c)
@@ -150,14 +156,16 @@ func processNotification(payload NotificationPayload, db *sql.DB, cClient *gocen
 		// BRANCH C: Real-Time Centrifugo Routing
 		channelName := payload.WsChannel
 		if channelName == "" {
-			// Failsafe channel
 			channelName = fmt.Sprintf("global_system#%s", payload.UserID)
 		}
 
+		// R8: Forward category and eventType to the frontend for visual styling
 		realtimeMsg := map[string]interface{}{
 			"type":        "IN_APP_ALERT",
 			"title":       payload.Subject,
 			"body":        payload.Body,
+			"category":    payload.Category,
+			"eventType":   payload.EventType,
 			"timestamp":   time.Now().Unix(),
 			"referenceId": payload.NotificationID,
 		}
@@ -168,7 +176,7 @@ func processNotification(payload NotificationPayload, db *sql.DB, cClient *gocen
 		if err != nil {
 			log.Printf("❌ Failed to push event to Centrifugo (%s): %v\n", channelName, err)
 		} else {
-			fmt.Printf("🚀 Successfully pushed REALTIME event to %s\n", channelName)
+			fmt.Printf("🚀 Successfully pushed REALTIME event to %s [%s]\n", channelName, payload.Category)
 		}
 	} else {
 		fmt.Printf("⚠️ Unknown ActionType Received: %s\n", payload.ActionType)
@@ -178,7 +186,7 @@ func processNotification(payload NotificationPayload, db *sql.DB, cClient *gocen
 // updateAuditLog abstracts the postgres DB update for external providers
 func updateAuditLog(notificationID string, db *sql.DB, status string) {
 	if notificationID != "" {
-		providerRef := "sim_" + fmt.Sprintf("%d", time.Now().Unix()) // Simulated provider reference ID
+		providerRef := "sim_" + fmt.Sprintf("%d", time.Now().Unix())
 		_, err := db.Exec(`
 			UPDATE notification_logs 
 			SET status = $1, sent_at = NOW(), provider_ref = $2 

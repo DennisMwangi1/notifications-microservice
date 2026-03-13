@@ -29,8 +29,9 @@ async function bootstrap() {
 
       await admin.disconnect();
       adminConnected = true;
-    } catch (e: any) {
-      console.error('Kafka broker not quite ready, retrying admin connection in 5 seconds...', e.message);
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : String(e);
+      console.error('Kafka broker not quite ready, retrying admin connection in 5 seconds...', errMsg);
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
@@ -55,7 +56,7 @@ async function bootstrap() {
       consumer: {
         groupId: 'notification-worker-group'
       },
-    } as any,
+    },
   });
 
   // Start the Kafka listener

@@ -1,6 +1,7 @@
 import { Controller, Post, Body, UnauthorizedException, Inject } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import prisma from '../config/prisma.config';
+import { TriggerEventDto, EnrichedKafkaPayload } from '../common/dto/events.dto';
 
 @Controller('api/v1/events')
 export class EventsController {
@@ -9,7 +10,7 @@ export class EventsController {
     ) { }
 
     @Post('trigger')
-    async triggerEvent(@Body() body: any) {
+    async triggerEvent(@Body() body: TriggerEventDto) {
         const { apiKey, eventType, payload } = body;
 
         if (!apiKey || !eventType || !payload) {
@@ -26,11 +27,11 @@ export class EventsController {
             throw new UnauthorizedException('Invalid or inactive API key');
         }
 
-        // Inject tenant identity into payload for downstream consumers
-        const enrichedPayload = {
+        // R7: Only forward minimal tenant identity — NEVER include api_key in Kafka messages
+        const enrichedPayload: EnrichedKafkaPayload = {
             ...payload,
-            tenant: tenant,
-            eventType: eventType // Pass the original trigger string downstream
+            tenant: { id: tenant.id, name: tenant.name },
+            eventType: eventType
         };
 
         // Forward to Kafka's universal generic topic so the asynchronous stream handles rendering & delivery

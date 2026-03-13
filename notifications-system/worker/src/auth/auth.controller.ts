@@ -1,12 +1,13 @@
 import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import prisma from '../config/prisma.config';
+import { GenerateTokenDto } from '../common/dto/auth.dto';
 
 @Controller('api/v1/auth')
 export class AuthController {
 
     @Post('realtime-token')
-    async generateToken(@Body() body: { userId: string; tenantId: string }) {
+    async generateToken(@Body() body: GenerateTokenDto) {
         const { userId, tenantId } = body;
 
         if (!userId || !tenantId) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../lib/api';
 
 interface Tenant { id: string; name: string; }
 
@@ -16,8 +17,6 @@ interface Template {
     target_ws_channel: string | null;
     created_at: string | null;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 const channelBadge: Record<string, string> = {
     EMAIL: 'bg-sky-50 text-sky-600 border-sky-200',

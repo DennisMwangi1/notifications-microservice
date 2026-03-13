@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Link from 'next/link';
+import { ErrorBoundary } from '../lib/error-boundary';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -64,7 +65,9 @@ export default function RootLayout({
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden relative">
           <div className="flex-1 overflow-y-auto p-8 lg:p-12">
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </div>
         </main>
       </body>

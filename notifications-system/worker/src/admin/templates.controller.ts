@@ -1,20 +1,14 @@
 import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
 import prisma from '../config/prisma.config';
 import { randomUUID } from 'crypto';
+import { CreateTemplateDto } from '../common/dto/admin.dto';
 
 @Controller('api/v1/admin/templates')
 export class TemplatesController {
 
     // 1. Create a new iteration/version of a template (Content Editing)
     @Post()
-    async createTemplate(@Body() body: {
-        tenant_id?: string;
-        event_type: string;
-        channel_type: 'EMAIL' | 'SMS' | 'PUSH';
-        subject_line?: string;
-        content_body: string;
-        target_ws_channel?: string;
-    }) {
+    async createTemplate(@Body() body: CreateTemplateDto) {
         const { tenant_id, event_type, channel_type, subject_line, content_body, target_ws_channel } = body;
 
         // Check if the template for this event/channel combo already exists to properly increment version safely

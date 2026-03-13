@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../lib/api';
 
 interface NotificationLog {
     notification_id: string;
@@ -20,8 +21,6 @@ interface Pagination {
     limit: number;
     totalPages: number;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 const channelColors: Record<string, { bg: string; text: string; border: string }> = {
     EMAIL: { bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-200' },

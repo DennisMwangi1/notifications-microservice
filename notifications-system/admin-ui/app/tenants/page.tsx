@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../lib/api';
 
 interface Tenant {
     id: string;
@@ -10,8 +11,6 @@ interface Tenant {
     is_active: boolean;
     created_at: string;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function TenantsPage() {
     const [tenants, setTenants] = useState<Tenant[]>([]);
