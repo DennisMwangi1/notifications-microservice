@@ -31,6 +31,7 @@ export type TenantsMinAggregateOutputType = {
   webhook_secret: string | null
   sender_email: string | null
   sender_name: string | null
+  provider_config_id: string | null
   created_at: Date | null
   is_active: boolean | null
 }
@@ -42,6 +43,7 @@ export type TenantsMaxAggregateOutputType = {
   webhook_secret: string | null
   sender_email: string | null
   sender_name: string | null
+  provider_config_id: string | null
   created_at: Date | null
   is_active: boolean | null
 }
@@ -54,6 +56,7 @@ export type TenantsCountAggregateOutputType = {
   allowed_channels: number
   sender_email: number
   sender_name: number
+  provider_config_id: number
   created_at: number
   is_active: number
   _all: number
@@ -67,6 +70,7 @@ export type TenantsMinAggregateInputType = {
   webhook_secret?: true
   sender_email?: true
   sender_name?: true
+  provider_config_id?: true
   created_at?: true
   is_active?: true
 }
@@ -78,6 +82,7 @@ export type TenantsMaxAggregateInputType = {
   webhook_secret?: true
   sender_email?: true
   sender_name?: true
+  provider_config_id?: true
   created_at?: true
   is_active?: true
 }
@@ -90,6 +95,7 @@ export type TenantsCountAggregateInputType = {
   allowed_channels?: true
   sender_email?: true
   sender_name?: true
+  provider_config_id?: true
   created_at?: true
   is_active?: true
   _all?: true
@@ -175,6 +181,7 @@ export type TenantsGroupByOutputType = {
   allowed_channels: string[]
   sender_email: string | null
   sender_name: string | null
+  provider_config_id: string | null
   created_at: Date
   is_active: boolean
   _count: TenantsCountAggregateOutputType | null
@@ -208,8 +215,10 @@ export type tenantsWhereInput = {
   allowed_channels?: Prisma.StringNullableListFilter<"tenants">
   sender_email?: Prisma.StringNullableFilter<"tenants"> | string | null
   sender_name?: Prisma.StringNullableFilter<"tenants"> | string | null
+  provider_config_id?: Prisma.UuidNullableFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolFilter<"tenants"> | boolean
+  provider_config?: Prisma.XOR<Prisma.Provider_configsNullableScalarRelationFilter, Prisma.provider_configsWhereInput> | null
 }
 
 export type tenantsOrderByWithRelationInput = {
@@ -220,8 +229,10 @@ export type tenantsOrderByWithRelationInput = {
   allowed_channels?: Prisma.SortOrder
   sender_email?: Prisma.SortOrderInput | Prisma.SortOrder
   sender_name?: Prisma.SortOrderInput | Prisma.SortOrder
+  provider_config_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  provider_config?: Prisma.provider_configsOrderByWithRelationInput
 }
 
 export type tenantsWhereUniqueInput = Prisma.AtLeast<{
@@ -235,8 +246,10 @@ export type tenantsWhereUniqueInput = Prisma.AtLeast<{
   allowed_channels?: Prisma.StringNullableListFilter<"tenants">
   sender_email?: Prisma.StringNullableFilter<"tenants"> | string | null
   sender_name?: Prisma.StringNullableFilter<"tenants"> | string | null
+  provider_config_id?: Prisma.UuidNullableFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolFilter<"tenants"> | boolean
+  provider_config?: Prisma.XOR<Prisma.Provider_configsNullableScalarRelationFilter, Prisma.provider_configsWhereInput> | null
 }, "id" | "api_key" | "webhook_secret">
 
 export type tenantsOrderByWithAggregationInput = {
@@ -247,6 +260,7 @@ export type tenantsOrderByWithAggregationInput = {
   allowed_channels?: Prisma.SortOrder
   sender_email?: Prisma.SortOrderInput | Prisma.SortOrder
   sender_name?: Prisma.SortOrderInput | Prisma.SortOrder
+  provider_config_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   _count?: Prisma.tenantsCountOrderByAggregateInput
@@ -265,6 +279,7 @@ export type tenantsScalarWhereWithAggregatesInput = {
   allowed_channels?: Prisma.StringNullableListFilter<"tenants">
   sender_email?: Prisma.StringNullableWithAggregatesFilter<"tenants"> | string | null
   sender_name?: Prisma.StringNullableWithAggregatesFilter<"tenants"> | string | null
+  provider_config_id?: Prisma.UuidNullableWithAggregatesFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolWithAggregatesFilter<"tenants"> | boolean
 }
@@ -279,6 +294,7 @@ export type tenantsCreateInput = {
   sender_name?: string | null
   created_at?: Date | string
   is_active?: boolean
+  provider_config?: Prisma.provider_configsCreateNestedOneWithoutTenantsInput
 }
 
 export type tenantsUncheckedCreateInput = {
@@ -289,6 +305,7 @@ export type tenantsUncheckedCreateInput = {
   allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
   sender_email?: string | null
   sender_name?: string | null
+  provider_config_id?: string | null
   created_at?: Date | string
   is_active?: boolean
 }
@@ -303,6 +320,7 @@ export type tenantsUpdateInput = {
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  provider_config?: Prisma.provider_configsUpdateOneWithoutTenantsNestedInput
 }
 
 export type tenantsUncheckedUpdateInput = {
@@ -313,6 +331,7 @@ export type tenantsUncheckedUpdateInput = {
   allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
   sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provider_config_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -325,6 +344,7 @@ export type tenantsCreateManyInput = {
   allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
   sender_email?: string | null
   sender_name?: string | null
+  provider_config_id?: string | null
   created_at?: Date | string
   is_active?: boolean
 }
@@ -349,6 +369,7 @@ export type tenantsUncheckedUpdateManyInput = {
   allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
   sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provider_config_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -369,6 +390,7 @@ export type tenantsCountOrderByAggregateInput = {
   allowed_channels?: Prisma.SortOrder
   sender_email?: Prisma.SortOrder
   sender_name?: Prisma.SortOrder
+  provider_config_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
 }
@@ -380,6 +402,7 @@ export type tenantsMaxOrderByAggregateInput = {
   webhook_secret?: Prisma.SortOrder
   sender_email?: Prisma.SortOrder
   sender_name?: Prisma.SortOrder
+  provider_config_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
 }
@@ -391,8 +414,19 @@ export type tenantsMinOrderByAggregateInput = {
   webhook_secret?: Prisma.SortOrder
   sender_email?: Prisma.SortOrder
   sender_name?: Prisma.SortOrder
+  provider_config_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+}
+
+export type TenantsListRelationFilter = {
+  every?: Prisma.tenantsWhereInput
+  some?: Prisma.tenantsWhereInput
+  none?: Prisma.tenantsWhereInput
+}
+
+export type tenantsOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type tenantsCreateallowed_channelsInput = {
@@ -408,6 +442,162 @@ export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
 
+export type tenantsCreateNestedManyWithoutProvider_configInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutProvider_configInput, Prisma.tenantsUncheckedCreateWithoutProvider_configInput> | Prisma.tenantsCreateWithoutProvider_configInput[] | Prisma.tenantsUncheckedCreateWithoutProvider_configInput[]
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutProvider_configInput | Prisma.tenantsCreateOrConnectWithoutProvider_configInput[]
+  createMany?: Prisma.tenantsCreateManyProvider_configInputEnvelope
+  connect?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+}
+
+export type tenantsUncheckedCreateNestedManyWithoutProvider_configInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutProvider_configInput, Prisma.tenantsUncheckedCreateWithoutProvider_configInput> | Prisma.tenantsCreateWithoutProvider_configInput[] | Prisma.tenantsUncheckedCreateWithoutProvider_configInput[]
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutProvider_configInput | Prisma.tenantsCreateOrConnectWithoutProvider_configInput[]
+  createMany?: Prisma.tenantsCreateManyProvider_configInputEnvelope
+  connect?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+}
+
+export type tenantsUpdateManyWithoutProvider_configNestedInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutProvider_configInput, Prisma.tenantsUncheckedCreateWithoutProvider_configInput> | Prisma.tenantsCreateWithoutProvider_configInput[] | Prisma.tenantsUncheckedCreateWithoutProvider_configInput[]
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutProvider_configInput | Prisma.tenantsCreateOrConnectWithoutProvider_configInput[]
+  upsert?: Prisma.tenantsUpsertWithWhereUniqueWithoutProvider_configInput | Prisma.tenantsUpsertWithWhereUniqueWithoutProvider_configInput[]
+  createMany?: Prisma.tenantsCreateManyProvider_configInputEnvelope
+  set?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+  disconnect?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+  delete?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+  connect?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+  update?: Prisma.tenantsUpdateWithWhereUniqueWithoutProvider_configInput | Prisma.tenantsUpdateWithWhereUniqueWithoutProvider_configInput[]
+  updateMany?: Prisma.tenantsUpdateManyWithWhereWithoutProvider_configInput | Prisma.tenantsUpdateManyWithWhereWithoutProvider_configInput[]
+  deleteMany?: Prisma.tenantsScalarWhereInput | Prisma.tenantsScalarWhereInput[]
+}
+
+export type tenantsUncheckedUpdateManyWithoutProvider_configNestedInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutProvider_configInput, Prisma.tenantsUncheckedCreateWithoutProvider_configInput> | Prisma.tenantsCreateWithoutProvider_configInput[] | Prisma.tenantsUncheckedCreateWithoutProvider_configInput[]
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutProvider_configInput | Prisma.tenantsCreateOrConnectWithoutProvider_configInput[]
+  upsert?: Prisma.tenantsUpsertWithWhereUniqueWithoutProvider_configInput | Prisma.tenantsUpsertWithWhereUniqueWithoutProvider_configInput[]
+  createMany?: Prisma.tenantsCreateManyProvider_configInputEnvelope
+  set?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+  disconnect?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+  delete?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+  connect?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+  update?: Prisma.tenantsUpdateWithWhereUniqueWithoutProvider_configInput | Prisma.tenantsUpdateWithWhereUniqueWithoutProvider_configInput[]
+  updateMany?: Prisma.tenantsUpdateManyWithWhereWithoutProvider_configInput | Prisma.tenantsUpdateManyWithWhereWithoutProvider_configInput[]
+  deleteMany?: Prisma.tenantsScalarWhereInput | Prisma.tenantsScalarWhereInput[]
+}
+
+export type tenantsCreateWithoutProvider_configInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+}
+
+export type tenantsUncheckedCreateWithoutProvider_configInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+}
+
+export type tenantsCreateOrConnectWithoutProvider_configInput = {
+  where: Prisma.tenantsWhereUniqueInput
+  create: Prisma.XOR<Prisma.tenantsCreateWithoutProvider_configInput, Prisma.tenantsUncheckedCreateWithoutProvider_configInput>
+}
+
+export type tenantsCreateManyProvider_configInputEnvelope = {
+  data: Prisma.tenantsCreateManyProvider_configInput | Prisma.tenantsCreateManyProvider_configInput[]
+  skipDuplicates?: boolean
+}
+
+export type tenantsUpsertWithWhereUniqueWithoutProvider_configInput = {
+  where: Prisma.tenantsWhereUniqueInput
+  update: Prisma.XOR<Prisma.tenantsUpdateWithoutProvider_configInput, Prisma.tenantsUncheckedUpdateWithoutProvider_configInput>
+  create: Prisma.XOR<Prisma.tenantsCreateWithoutProvider_configInput, Prisma.tenantsUncheckedCreateWithoutProvider_configInput>
+}
+
+export type tenantsUpdateWithWhereUniqueWithoutProvider_configInput = {
+  where: Prisma.tenantsWhereUniqueInput
+  data: Prisma.XOR<Prisma.tenantsUpdateWithoutProvider_configInput, Prisma.tenantsUncheckedUpdateWithoutProvider_configInput>
+}
+
+export type tenantsUpdateManyWithWhereWithoutProvider_configInput = {
+  where: Prisma.tenantsScalarWhereInput
+  data: Prisma.XOR<Prisma.tenantsUpdateManyMutationInput, Prisma.tenantsUncheckedUpdateManyWithoutProvider_configInput>
+}
+
+export type tenantsScalarWhereInput = {
+  AND?: Prisma.tenantsScalarWhereInput | Prisma.tenantsScalarWhereInput[]
+  OR?: Prisma.tenantsScalarWhereInput[]
+  NOT?: Prisma.tenantsScalarWhereInput | Prisma.tenantsScalarWhereInput[]
+  id?: Prisma.UuidFilter<"tenants"> | string
+  name?: Prisma.StringFilter<"tenants"> | string
+  api_key?: Prisma.StringFilter<"tenants"> | string
+  webhook_secret?: Prisma.StringNullableFilter<"tenants"> | string | null
+  allowed_channels?: Prisma.StringNullableListFilter<"tenants">
+  sender_email?: Prisma.StringNullableFilter<"tenants"> | string | null
+  sender_name?: Prisma.StringNullableFilter<"tenants"> | string | null
+  provider_config_id?: Prisma.UuidNullableFilter<"tenants"> | string | null
+  created_at?: Prisma.DateTimeFilter<"tenants"> | Date | string
+  is_active?: Prisma.BoolFilter<"tenants"> | boolean
+}
+
+export type tenantsCreateManyProvider_configInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+}
+
+export type tenantsUpdateWithoutProvider_configInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+}
+
+export type tenantsUncheckedUpdateWithoutProvider_configInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+}
+
+export type tenantsUncheckedUpdateManyWithoutProvider_configInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+}
+
 
 
 export type tenantsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -418,8 +608,10 @@ export type tenantsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   allowed_channels?: boolean
   sender_email?: boolean
   sender_name?: boolean
+  provider_config_id?: boolean
   created_at?: boolean
   is_active?: boolean
+  provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
 }, ExtArgs["result"]["tenants"]>
 
 export type tenantsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -430,8 +622,10 @@ export type tenantsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   allowed_channels?: boolean
   sender_email?: boolean
   sender_name?: boolean
+  provider_config_id?: boolean
   created_at?: boolean
   is_active?: boolean
+  provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
 }, ExtArgs["result"]["tenants"]>
 
 export type tenantsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -442,8 +636,10 @@ export type tenantsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   allowed_channels?: boolean
   sender_email?: boolean
   sender_name?: boolean
+  provider_config_id?: boolean
   created_at?: boolean
   is_active?: boolean
+  provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
 }, ExtArgs["result"]["tenants"]>
 
 export type tenantsSelectScalar = {
@@ -454,15 +650,27 @@ export type tenantsSelectScalar = {
   allowed_channels?: boolean
   sender_email?: boolean
   sender_name?: boolean
+  provider_config_id?: boolean
   created_at?: boolean
   is_active?: boolean
 }
 
-export type tenantsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "api_key" | "webhook_secret" | "allowed_channels" | "sender_email" | "sender_name" | "created_at" | "is_active", ExtArgs["result"]["tenants"]>
+export type tenantsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "api_key" | "webhook_secret" | "allowed_channels" | "sender_email" | "sender_name" | "provider_config_id" | "created_at" | "is_active", ExtArgs["result"]["tenants"]>
+export type tenantsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
+}
+export type tenantsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
+}
+export type tenantsIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
+}
 
 export type $tenantsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "tenants"
-  objects: {}
+  objects: {
+    provider_config: Prisma.$provider_configsPayload<ExtArgs> | null
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
@@ -471,6 +679,7 @@ export type $tenantsPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     allowed_channels: string[]
     sender_email: string | null
     sender_name: string | null
+    provider_config_id: string | null
     created_at: Date
     is_active: boolean
   }, ExtArgs["result"]["tenants"]>
@@ -867,6 +1076,7 @@ readonly fields: tenantsFieldRefs;
  */
 export interface Prisma__tenantsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  provider_config<T extends Prisma.tenants$provider_configArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tenants$provider_configArgs<ExtArgs>>): Prisma.Prisma__provider_configsClient<runtime.Types.Result.GetResult<Prisma.$provider_configsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -903,6 +1113,7 @@ export interface tenantsFieldRefs {
   readonly allowed_channels: Prisma.FieldRef<"tenants", 'String[]'>
   readonly sender_email: Prisma.FieldRef<"tenants", 'String'>
   readonly sender_name: Prisma.FieldRef<"tenants", 'String'>
+  readonly provider_config_id: Prisma.FieldRef<"tenants", 'String'>
   readonly created_at: Prisma.FieldRef<"tenants", 'DateTime'>
   readonly is_active: Prisma.FieldRef<"tenants", 'Boolean'>
 }
@@ -922,6 +1133,10 @@ export type tenantsFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.Inter
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
+  /**
    * Filter, which tenants to fetch.
    */
   where: Prisma.tenantsWhereUniqueInput
@@ -940,6 +1155,10 @@ export type tenantsFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extension
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
+  /**
    * Filter, which tenants to fetch.
    */
   where: Prisma.tenantsWhereUniqueInput
@@ -957,6 +1176,10 @@ export type tenantsFindFirstArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Omit specific fields from the tenants
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
   /**
    * Filter, which tenants to fetch.
    */
@@ -1006,6 +1229,10 @@ export type tenantsFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensions
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
+  /**
    * Filter, which tenants to fetch.
    */
   where?: Prisma.tenantsWhereInput
@@ -1054,6 +1281,10 @@ export type tenantsFindManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
+  /**
    * Filter, which tenants to fetch.
    */
   where?: Prisma.tenantsWhereInput
@@ -1097,6 +1328,10 @@ export type tenantsCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
+  /**
    * The data needed to create a tenants.
    */
   data: Prisma.XOR<Prisma.tenantsCreateInput, Prisma.tenantsUncheckedCreateInput>
@@ -1130,6 +1365,10 @@ export type tenantsCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    */
   data: Prisma.tenantsCreateManyInput | Prisma.tenantsCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1144,6 +1383,10 @@ export type tenantsUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Omit specific fields from the tenants
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
   /**
    * The data needed to update a tenants.
    */
@@ -1196,6 +1439,10 @@ export type tenantsUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    * Limit how many tenants to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1210,6 +1457,10 @@ export type tenantsUpsertArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Omit specific fields from the tenants
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
   /**
    * The filter to search for the tenants to update in case it exists.
    */
@@ -1237,6 +1488,10 @@ export type tenantsDeleteArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
+  /**
    * Filter which tenants to delete.
    */
   where: Prisma.tenantsWhereUniqueInput
@@ -1257,6 +1512,25 @@ export type tenantsDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
 }
 
 /**
+ * tenants.provider_config
+ */
+export type tenants$provider_configArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the provider_configs
+   */
+  select?: Prisma.provider_configsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the provider_configs
+   */
+  omit?: Prisma.provider_configsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.provider_configsInclude<ExtArgs> | null
+  where?: Prisma.provider_configsWhereInput
+}
+
+/**
  * tenants without action
  */
 export type tenantsDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1268,4 +1542,8 @@ export type tenantsDefaultArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Omit specific fields from the tenants
    */
   omit?: Prisma.tenantsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenantsInclude<ExtArgs> | null
 }

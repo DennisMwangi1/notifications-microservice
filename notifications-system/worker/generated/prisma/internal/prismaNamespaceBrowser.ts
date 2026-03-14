@@ -54,7 +54,8 @@ export const ModelName = {
   notification_logs: 'notification_logs',
   templates: 'templates',
   in_app_notifications: 'in_app_notifications',
-  tenants: 'tenants'
+  tenants: 'tenants',
+  provider_configs: 'provider_configs'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -128,11 +129,25 @@ export const TenantsScalarFieldEnum = {
   allowed_channels: 'allowed_channels',
   sender_email: 'sender_email',
   sender_name: 'sender_name',
+  provider_config_id: 'provider_config_id',
   created_at: 'created_at',
   is_active: 'is_active'
 } as const
 
 export type TenantsScalarFieldEnum = (typeof TenantsScalarFieldEnum)[keyof typeof TenantsScalarFieldEnum]
+
+
+export const Provider_configsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  provider: 'provider',
+  api_key: 'api_key',
+  sender_email: 'sender_email',
+  sender_name: 'sender_name',
+  created_at: 'created_at'
+} as const
+
+export type Provider_configsScalarFieldEnum = (typeof Provider_configsScalarFieldEnum)[keyof typeof Provider_configsScalarFieldEnum]
 
 
 export const SortOrder = {

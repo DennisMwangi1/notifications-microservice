@@ -37,4 +37,5 @@ export interface TenantIdentity {
     name: string;
     sender_email?: string | null;
     sender_name?: string | null;
+    provider_config_id?: string | null;
 }

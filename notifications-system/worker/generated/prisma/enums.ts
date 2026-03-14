@@ -34,3 +34,14 @@ export const in_app_status = {
 } as const
 
 export type in_app_status = (typeof in_app_status)[keyof typeof in_app_status]
+
+
+export const provider_type = {
+  SENDGRID: 'SENDGRID',
+  RESEND: 'RESEND',
+  TWILIO: 'TWILIO',
+  AFRICASTALKING: 'AFRICASTALKING',
+  CUSTOM: 'CUSTOM'
+} as const
+
+export type provider_type = (typeof provider_type)[keyof typeof provider_type]

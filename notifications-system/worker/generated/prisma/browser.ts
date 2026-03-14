@@ -37,3 +37,8 @@ export type in_app_notifications = Prisma.in_app_notificationsModel
  * 
  */
 export type tenants = Prisma.tenantsModel
+/**
+ * Model provider_configs
+ * 
+ */
+export type provider_configs = Prisma.provider_configsModel

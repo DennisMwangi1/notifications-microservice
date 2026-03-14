@@ -10,27 +10,45 @@ interface Tenant {
     allowed_channels: string[];
     is_active: boolean;
     created_at: string;
+    provider_config_id?: string | null;
+    sender_email?: string | null;
+    sender_name?: string | null;
+}
+
+interface ProviderConfig {
+    id: string;
+    name: string;
 }
 
 export default function TenantsPage() {
     const [tenants, setTenants] = useState<Tenant[]>([]);
+    const [providers, setProviders] = useState<ProviderConfig[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Create Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newTenantName, setNewTenantName] = useState('');
     const [newChannels, setNewChannels] = useState('');
+    const [newProviderId, setNewProviderId] = useState('');
+    const [newSenderEmail, setNewSenderEmail] = useState('');
+    const [newSenderName, setNewSenderName] = useState('');
 
     // Edit Modal
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
     const [editTenantName, setEditTenantName] = useState('');
     const [editChannels, setEditChannels] = useState('');
+    const [editProviderId, setEditProviderId] = useState('');
+    const [editSenderEmail, setEditSenderEmail] = useState('');
+    const [editSenderName, setEditSenderName] = useState('');
 
     // Detail Modal
     const [detailTenant, setDetailTenant] = useState<Tenant | null>(null);
 
-    useEffect(() => { fetchTenants(); }, []);
+    useEffect(() => {
+        fetchTenants();
+        fetchProviders();
+    }, []);
 
     const fetchTenants = async () => {
         try {
@@ -42,19 +60,33 @@ export default function TenantsPage() {
         finally { setLoading(false); }
     };
 
+    const fetchProviders = async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/v1/admin/providers`);
+            const json = await res.json();
+            if (json.success) setProviders(json.data);
+        } catch (err) { console.error('Failed to fetch providers:', err); }
+    };
+
     const handleCreateNew = async (e: React.FormEvent) => {
         e.preventDefault();
         const channelsArray = newChannels.split(',').map(c => c.trim()).filter(Boolean);
         try {
             const res = await fetch(`${API_URL}/api/v1/admin/tenants`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newTenantName, allowed_channels: channelsArray }),
+                body: JSON.stringify({
+                    name: newTenantName,
+                    allowed_channels: channelsArray,
+                    provider_config_id: newProviderId || undefined,
+                    sender_email: newSenderEmail || undefined,
+                    sender_name: newSenderName || undefined
+                }),
             });
             const json = await res.json();
             if (json.success) {
                 setTenants([json.data, ...tenants]);
                 setIsModalOpen(false);
-                setNewTenantName(''); setNewChannels('');
+                setNewTenantName(''); setNewChannels(''); setNewProviderId(''); setNewSenderEmail(''); setNewSenderName('');
             }
         } catch (err) { console.error('Failed to create tenant', err); }
     };
@@ -63,6 +95,9 @@ export default function TenantsPage() {
         setEditingTenant(tenant);
         setEditTenantName(tenant.name);
         setEditChannels(tenant.allowed_channels ? tenant.allowed_channels.join(', ') : '');
+        setEditProviderId(tenant.provider_config_id || '');
+        setEditSenderEmail(tenant.sender_email || '');
+        setEditSenderName(tenant.sender_name || '');
         setIsEditModalOpen(true);
     };
 
@@ -73,11 +108,24 @@ export default function TenantsPage() {
         try {
             const res = await fetch(`${API_URL}/api/v1/admin/tenants/${editingTenant.id}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: editTenantName, allowed_channels: channelsArray }),
+                body: JSON.stringify({
+                    name: editTenantName,
+                    allowed_channels: channelsArray,
+                    provider_config_id: editProviderId || null,
+                    sender_email: editSenderEmail || null,
+                    sender_name: editSenderName || null
+                }),
             });
             const json = await res.json();
             if (json.success) {
-                setTenants(tenants.map(t => t.id === editingTenant.id ? { ...t, name: editTenantName, allowed_channels: channelsArray } : t));
+                setTenants(tenants.map(t => t.id === editingTenant.id ? {
+                    ...t,
+                    name: editTenantName,
+                    allowed_channels: channelsArray,
+                    provider_config_id: editProviderId || null,
+                    sender_email: editSenderEmail || null,
+                    sender_name: editSenderName || null
+                } : t));
                 setIsEditModalOpen(false);
                 setEditingTenant(null);
             }
@@ -250,6 +298,23 @@ export default function TenantsPage() {
                                 <input type="text" value={newChannels} onChange={e => setNewChannels(e.target.value)} placeholder="e.g. ecommerce_store, support_chat" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
                                 <p className="text-[11px] text-slate-500 mt-2 font-medium">Comma separated namespaces for real-time In-App Popups (Optional).</p>
                             </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Integration Configuration (BYOP)</label>
+                                <select value={newProviderId} onChange={e => setNewProviderId(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm select-chevron">
+                                    <option value="">System Default</option>
+                                    {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Email</label>
+                                    <input type="email" value={newSenderEmail} onChange={e => setNewSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Name</label>
+                                    <input type="text" value={newSenderName} onChange={e => setNewSenderName(e.target.value)} placeholder="TMaaS App" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                </div>
+                            </div>
                             <div className="pt-2 flex justify-end space-x-3">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
                                 <button type="submit" className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm">Establish Infrastructure</button>
@@ -276,6 +341,23 @@ export default function TenantsPage() {
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">WebSocket Boundaries</label>
                                 <input type="text" value={editChannels} onChange={e => setEditChannels(e.target.value)} placeholder="e.g. ecommerce_store, support_chat" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
                                 <p className="text-[11px] text-slate-500 mt-2 font-medium">Comma separated namespaces (Optional).</p>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Integration Configuration (BYOP)</label>
+                                <select value={editProviderId} onChange={e => setEditProviderId(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm select-chevron">
+                                    <option value="">System Default</option>
+                                    {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Email</label>
+                                    <input type="email" value={editSenderEmail} onChange={e => setEditSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Name</label>
+                                    <input type="text" value={editSenderName} onChange={e => setEditSenderName(e.target.value)} placeholder="TMaaS App" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                </div>
                             </div>
                             <div className="pt-2 flex justify-end space-x-3">
                                 <button type="button" onClick={() => { setIsEditModalOpen(false); setEditingTenant(null); }} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>

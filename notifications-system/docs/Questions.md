@@ -315,3 +315,28 @@ These are platforms built specifically for external clients. These **must have d
 *   **Projects (Clients):** Each client project receives a strictly isolated, dedicated tenant setup.
 
 The system is designed to handle both simultaneously! Whether it's a product we own or a project we built for someone else, each receives a configuration row in the `tenants` table that defines its specific boundaries and capabilities.
+
+### Q13: For email configuration, do we have a default sender email address? If not, what should we do? Also for third party configurations, can we do the configurations on the UI for example setting up resend api key and sender email address? Can we also setup multiple tenants to utilise the same configuration
+
+**Answer:**
+
+This is a fantastic set of questions that touches on the ultimate flexibility of a multi-tenant platform! Let's break down each part:
+
+**1. Default Sender Email Address**
+Currently, if a tenant doesn't have a `sender_email` explicitly set in the database, the email dispatch would fail or use a hardcoded fallback. 
+**What we should do:** We absolutely need a system-wide default. We should define a `GLOBAL_DEFAULT_SENDER_EMAIL` (e.g., `notifications@hlcc.africa` or `no-reply@tmaas.africa`) in the `.env` file or a global settings table. 
+When the worker compiles an email, it should use a simple coalesce logic: `const fromAddress = tenant.senderEmail || process.env.GLOBAL_DEFAULT_SENDER_EMAIL;`. This guarantees that an email *always* has a valid sender, even if a new tenant hasn't fully configured their settings yet.
+
+**2. Third-Party Configurations via the UI (Bring Your Own Provider - BYOP)**
+Yes! This is the gold standard for enterprise platforms. While our current architecture (from Q11) relies on a single `.env` API key for the whole system, we can easily upgrade this to allow tenants to bring their own Resend, SendGrid, or Twilio accounts.
+*   **Database Upgrade:** We create a new table called `provider_configs` (or add a JSONB `custom_credentials` column to the `tenants` table).
+*   **UI Integration:** In the Admin Panel, under the tenant's settings, we add an "Integrations" tab where they can select a provider (e.g., Resend), paste their API key, and set their verified sender email.
+*   **Worker Logic:** Before dispatching an email, the worker checks: *"Does this tenant have a custom Resend API key in the DB?"* If yes, the worker dynamically initializes a new Resend SDK instance using that specific key. If no, it falls back to the platform's default shared SendGrid/Resend key. *(Note: We must encrypt these API keys at rest in the database!)*
+
+**3. Multiple Tenants Utilizing the Same Configuration**
+Absolutely! This is perfect for when a single client organization has multiple distinct products (tenants) but wants to pay centrally under one single Resend/SendGrid billing account.
+To achieve this gracefully without duplicating API keys everywhere, we normalize the configuration:
+*   Instead of putting the API key directly inside the `tenants` row, we create a distinct `provider_configs` table.
+*   The `tenants` table gets a `provider_config_id` foreign key. 
+*   Now, you can have "Tenant A" (Ecommerce), "Tenant B" (Support), and "Tenant C" (Marketing) all point their `provider_config_id` to the exact same "Client X Resend Account" row in the database. 
+They all share the exact same configuration via the Admin UI, but their templates, user channels, and distinct logic remain perfectly isolated!

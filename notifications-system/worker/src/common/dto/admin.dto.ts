@@ -7,12 +7,36 @@
 export interface CreateTenantDto {
     name: string;
     allowed_channels: string[];
+    provider_config_id?: string;
+    sender_email?: string;
+    sender_name?: string;
 }
 
 export interface UpdateTenantDto {
     name?: string;
     allowed_channels?: string[];
     is_active?: boolean;
+    provider_config_id?: string;
+    sender_email?: string;
+    sender_name?: string;
+}
+
+// ─── Provider Configs ──────────────────────
+
+export interface CreateProviderConfigDto {
+    name: string;
+    provider: 'SENDGRID' | 'RESEND' | 'TWILIO' | 'AFRICASTALKING' | 'CUSTOM';
+    api_key: string;
+    sender_email?: string;
+    sender_name?: string;
+}
+
+export interface UpdateProviderConfigDto {
+    name?: string;
+    provider?: 'SENDGRID' | 'RESEND' | 'TWILIO' | 'AFRICASTALKING' | 'CUSTOM';
+    api_key?: string;
+    sender_email?: string;
+    sender_name?: string;
 }
 
 // ─── Templates ──────────────────────────────
@@ -39,6 +63,7 @@ export interface EmailDispatchPayload {
     subject: string;
     body: string;
     provider: string;
+    apiKey?: string;
 }
 
 export interface SmsDispatchPayload {
@@ -50,6 +75,7 @@ export interface SmsDispatchPayload {
     subject: string;
     body: string;
     provider: string;
+    apiKey?: string;
 }
 
 export interface RealtimeDispatchPayload {

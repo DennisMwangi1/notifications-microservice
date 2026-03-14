@@ -58,7 +58,8 @@ export class EventsController {
                 id: tenant.id,
                 name: tenant.name,
                 sender_email: tenant.sender_email,
-                sender_name: tenant.sender_name
+                sender_name: tenant.sender_name,
+                provider_config_id: tenant.provider_config_id
             },
             eventType: eventType
         };

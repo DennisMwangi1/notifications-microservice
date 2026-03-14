@@ -22,13 +22,13 @@ model notification_logs {
 }
 
 model templates {
-  template_id  String       @db.VarChar(100)
-  version      Int
-  channel_type channel_enum
-  subject_line String?      @db.VarChar(255)
-  content_body String
-  locale       String?      @default("en") @db.VarChar(10)
-  is_active    Boolean?     @default(true)
+  template_id       String       @db.VarChar(100)
+  version           Int
+  channel_type      channel_enum
+  subject_line      String?      @db.VarChar(255)
+  content_body      String
+  locale            String?      @default("en") @db.VarChar(10)
+  is_active         Boolean?     @default(true)
   created_at        DateTime?    @default(now()) @db.Timestamp(6)
   tenant_id         String?      @db.Uuid
   event_type        String?      @db.VarChar(100)
@@ -36,7 +36,6 @@ model templates {
 
   @@id([template_id, version])
 }
-
 
 enum channel_enum {
   EMAIL
@@ -57,24 +56,46 @@ enum in_app_status {
 }
 
 model in_app_notifications {
-  id             String        @id @default(uuid()) @db.Uuid
-  user_id        String        @db.Uuid
-  tenant_id      String        @db.Uuid
-  type           String
-  title          String
-  body           String
-  status         in_app_status @default(UNREAD)
-  created_at     DateTime      @default(now()) @db.Timestamp(6)
+  id         String        @id @default(uuid()) @db.Uuid
+  user_id    String        @db.Uuid
+  tenant_id  String        @db.Uuid
+  type       String
+  title      String
+  body       String
+  status     in_app_status @default(UNREAD)
+  created_at DateTime      @default(now()) @db.Timestamp(6)
 }
 
 model tenants {
-  id               String   @id @default(uuid()) @db.Uuid
-  name             String
-  api_key          String   @unique
-  webhook_secret   String?  @unique @db.VarChar(255)
-  allowed_channels String[] // e.g. ["ecommerce_store", "support_chat"]
-  sender_email     String?  @db.VarChar(255)
-  sender_name      String?  @db.VarChar(255)
-  created_at       DateTime @default(now()) @db.Timestamp(6)
-  is_active        Boolean  @default(true)
+  id                 String            @id @default(uuid()) @db.Uuid
+  name               String
+  api_key            String            @unique
+  webhook_secret     String?           @unique @db.VarChar(255)
+  allowed_channels   String[] // e.g. ["ecommerce_store", "support_chat"]
+  sender_email       String?           @db.VarChar(255)
+  sender_name        String?           @db.VarChar(255)
+  provider_config_id String?           @db.Uuid
+  provider_config    provider_configs? @relation(fields: [provider_config_id], references: [id])
+  created_at         DateTime          @default(now()) @db.Timestamp(6)
+  is_active          Boolean           @default(true)
+}
+
+enum provider_type {
+  SENDGRID
+  RESEND
+  TWILIO
+  AFRICASTALKING
+  CUSTOM
+}
+
+model provider_configs {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String        @db.VarChar(255)
+  provider     provider_type
+  api_key      String        @db.VarChar(255)
+  sender_email String?       @db.VarChar(255)
+  sender_name  String?       @db.VarChar(255)
+  created_at   DateTime      @default(now()) @db.Timestamp(6)
+
+  tenants tenants[]
 }

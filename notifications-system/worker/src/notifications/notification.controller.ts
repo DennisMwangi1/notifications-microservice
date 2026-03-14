@@ -58,6 +58,14 @@ export class NotificationsController implements OnModuleInit {
       return;
     }
 
+    // BYOP: Check for custom provider config
+    let providerConfig = null;
+    if (tenant.provider_config_id) {
+      providerConfig = await this.prisma.provider_configs.findUnique({
+        where: { id: tenant.provider_config_id }
+      });
+    }
+
     // Iterate through the delivery matrix and dispatch per channel
     for (const template of templates) {
       const dynamicSubject = this.renderService.renderText(template.subject_line || 'Notification', payloadData as Record<string, unknown>).replace(/<[^>]*>?/gm, '');
@@ -87,11 +95,12 @@ export class NotificationsController implements OnModuleInit {
           tenantId: tenant.id,
           userId,
           recipient: (payloadData.recipientEmail as string) || "error_no_email_provided@system",
-          senderEmail: tenant.sender_email,
-          senderName: tenant.sender_name,
+          senderEmail: providerConfig?.sender_email || tenant.sender_email,
+          senderName: providerConfig?.sender_name || tenant.sender_name,
           subject: dynamicSubject,
           body: finalHtml,
-          provider: "RESEND"
+          provider: providerConfig?.provider || "RESEND",
+          apiKey: providerConfig?.api_key,
         };
 
         this.kafkaClient.emit('notification.dispatch', emailPayload);
@@ -124,7 +133,8 @@ export class NotificationsController implements OnModuleInit {
           recipient: (payloadData.recipientPhone as string) || "+10000000000",
           subject: dynamicSubject,
           body: finalSmsText,
-          provider: "TWILIO"
+          provider: providerConfig?.provider || "TWILIO",
+          apiKey: providerConfig?.api_key,
         };
         this.kafkaClient.emit('notification.dispatch', smsPayload);
       }

@@ -387,7 +387,8 @@ export const ModelName = {
   notification_logs: 'notification_logs',
   templates: 'templates',
   in_app_notifications: 'in_app_notifications',
-  tenants: 'tenants'
+  tenants: 'tenants',
+  provider_configs: 'provider_configs'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "notification_logs" | "templates" | "in_app_notifications" | "tenants"
+    modelProps: "notification_logs" | "templates" | "in_app_notifications" | "tenants" | "provider_configs"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +704,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    provider_configs: {
+      payload: Prisma.$provider_configsPayload<ExtArgs>
+      fields: Prisma.provider_configsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.provider_configsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.provider_configsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>
+        }
+        findFirst: {
+          args: Prisma.provider_configsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.provider_configsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>
+        }
+        findMany: {
+          args: Prisma.provider_configsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>[]
+        }
+        create: {
+          args: Prisma.provider_configsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>
+        }
+        createMany: {
+          args: Prisma.provider_configsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.provider_configsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>[]
+        }
+        delete: {
+          args: Prisma.provider_configsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>
+        }
+        update: {
+          args: Prisma.provider_configsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>
+        }
+        deleteMany: {
+          args: Prisma.provider_configsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.provider_configsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.provider_configsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>[]
+        }
+        upsert: {
+          args: Prisma.provider_configsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$provider_configsPayload>
+        }
+        aggregate: {
+          args: Prisma.Provider_configsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProvider_configs>
+        }
+        groupBy: {
+          args: Prisma.provider_configsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Provider_configsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.provider_configsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Provider_configsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -797,11 +872,25 @@ export const TenantsScalarFieldEnum = {
   allowed_channels: 'allowed_channels',
   sender_email: 'sender_email',
   sender_name: 'sender_name',
+  provider_config_id: 'provider_config_id',
   created_at: 'created_at',
   is_active: 'is_active'
 } as const
 
 export type TenantsScalarFieldEnum = (typeof TenantsScalarFieldEnum)[keyof typeof TenantsScalarFieldEnum]
+
+
+export const Provider_configsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  provider: 'provider',
+  api_key: 'api_key',
+  sender_email: 'sender_email',
+  sender_name: 'sender_name',
+  created_at: 'created_at'
+} as const
+
+export type Provider_configsScalarFieldEnum = (typeof Provider_configsScalarFieldEnum)[keyof typeof Provider_configsScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -957,6 +1046,20 @@ export type ListEnumin_app_statusFieldRefInput<$PrismaModel> = FieldRefInputType
 
 
 /**
+ * Reference to a field of type 'provider_type'
+ */
+export type Enumprovider_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'provider_type'>
+    
+
+
+/**
+ * Reference to a field of type 'provider_type[]'
+ */
+export type ListEnumprovider_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'provider_type[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -1068,6 +1171,7 @@ export type GlobalOmitConfig = {
   templates?: Prisma.templatesOmit
   in_app_notifications?: Prisma.in_app_notificationsOmit
   tenants?: Prisma.tenantsOmit
+  provider_configs?: Prisma.provider_configsOmit
 }
 
 /* Types for Logging */

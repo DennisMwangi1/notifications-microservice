@@ -33,6 +33,7 @@ type NotificationPayload struct {
 	WsChannel      string `json:"wsChannel"`
 	Category       string `json:"category"`
 	EventType      string `json:"eventType"`
+	APIKey         string `json:"apiKey"`
 }
 
 func main() {
@@ -172,7 +173,12 @@ func processNotification(payload NotificationPayload, db *sql.DB, cClient *gocen
 			Html:    payload.Body,
 		}
 
-		sent, err := resendClient.Emails.Send(params)
+		clientToUse := resendClient
+		if payload.APIKey != "" {
+			clientToUse = resend.NewClient(payload.APIKey)
+		}
+
+		sent, err := clientToUse.Emails.Send(params)
 		if err != nil {
 			log.Printf("❌ Failed to send email to %s: %v\n", payload.Recipient, err)
 			updateAuditLog(payload.NotificationID, db, "FAILED")
