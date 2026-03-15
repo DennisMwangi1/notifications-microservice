@@ -20,8 +20,22 @@ export type tenantsModel = runtime.Types.Result.DefaultSelection<Prisma.$tenants
 
 export type AggregateTenants = {
   _count: TenantsCountAggregateOutputType | null
+  _avg: TenantsAvgAggregateOutputType | null
+  _sum: TenantsSumAggregateOutputType | null
   _min: TenantsMinAggregateOutputType | null
   _max: TenantsMaxAggregateOutputType | null
+}
+
+export type TenantsAvgAggregateOutputType = {
+  rate_limit_per_minute: number | null
+  daily_notification_cap: number | null
+  max_template_count: number | null
+}
+
+export type TenantsSumAggregateOutputType = {
+  rate_limit_per_minute: number | null
+  daily_notification_cap: number | null
+  max_template_count: number | null
 }
 
 export type TenantsMinAggregateOutputType = {
@@ -34,6 +48,9 @@ export type TenantsMinAggregateOutputType = {
   provider_config_id: string | null
   created_at: Date | null
   is_active: boolean | null
+  rate_limit_per_minute: number | null
+  daily_notification_cap: number | null
+  max_template_count: number | null
 }
 
 export type TenantsMaxAggregateOutputType = {
@@ -46,6 +63,9 @@ export type TenantsMaxAggregateOutputType = {
   provider_config_id: string | null
   created_at: Date | null
   is_active: boolean | null
+  rate_limit_per_minute: number | null
+  daily_notification_cap: number | null
+  max_template_count: number | null
 }
 
 export type TenantsCountAggregateOutputType = {
@@ -59,9 +79,24 @@ export type TenantsCountAggregateOutputType = {
   provider_config_id: number
   created_at: number
   is_active: number
+  rate_limit_per_minute: number
+  daily_notification_cap: number
+  max_template_count: number
   _all: number
 }
 
+
+export type TenantsAvgAggregateInputType = {
+  rate_limit_per_minute?: true
+  daily_notification_cap?: true
+  max_template_count?: true
+}
+
+export type TenantsSumAggregateInputType = {
+  rate_limit_per_minute?: true
+  daily_notification_cap?: true
+  max_template_count?: true
+}
 
 export type TenantsMinAggregateInputType = {
   id?: true
@@ -73,6 +108,9 @@ export type TenantsMinAggregateInputType = {
   provider_config_id?: true
   created_at?: true
   is_active?: true
+  rate_limit_per_minute?: true
+  daily_notification_cap?: true
+  max_template_count?: true
 }
 
 export type TenantsMaxAggregateInputType = {
@@ -85,6 +123,9 @@ export type TenantsMaxAggregateInputType = {
   provider_config_id?: true
   created_at?: true
   is_active?: true
+  rate_limit_per_minute?: true
+  daily_notification_cap?: true
+  max_template_count?: true
 }
 
 export type TenantsCountAggregateInputType = {
@@ -98,6 +139,9 @@ export type TenantsCountAggregateInputType = {
   provider_config_id?: true
   created_at?: true
   is_active?: true
+  rate_limit_per_minute?: true
+  daily_notification_cap?: true
+  max_template_count?: true
   _all?: true
 }
 
@@ -139,6 +183,18 @@ export type TenantsAggregateArgs<ExtArgs extends runtime.Types.Extensions.Intern
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: TenantsAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: TenantsSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: TenantsMinAggregateInputType
@@ -169,6 +225,8 @@ export type tenantsGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   _count?: TenantsCountAggregateInputType | true
+  _avg?: TenantsAvgAggregateInputType
+  _sum?: TenantsSumAggregateInputType
   _min?: TenantsMinAggregateInputType
   _max?: TenantsMaxAggregateInputType
 }
@@ -184,7 +242,12 @@ export type TenantsGroupByOutputType = {
   provider_config_id: string | null
   created_at: Date
   is_active: boolean
+  rate_limit_per_minute: number
+  daily_notification_cap: number
+  max_template_count: number
   _count: TenantsCountAggregateOutputType | null
+  _avg: TenantsAvgAggregateOutputType | null
+  _sum: TenantsSumAggregateOutputType | null
   _min: TenantsMinAggregateOutputType | null
   _max: TenantsMaxAggregateOutputType | null
 }
@@ -218,6 +281,9 @@ export type tenantsWhereInput = {
   provider_config_id?: Prisma.UuidNullableFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolFilter<"tenants"> | boolean
+  rate_limit_per_minute?: Prisma.IntFilter<"tenants"> | number
+  daily_notification_cap?: Prisma.IntFilter<"tenants"> | number
+  max_template_count?: Prisma.IntFilter<"tenants"> | number
   provider_config?: Prisma.XOR<Prisma.Provider_configsNullableScalarRelationFilter, Prisma.provider_configsWhereInput> | null
 }
 
@@ -232,6 +298,9 @@ export type tenantsOrderByWithRelationInput = {
   provider_config_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  rate_limit_per_minute?: Prisma.SortOrder
+  daily_notification_cap?: Prisma.SortOrder
+  max_template_count?: Prisma.SortOrder
   provider_config?: Prisma.provider_configsOrderByWithRelationInput
 }
 
@@ -249,6 +318,9 @@ export type tenantsWhereUniqueInput = Prisma.AtLeast<{
   provider_config_id?: Prisma.UuidNullableFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolFilter<"tenants"> | boolean
+  rate_limit_per_minute?: Prisma.IntFilter<"tenants"> | number
+  daily_notification_cap?: Prisma.IntFilter<"tenants"> | number
+  max_template_count?: Prisma.IntFilter<"tenants"> | number
   provider_config?: Prisma.XOR<Prisma.Provider_configsNullableScalarRelationFilter, Prisma.provider_configsWhereInput> | null
 }, "id" | "api_key" | "webhook_secret">
 
@@ -263,9 +335,14 @@ export type tenantsOrderByWithAggregationInput = {
   provider_config_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  rate_limit_per_minute?: Prisma.SortOrder
+  daily_notification_cap?: Prisma.SortOrder
+  max_template_count?: Prisma.SortOrder
   _count?: Prisma.tenantsCountOrderByAggregateInput
+  _avg?: Prisma.tenantsAvgOrderByAggregateInput
   _max?: Prisma.tenantsMaxOrderByAggregateInput
   _min?: Prisma.tenantsMinOrderByAggregateInput
+  _sum?: Prisma.tenantsSumOrderByAggregateInput
 }
 
 export type tenantsScalarWhereWithAggregatesInput = {
@@ -282,6 +359,9 @@ export type tenantsScalarWhereWithAggregatesInput = {
   provider_config_id?: Prisma.UuidNullableWithAggregatesFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolWithAggregatesFilter<"tenants"> | boolean
+  rate_limit_per_minute?: Prisma.IntWithAggregatesFilter<"tenants"> | number
+  daily_notification_cap?: Prisma.IntWithAggregatesFilter<"tenants"> | number
+  max_template_count?: Prisma.IntWithAggregatesFilter<"tenants"> | number
 }
 
 export type tenantsCreateInput = {
@@ -294,6 +374,9 @@ export type tenantsCreateInput = {
   sender_name?: string | null
   created_at?: Date | string
   is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
   provider_config?: Prisma.provider_configsCreateNestedOneWithoutTenantsInput
 }
 
@@ -308,6 +391,9 @@ export type tenantsUncheckedCreateInput = {
   provider_config_id?: string | null
   created_at?: Date | string
   is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
 }
 
 export type tenantsUpdateInput = {
@@ -320,6 +406,9 @@ export type tenantsUpdateInput = {
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
   provider_config?: Prisma.provider_configsUpdateOneWithoutTenantsNestedInput
 }
 
@@ -334,6 +423,9 @@ export type tenantsUncheckedUpdateInput = {
   provider_config_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type tenantsCreateManyInput = {
@@ -347,6 +439,9 @@ export type tenantsCreateManyInput = {
   provider_config_id?: string | null
   created_at?: Date | string
   is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
 }
 
 export type tenantsUpdateManyMutationInput = {
@@ -359,6 +454,9 @@ export type tenantsUpdateManyMutationInput = {
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type tenantsUncheckedUpdateManyInput = {
@@ -372,6 +470,9 @@ export type tenantsUncheckedUpdateManyInput = {
   provider_config_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type StringNullableListFilter<$PrismaModel = never> = {
@@ -393,6 +494,15 @@ export type tenantsCountOrderByAggregateInput = {
   provider_config_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  rate_limit_per_minute?: Prisma.SortOrder
+  daily_notification_cap?: Prisma.SortOrder
+  max_template_count?: Prisma.SortOrder
+}
+
+export type tenantsAvgOrderByAggregateInput = {
+  rate_limit_per_minute?: Prisma.SortOrder
+  daily_notification_cap?: Prisma.SortOrder
+  max_template_count?: Prisma.SortOrder
 }
 
 export type tenantsMaxOrderByAggregateInput = {
@@ -405,6 +515,9 @@ export type tenantsMaxOrderByAggregateInput = {
   provider_config_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  rate_limit_per_minute?: Prisma.SortOrder
+  daily_notification_cap?: Prisma.SortOrder
+  max_template_count?: Prisma.SortOrder
 }
 
 export type tenantsMinOrderByAggregateInput = {
@@ -417,6 +530,15 @@ export type tenantsMinOrderByAggregateInput = {
   provider_config_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  rate_limit_per_minute?: Prisma.SortOrder
+  daily_notification_cap?: Prisma.SortOrder
+  max_template_count?: Prisma.SortOrder
+}
+
+export type tenantsSumOrderByAggregateInput = {
+  rate_limit_per_minute?: Prisma.SortOrder
+  daily_notification_cap?: Prisma.SortOrder
+  max_template_count?: Prisma.SortOrder
 }
 
 export type TenantsListRelationFilter = {
@@ -494,6 +616,9 @@ export type tenantsCreateWithoutProvider_configInput = {
   sender_name?: string | null
   created_at?: Date | string
   is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
 }
 
 export type tenantsUncheckedCreateWithoutProvider_configInput = {
@@ -506,6 +631,9 @@ export type tenantsUncheckedCreateWithoutProvider_configInput = {
   sender_name?: string | null
   created_at?: Date | string
   is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
 }
 
 export type tenantsCreateOrConnectWithoutProvider_configInput = {
@@ -548,6 +676,9 @@ export type tenantsScalarWhereInput = {
   provider_config_id?: Prisma.UuidNullableFilter<"tenants"> | string | null
   created_at?: Prisma.DateTimeFilter<"tenants"> | Date | string
   is_active?: Prisma.BoolFilter<"tenants"> | boolean
+  rate_limit_per_minute?: Prisma.IntFilter<"tenants"> | number
+  daily_notification_cap?: Prisma.IntFilter<"tenants"> | number
+  max_template_count?: Prisma.IntFilter<"tenants"> | number
 }
 
 export type tenantsCreateManyProvider_configInput = {
@@ -560,6 +691,9 @@ export type tenantsCreateManyProvider_configInput = {
   sender_name?: string | null
   created_at?: Date | string
   is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
 }
 
 export type tenantsUpdateWithoutProvider_configInput = {
@@ -572,6 +706,9 @@ export type tenantsUpdateWithoutProvider_configInput = {
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type tenantsUncheckedUpdateWithoutProvider_configInput = {
@@ -584,6 +721,9 @@ export type tenantsUncheckedUpdateWithoutProvider_configInput = {
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type tenantsUncheckedUpdateManyWithoutProvider_configInput = {
@@ -596,6 +736,9 @@ export type tenantsUncheckedUpdateManyWithoutProvider_configInput = {
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 
@@ -611,6 +754,9 @@ export type tenantsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   provider_config_id?: boolean
   created_at?: boolean
   is_active?: boolean
+  rate_limit_per_minute?: boolean
+  daily_notification_cap?: boolean
+  max_template_count?: boolean
   provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
 }, ExtArgs["result"]["tenants"]>
 
@@ -625,6 +771,9 @@ export type tenantsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   provider_config_id?: boolean
   created_at?: boolean
   is_active?: boolean
+  rate_limit_per_minute?: boolean
+  daily_notification_cap?: boolean
+  max_template_count?: boolean
   provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
 }, ExtArgs["result"]["tenants"]>
 
@@ -639,6 +788,9 @@ export type tenantsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   provider_config_id?: boolean
   created_at?: boolean
   is_active?: boolean
+  rate_limit_per_minute?: boolean
+  daily_notification_cap?: boolean
+  max_template_count?: boolean
   provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
 }, ExtArgs["result"]["tenants"]>
 
@@ -653,9 +805,12 @@ export type tenantsSelectScalar = {
   provider_config_id?: boolean
   created_at?: boolean
   is_active?: boolean
+  rate_limit_per_minute?: boolean
+  daily_notification_cap?: boolean
+  max_template_count?: boolean
 }
 
-export type tenantsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "api_key" | "webhook_secret" | "allowed_channels" | "sender_email" | "sender_name" | "provider_config_id" | "created_at" | "is_active", ExtArgs["result"]["tenants"]>
+export type tenantsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "api_key" | "webhook_secret" | "allowed_channels" | "sender_email" | "sender_name" | "provider_config_id" | "created_at" | "is_active" | "rate_limit_per_minute" | "daily_notification_cap" | "max_template_count", ExtArgs["result"]["tenants"]>
 export type tenantsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
 }
@@ -682,6 +837,9 @@ export type $tenantsPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     provider_config_id: string | null
     created_at: Date
     is_active: boolean
+    rate_limit_per_minute: number
+    daily_notification_cap: number
+    max_template_count: number
   }, ExtArgs["result"]["tenants"]>
   composites: {}
 }
@@ -1116,6 +1274,9 @@ export interface tenantsFieldRefs {
   readonly provider_config_id: Prisma.FieldRef<"tenants", 'String'>
   readonly created_at: Prisma.FieldRef<"tenants", 'DateTime'>
   readonly is_active: Prisma.FieldRef<"tenants", 'Boolean'>
+  readonly rate_limit_per_minute: Prisma.FieldRef<"tenants", 'Int'>
+  readonly daily_notification_cap: Prisma.FieldRef<"tenants", 'Int'>
+  readonly max_template_count: Prisma.FieldRef<"tenants", 'Int'>
 }
     
 

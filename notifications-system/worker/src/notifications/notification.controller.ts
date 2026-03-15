@@ -231,4 +231,50 @@ export class NotificationsController implements OnModuleInit {
 
     return { success: true, message: 'Notification marked as READ' };
   }
+
+  // -------------------------------------------------------------
+  // DLQ Consumer: Persist permanently failed notifications
+  // -------------------------------------------------------------
+
+  @MessagePattern('notification.dlq')
+  async handleDeadLetter(@Payload() data: {
+    originalPayload: Record<string, unknown>;
+    retryCount: number;
+    maxRetries: number;
+    lastError: string;
+    notificationId: string;
+    tenantId: string;
+    channel: string;
+  }) {
+    console.log(`💀 DLQ: Persisting permanently failed notification ${data.notificationId}`);
+
+    try {
+      // Persist to failed_notifications table for admin review
+      await this.prisma.failed_notifications.create({
+        data: {
+          notification_id: data.notificationId,
+          tenant_id: data.tenantId,
+          channel: data.channel as 'EMAIL' | 'SMS' | 'PUSH',
+          payload: data.originalPayload as object,
+          error_details: data.lastError,
+          retry_count: data.retryCount,
+          max_retries: data.maxRetries,
+          permanently_failed: true,
+        }
+      });
+
+      // Update the notification_logs status to FAILED with error context
+      await this.prisma.notification_logs.updateMany({
+        where: { notification_id: data.notificationId },
+        data: {
+          status: 'FAILED',
+          error_details: `DLQ: ${data.lastError} (after ${data.retryCount} retries)`,
+        }
+      });
+
+      console.log(`💀 DLQ: Notification ${data.notificationId} persisted to failed_notifications table`);
+    } catch (err) {
+      console.error(`❌ DLQ: Failed to persist dead letter for ${data.notificationId}:`, err);
+    }
+  }
 }

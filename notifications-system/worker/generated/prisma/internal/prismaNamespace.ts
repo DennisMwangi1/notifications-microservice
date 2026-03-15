@@ -388,6 +388,8 @@ export const ModelName = {
   templates: 'templates',
   in_app_notifications: 'in_app_notifications',
   tenants: 'tenants',
+  processed_events: 'processed_events',
+  failed_notifications: 'failed_notifications',
   provider_configs: 'provider_configs'
 } as const
 
@@ -404,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "notification_logs" | "templates" | "in_app_notifications" | "tenants" | "provider_configs"
+    modelProps: "notification_logs" | "templates" | "in_app_notifications" | "tenants" | "processed_events" | "failed_notifications" | "provider_configs"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -704,6 +706,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    processed_events: {
+      payload: Prisma.$processed_eventsPayload<ExtArgs>
+      fields: Prisma.processed_eventsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.processed_eventsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.processed_eventsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>
+        }
+        findFirst: {
+          args: Prisma.processed_eventsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.processed_eventsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>
+        }
+        findMany: {
+          args: Prisma.processed_eventsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>[]
+        }
+        create: {
+          args: Prisma.processed_eventsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>
+        }
+        createMany: {
+          args: Prisma.processed_eventsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.processed_eventsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>[]
+        }
+        delete: {
+          args: Prisma.processed_eventsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>
+        }
+        update: {
+          args: Prisma.processed_eventsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>
+        }
+        deleteMany: {
+          args: Prisma.processed_eventsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.processed_eventsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.processed_eventsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>[]
+        }
+        upsert: {
+          args: Prisma.processed_eventsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processed_eventsPayload>
+        }
+        aggregate: {
+          args: Prisma.Processed_eventsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProcessed_events>
+        }
+        groupBy: {
+          args: Prisma.processed_eventsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Processed_eventsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.processed_eventsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Processed_eventsCountAggregateOutputType> | number
+        }
+      }
+    }
+    failed_notifications: {
+      payload: Prisma.$failed_notificationsPayload<ExtArgs>
+      fields: Prisma.failed_notificationsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.failed_notificationsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.failed_notificationsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>
+        }
+        findFirst: {
+          args: Prisma.failed_notificationsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.failed_notificationsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>
+        }
+        findMany: {
+          args: Prisma.failed_notificationsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>[]
+        }
+        create: {
+          args: Prisma.failed_notificationsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>
+        }
+        createMany: {
+          args: Prisma.failed_notificationsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.failed_notificationsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>[]
+        }
+        delete: {
+          args: Prisma.failed_notificationsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>
+        }
+        update: {
+          args: Prisma.failed_notificationsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>
+        }
+        deleteMany: {
+          args: Prisma.failed_notificationsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.failed_notificationsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.failed_notificationsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>[]
+        }
+        upsert: {
+          args: Prisma.failed_notificationsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$failed_notificationsPayload>
+        }
+        aggregate: {
+          args: Prisma.Failed_notificationsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFailed_notifications>
+        }
+        groupBy: {
+          args: Prisma.failed_notificationsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Failed_notificationsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.failed_notificationsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Failed_notificationsCountAggregateOutputType> | number
+        }
+      }
+    }
     provider_configs: {
       payload: Prisma.$provider_configsPayload<ExtArgs>
       fields: Prisma.provider_configsFieldRefs
@@ -874,10 +1024,45 @@ export const TenantsScalarFieldEnum = {
   sender_name: 'sender_name',
   provider_config_id: 'provider_config_id',
   created_at: 'created_at',
-  is_active: 'is_active'
+  is_active: 'is_active',
+  rate_limit_per_minute: 'rate_limit_per_minute',
+  daily_notification_cap: 'daily_notification_cap',
+  max_template_count: 'max_template_count'
 } as const
 
 export type TenantsScalarFieldEnum = (typeof TenantsScalarFieldEnum)[keyof typeof TenantsScalarFieldEnum]
+
+
+export const Processed_eventsScalarFieldEnum = {
+  id: 'id',
+  idempotency_key: 'idempotency_key',
+  tenant_id: 'tenant_id',
+  event_type: 'event_type',
+  payload_hash: 'payload_hash',
+  response: 'response',
+  created_at: 'created_at',
+  expires_at: 'expires_at'
+} as const
+
+export type Processed_eventsScalarFieldEnum = (typeof Processed_eventsScalarFieldEnum)[keyof typeof Processed_eventsScalarFieldEnum]
+
+
+export const Failed_notificationsScalarFieldEnum = {
+  id: 'id',
+  notification_id: 'notification_id',
+  tenant_id: 'tenant_id',
+  channel: 'channel',
+  payload: 'payload',
+  error_details: 'error_details',
+  retry_count: 'retry_count',
+  max_retries: 'max_retries',
+  next_retry_at: 'next_retry_at',
+  permanently_failed: 'permanently_failed',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Failed_notificationsScalarFieldEnum = (typeof Failed_notificationsScalarFieldEnum)[keyof typeof Failed_notificationsScalarFieldEnum]
 
 
 export const Provider_configsScalarFieldEnum = {
@@ -907,6 +1092,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -1171,6 +1363,8 @@ export type GlobalOmitConfig = {
   templates?: Prisma.templatesOmit
   in_app_notifications?: Prisma.in_app_notificationsOmit
   tenants?: Prisma.tenantsOmit
+  processed_events?: Prisma.processed_eventsOmit
+  failed_notifications?: Prisma.failed_notificationsOmit
   provider_configs?: Prisma.provider_configsOmit
 }
 

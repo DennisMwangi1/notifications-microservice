@@ -22,7 +22,8 @@ export const status_enum = {
   PENDING: 'PENDING',
   SENT: 'SENT',
   DELIVERED: 'DELIVERED',
-  FAILED: 'FAILED'
+  FAILED: 'FAILED',
+  RETRYING: 'RETRYING'
 } as const
 
 export type status_enum = (typeof status_enum)[keyof typeof status_enum]

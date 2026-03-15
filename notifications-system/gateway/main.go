@@ -12,32 +12,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/DennisMwangi1/notifications-microservice-gateway/gateway/adapters"
+	"github.com/DennisMwangi1/notifications-microservice-gateway/gateway/types"
+
 	"github.com/centrifugal/gocent/v3"
 	_ "github.com/lib/pq"
-	"github.com/resend/resend-go/v2"
 	"github.com/segmentio/kafka-go"
 )
 
-// R8: Updated struct to include Category and EventType fields forwarded by the NestJS worker
-type NotificationPayload struct {
-	ActionType     string `json:"actionType"`
-	NotificationID string `json:"notificationId"`
-	TenantID       string `json:"tenantId"`
-	UserID         string `json:"userId"`
-	Recipient      string `json:"recipient"`
-	SenderEmail    string `json:"senderEmail"`
-	SenderName     string `json:"senderName"`
-	Subject        string `json:"subject"`
-	Body           string `json:"body"`
-	Provider       string `json:"provider"`
-	WsChannel      string `json:"wsChannel"`
-	Category       string `json:"category"`
-	EventType      string `json:"eventType"`
-	APIKey         string `json:"apiKey"`
-}
+// Retry backoff schedule (in seconds)
+var retryBackoffSeconds = []int{60, 300, 900, 3600} // 1min, 5min, 15min, 1hr
+const maxRetries = 5
 
 func main() {
-	// R3: All addresses resolved from environment variables with sensible defaults
+	// ─── Database Connection ────────────────────────────
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
 		dbURL = "postgres://admin:password@localhost:5432/notification_db?sslmode=disable"
@@ -53,14 +41,7 @@ func main() {
 	}
 	fmt.Println("Connected to PostgreSQL for Audit Logs")
 
-	// Initialize Resend Client
-	resendAPIKey := os.Getenv("RESEND_API_KEY")
-	if resendAPIKey == "" {
-		resendAPIKey = "re_Q8AGvT6y_NJbKrpcey1ke4dRq7HhQhMFe"
-	}
-	resendClient := resend.NewClient(resendAPIKey)
-
-	// R3: Centrifugo address from environment
+	// ─── Centrifugo Client ──────────────────────────────
 	centrifugoURL := os.Getenv("CENTRIFUGO_API_URL")
 	if centrifugoURL == "" {
 		centrifugoURL = "http://localhost:8000/api"
@@ -75,62 +56,137 @@ func main() {
 	})
 	fmt.Printf("Centrifugo HTTP Client initialized → %s\n", centrifugoURL)
 
-	// R3: Kafka broker address from environment
+	// ─── Kafka Config ───────────────────────────────────
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	if kafkaBroker == "" {
 		kafkaBroker = "localhost:9092"
 	}
-	reader := kafka.NewReader(kafka.ReaderConfig{
+
+	// ─── Initialize Adapter Registry ────────────────────
+	resendAPIKey := os.Getenv("RESEND_API_KEY")
+	if resendAPIKey == "" {
+		resendAPIKey = "re_Q8AGvT6y_NJbKrpcey1ke4dRq7HhQhMFe"
+	}
+	sendGridAPIKey := os.Getenv("SENDGRID_API_KEY")
+	twilioSID := os.Getenv("TWILIO_ACCOUNT_SID")
+	twilioToken := os.Getenv("TWILIO_AUTH_TOKEN")
+
+	registry := adapters.NewRegistry(resendAPIKey, sendGridAPIKey, twilioSID, twilioToken, cClient)
+	fmt.Printf("Channel Adapter Registry initialized with adapters: %v\n", registry.ListAdapters())
+
+	// ─── Kafka Writers (Producers) for Retry & DLQ ──────
+	retryWriter := &kafka.Writer{
+		Addr:     kafka.TCP(kafkaBroker),
+		Topic:    "notification.retry",
+		Balancer: &kafka.LeastBytes{},
+	}
+	defer retryWriter.Close()
+
+	dlqWriter := &kafka.Writer{
+		Addr:     kafka.TCP(kafkaBroker),
+		Topic:    "notification.dlq",
+		Balancer: &kafka.LeastBytes{},
+	}
+	defer dlqWriter.Close()
+
+	// ─── Kafka Readers (Consumers) ──────────────────────
+	dispatchReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  []string{kafkaBroker},
 		Topic:    "notification.dispatch",
 		GroupID:  "go-gateway-group",
 		MinBytes: 1,
 		MaxBytes: 10e6,
 	})
+
+	retryReader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{kafkaBroker},
+		Topic:    "notification.retry",
+		GroupID:  "go-gateway-retry-group",
+		MinBytes: 1,
+		MaxBytes: 10e6,
+	})
+
 	fmt.Printf("Go gateway is standing by for dispatch (Kafka: %s)\n", kafkaBroker)
 
-	// Set up channel to listen for Interrupt or Terminate signals
+	// ─── Graceful Shutdown ──────────────────────────────
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Context to control reader loop
 	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
 
-	// Start reading in a background goroutine
+	// ─── Dispatch Consumer (primary) ────────────────────
 	go func() {
 		for {
-			message, err := reader.ReadMessage(ctx)
+			message, err := dispatchReader.ReadMessage(ctx)
 			if err != nil {
 				if ctx.Err() != nil {
 					return
 				}
-				log.Printf("error reading message: %v", err)
+				log.Printf("error reading dispatch message: %v", err)
 				continue
 			}
 
-			var payload NotificationPayload
+			var payload types.NotificationPayload
 			if err := json.Unmarshal(message.Value, &payload); err != nil {
-				log.Printf("Failed to unmarshal: %v", err)
+				log.Printf("Failed to unmarshal dispatch message: %v", err)
 				continue
 			}
 
 			wg.Add(1)
-			go func(p NotificationPayload, database *sql.DB, c *gocent.Client, r *resend.Client) {
+			go func(p types.NotificationPayload) {
 				defer wg.Done()
-				processNotification(p, database, c, r)
-			}(payload, db, cClient, resendClient)
+				processWithAdapters(p, db, registry, retryWriter, dlqWriter, 0)
+			}(payload)
 		}
 	}()
 
-	// Block main thread until a signal is received
+	// ─── Retry Consumer ─────────────────────────────────
+	go func() {
+		for {
+			message, err := retryReader.ReadMessage(ctx)
+			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				log.Printf("error reading retry message: %v", err)
+				continue
+			}
+
+			var retryMsg types.RetryMessage
+			if err := json.Unmarshal(message.Value, &retryMsg); err != nil {
+				log.Printf("Failed to unmarshal retry message: %v", err)
+				continue
+			}
+
+			// Wait for the backoff delay before re-processing
+			now := time.Now().Unix()
+			if retryMsg.NextRetryAt > now {
+				waitDuration := time.Duration(retryMsg.NextRetryAt-now) * time.Second
+				fmt.Printf("⏳ Retry #%d for %s: waiting %v before re-dispatch\n",
+					retryMsg.RetryCount, retryMsg.OriginalPayload.NotificationID, waitDuration)
+				time.Sleep(waitDuration)
+			}
+
+			wg.Add(1)
+			go func(rm types.RetryMessage) {
+				defer wg.Done()
+				processWithAdapters(rm.OriginalPayload, db, registry, retryWriter, dlqWriter, rm.RetryCount)
+			}(retryMsg)
+		}
+	}()
+
+	// ─── Block until signal ─────────────────────────────
 	<-sigchan
 	fmt.Println("\nTermination signal received. Shutting down gracefully...")
 
 	cancel()
 
-	if err := reader.Close(); err != nil {
-		log.Printf("Failed to close kafka reader: %v", err)
+	if err := dispatchReader.Close(); err != nil {
+		log.Printf("Failed to close dispatch kafka reader: %v", err)
+	}
+	if err := retryReader.Close(); err != nil {
+		log.Printf("Failed to close retry kafka reader: %v", err)
 	}
 
 	// Wait for all ongoing dispatches to finish, with a timeout
@@ -143,90 +199,129 @@ func main() {
 	select {
 	case <-c:
 		fmt.Println("All ongoing dispatches completed.")
-	case <-time.After(10 * time.Second):
+	case <-time.After(15 * time.Second):
 		fmt.Println("Timeout waiting for dispatches to complete. Forcing shutdown.")
 	}
 
 	fmt.Println("Go gateway shutdown complete.")
 }
 
-func processNotification(payload NotificationPayload, db *sql.DB, cClient *gocent.Client, resendClient *resend.Client) {
-	fmt.Printf("Full Payload: %v\n", payload)
+// processWithAdapters resolves the correct adapter from the registry,
+// dispatches the notification, and handles failures via retry/DLQ topics.
+func processWithAdapters(
+	payload types.NotificationPayload,
+	db *sql.DB,
+	registry *adapters.Registry,
+	retryWriter *kafka.Writer,
+	dlqWriter *kafka.Writer,
+	currentRetryCount int,
+) {
+	fmt.Printf("📦 Processing: ActionType=%s, Provider=%s, NotificationID=%s (retry #%d)\n",
+		payload.ActionType, payload.Provider, payload.NotificationID, currentRetryCount)
 
-	// BRANCH A: Email Operations
-	if payload.ActionType == "EMAIL" {
-		fromEmail := payload.SenderEmail
-		if fromEmail == "" {
-			fromEmail = "onboarding@resend.dev"
-		}
-		fromName := payload.SenderName
-		if fromName == "" {
-			fromName = "Notification System"
-		}
+	// Resolve the correct adapter
+	adapter := registry.Resolve(payload.ActionType, payload.Provider)
+	if adapter == nil {
+		log.Printf("⚠️ No adapter found for ActionType=%s, Provider=%s\n", payload.ActionType, payload.Provider)
+		// No adapter = permanent failure, send directly to DLQ
+		publishToDLQ(dlqWriter, payload, currentRetryCount, "No adapter registered for this ActionType/Provider combination")
+		updateAuditLog(payload.NotificationID, db, "FAILED")
+		return
+	}
 
-		fmt.Printf("📧 Sending EMAIL to %s via Resend...\n", payload.Recipient)
+	// Dispatch through the adapter
+	result := adapter.Send(payload)
 
-		params := &resend.SendEmailRequest{
-			From:    fmt.Sprintf("%s <%s>", fromName, fromEmail),
-			To:      []string{payload.Recipient},
-			Subject: payload.Subject,
-			Html:    payload.Body,
-		}
-
-		clientToUse := resendClient
-		if payload.APIKey != "" {
-			clientToUse = resend.NewClient(payload.APIKey)
-		}
-
-		sent, err := clientToUse.Emails.Send(params)
-		if err != nil {
-			log.Printf("❌ Failed to send email to %s: %v\n", payload.Recipient, err)
-			updateAuditLog(payload.NotificationID, db, "FAILED")
-			// Optional: store error details in logs if we had an error column
-			return
-		}
-
-		fmt.Printf("✅ Successfully sent EMAIL to %s! Resend ID: %s\n", payload.Recipient, sent.Id)
-		updateAuditLogWithRef(payload.NotificationID, db, "SENT", sent.Id)
-
-	} else if payload.ActionType == "SMS" {
-		// BRANCH B: SMS Operations
-		fmt.Printf("📱 Sending SMS to %s via %s...\n", payload.Recipient, payload.Provider)
-		time.Sleep(1 * time.Second) // Simulated API call
-		fmt.Printf("✅ Successfully sent SMS to %s!\n", payload.Recipient)
-		updateAuditLog(payload.NotificationID, db, "SENT")
-	} else if payload.ActionType == "REALTIME" {
-		// BRANCH C: Real-Time Centrifugo Routing
-		channelName := payload.WsChannel
-		if channelName == "" {
-			channelName = fmt.Sprintf("global_system#%s", payload.UserID)
-		}
-
-		// R8: Forward category and eventType to the frontend for visual styling
-		realtimeMsg := map[string]interface{}{
-			"type":        "IN_APP_ALERT",
-			"title":       payload.Subject,
-			"body":        payload.Body,
-			"category":    payload.Category,
-			"eventType":   payload.EventType,
-			"timestamp":   time.Now().Unix(),
-			"referenceId": payload.NotificationID,
-		}
-
-		msgBytes, _ := json.Marshal(realtimeMsg)
-
-		_, err := cClient.Publish(context.Background(), channelName, msgBytes)
-		if err != nil {
-			log.Printf("❌ Failed to push event to Centrifugo (%s): %v\n", channelName, err)
+	if result.Success {
+		// Update audit log with success
+		if result.ProviderRef != "" {
+			updateAuditLogWithRef(payload.NotificationID, db, "SENT", result.ProviderRef)
 		} else {
-			fmt.Printf("🚀 Successfully pushed REALTIME event to %s [%s]\n", channelName, payload.Category)
+			updateAuditLog(payload.NotificationID, db, "SENT")
 		}
+		return
+	}
+
+	// ─── Handle Failure ─────────────────────────────────
+	errorMsg := "unknown error"
+	if result.Error != nil {
+		errorMsg = result.Error.Error()
+	}
+
+	if result.RetryableError && currentRetryCount < maxRetries {
+		// Publish to notification.retry with backoff
+		publishToRetry(retryWriter, payload, currentRetryCount, errorMsg)
+		updateAuditLog(payload.NotificationID, db, "RETRYING")
 	} else {
-		fmt.Printf("⚠️ Unknown ActionType Received: %s\n", payload.ActionType)
+		// Permanent failure or max retries exceeded → DLQ
+		if currentRetryCount >= maxRetries {
+			errorMsg = fmt.Sprintf("Max retries (%d) exceeded. Last error: %s", maxRetries, errorMsg)
+		}
+		publishToDLQ(dlqWriter, payload, currentRetryCount, errorMsg)
+		updateAuditLog(payload.NotificationID, db, "FAILED")
 	}
 }
 
-// updateAuditLog abstracts the postgres DB update for external providers
+// publishToRetry publishes a failed notification to the retry topic with backoff metadata.
+func publishToRetry(writer *kafka.Writer, payload types.NotificationPayload, currentRetryCount int, lastError string) {
+	nextRetry := currentRetryCount + 1
+	backoffIndex := currentRetryCount
+	if backoffIndex >= len(retryBackoffSeconds) {
+		backoffIndex = len(retryBackoffSeconds) - 1
+	}
+	nextRetryAt := time.Now().Unix() + int64(retryBackoffSeconds[backoffIndex])
+
+	retryMsg := types.RetryMessage{
+		OriginalPayload: payload,
+		RetryCount:      nextRetry,
+		MaxRetries:      maxRetries,
+		LastError:       lastError,
+		NextRetryAt:     nextRetryAt,
+	}
+
+	msgBytes, _ := json.Marshal(retryMsg)
+
+	err := writer.WriteMessages(context.Background(), kafka.Message{
+		Key:   []byte(payload.NotificationID),
+		Value: msgBytes,
+	})
+
+	if err != nil {
+		log.Printf("❌ Failed to publish to notification.retry: %v\n", err)
+	} else {
+		fmt.Printf("🔄 Retry #%d queued for %s (next attempt at +%ds)\n",
+			nextRetry, payload.NotificationID, retryBackoffSeconds[backoffIndex])
+	}
+}
+
+// publishToDLQ publishes a permanently failed notification to the dead letter queue.
+func publishToDLQ(writer *kafka.Writer, payload types.NotificationPayload, retryCount int, lastError string) {
+	dlqMsg := types.DLQMessage{
+		OriginalPayload: payload,
+		RetryCount:      retryCount,
+		MaxRetries:      maxRetries,
+		LastError:       lastError,
+		NotificationID:  payload.NotificationID,
+		TenantID:        payload.TenantID,
+		Channel:         payload.ActionType,
+	}
+
+	msgBytes, _ := json.Marshal(dlqMsg)
+
+	err := writer.WriteMessages(context.Background(), kafka.Message{
+		Key:   []byte(payload.NotificationID),
+		Value: msgBytes,
+	})
+
+	if err != nil {
+		log.Printf("❌ Failed to publish to notification.dlq: %v\n", err)
+	} else {
+		fmt.Printf("💀 DLQ: Notification %s moved to dead letter queue after %d retries\n",
+			payload.NotificationID, retryCount)
+	}
+}
+
+// updateAuditLog updates the notification_logs table with the dispatch status.
 func updateAuditLog(notificationID string, db *sql.DB, status string) {
 	if notificationID != "" {
 		providerRef := "sim_" + fmt.Sprintf("%d", time.Now().Unix())
@@ -244,7 +339,7 @@ func updateAuditLog(notificationID string, db *sql.DB, status string) {
 	}
 }
 
-// updateAuditLogWithRef specifically handles updating with an external provider reference
+// updateAuditLogWithRef updates the audit log with a real provider reference ID.
 func updateAuditLogWithRef(notificationID string, db *sql.DB, status string, providerRef string) {
 	if notificationID != "" {
 		_, err := db.Exec(`

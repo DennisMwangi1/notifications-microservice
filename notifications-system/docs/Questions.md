@@ -340,3 +340,30 @@ To achieve this gracefully without duplicating API keys everywhere, we normalize
 *   The `tenants` table gets a `provider_config_id` foreign key. 
 *   Now, you can have "Tenant A" (Ecommerce), "Tenant B" (Support), and "Tenant C" (Marketing) all point their `provider_config_id` to the exact same "Client X Resend Account" row in the database. 
 They all share the exact same configuration via the Admin UI, but their templates, user channels, and distinct logic remain perfectly isolated!
+
+### Q14: The template configuration is not intuitive as we have to input mjml. Are we okay to retain it as is or is there another approach we can take?
+
+**Answer:**
+
+This is a very common challenge when building communication platforms. Writing raw MJML by hand is powerful for developers, but it is completely unscalable and unintuitive for Content Managers, Marketers, or Admins who will actually be using the dashboard.
+
+We have a few distinct approaches to solve this, moving from "quick wins" to "enterprise grade":
+
+**Approach 1: Integrate a Visual Drag-and-Drop Editor (Recommended)**
+Instead of stripping out MJML entirely (because MJML is phenomenal for ensuring responsive, cross-client email compatibility), we keep the backend *exactly as is*. But in the **Admin UI**, we replace the raw text area with a visual Drag-and-Drop builder.
+*   **How it works:** We integrate a library like **Unlayer** or **GrapesJS** (which has an MJML preset) directly into our React template creation page. 
+*   **The Workflow:** The content team drags blocks (images, text, buttons) onto a canvas. When they click "Save", the React editor *automatically compiles that visual block into raw MJML* behind the scenes, and we save that MJML string to the database.
+*   **Why it's great:** Our backend worker `RenderService` doesn't need to change at all. The content team gets a beautiful interface, and we retain perfectly responsive emails.
+
+**Approach 2: Provider-Hosted Templates (The Decoupled Route)**
+If we don't want to manage templates visually in our platform at all, we can fully offload this to the third-party providers (SendGrid, Resend, etc.).
+*   **How it works:** We add a new `provider_external_template_id` string to our `templates` database table.
+*   **The Workflow:** The content team logs into SendGrid.com or Resend.com and uses *their* visual builders to make the templates. They copy the ID (e.g., `d-12345`) and paste it into our Admin UI. 
+*   **Backend Change:** When the NestJS worker fires, instead of compiling MJML internally, it simply tells SendGrid: *"Send email to user@app.com using Template 'd-12345' and inject these dynamic JSON variables."*
+*   **Downside:** This breaks provider agnosticism. If a tenant uses SendGrid for their template, and later switches to Resend, their template won't work anymore.
+
+**Approach 3: Retain as is? (Not Recommended Long-Term)**
+Retaining raw MJML input in the UI is okay for an **MVP (Minimum Viable Product)** phase if only engineers are configuring the system. It is absolutely unacceptable for a final product where non-technical stakeholders are involved.
+
+**The Verdict:**
+For the immediate future (Phase 1), it is perfectly fine to retain the raw-MJML input just to ensure the plumbing works. However, for Phase 2 (Polishing the UI), we should absolutely implement **Approach 1**. Adding a React-based visual builder like `react-email-editor` (Unlayer) gives us the ultimate enterprise feel without forcing us to redesign our robust backend architecture!

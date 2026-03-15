@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventsController } from './events.controller';
 import { SecurityService } from '../common/security.service';
+import { RateLimiterService } from '../common/rate-limiter.service';
 
 @Module({
     imports: [
@@ -19,7 +20,8 @@ import { SecurityService } from '../common/security.service';
             },
         ]),
     ],
-    providers: [SecurityService],
+    providers: [SecurityService, RateLimiterService],
     controllers: [EventsController],
 })
 export class EventsModule { }
+

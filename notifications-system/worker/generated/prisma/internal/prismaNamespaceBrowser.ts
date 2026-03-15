@@ -55,6 +55,8 @@ export const ModelName = {
   templates: 'templates',
   in_app_notifications: 'in_app_notifications',
   tenants: 'tenants',
+  processed_events: 'processed_events',
+  failed_notifications: 'failed_notifications',
   provider_configs: 'provider_configs'
 } as const
 
@@ -131,10 +133,45 @@ export const TenantsScalarFieldEnum = {
   sender_name: 'sender_name',
   provider_config_id: 'provider_config_id',
   created_at: 'created_at',
-  is_active: 'is_active'
+  is_active: 'is_active',
+  rate_limit_per_minute: 'rate_limit_per_minute',
+  daily_notification_cap: 'daily_notification_cap',
+  max_template_count: 'max_template_count'
 } as const
 
 export type TenantsScalarFieldEnum = (typeof TenantsScalarFieldEnum)[keyof typeof TenantsScalarFieldEnum]
+
+
+export const Processed_eventsScalarFieldEnum = {
+  id: 'id',
+  idempotency_key: 'idempotency_key',
+  tenant_id: 'tenant_id',
+  event_type: 'event_type',
+  payload_hash: 'payload_hash',
+  response: 'response',
+  created_at: 'created_at',
+  expires_at: 'expires_at'
+} as const
+
+export type Processed_eventsScalarFieldEnum = (typeof Processed_eventsScalarFieldEnum)[keyof typeof Processed_eventsScalarFieldEnum]
+
+
+export const Failed_notificationsScalarFieldEnum = {
+  id: 'id',
+  notification_id: 'notification_id',
+  tenant_id: 'tenant_id',
+  channel: 'channel',
+  payload: 'payload',
+  error_details: 'error_details',
+  retry_count: 'retry_count',
+  max_retries: 'max_retries',
+  next_retry_at: 'next_retry_at',
+  permanently_failed: 'permanently_failed',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Failed_notificationsScalarFieldEnum = (typeof Failed_notificationsScalarFieldEnum)[keyof typeof Failed_notificationsScalarFieldEnum]
 
 
 export const Provider_configsScalarFieldEnum = {
@@ -164,6 +201,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

@@ -48,6 +48,7 @@ enum status_enum {
   SENT
   DELIVERED
   FAILED
+  RETRYING
 }
 
 enum in_app_status {
@@ -67,17 +68,54 @@ model in_app_notifications {
 }
 
 model tenants {
-  id                 String            @id @default(uuid()) @db.Uuid
-  name               String
-  api_key            String            @unique
-  webhook_secret     String?           @unique @db.VarChar(255)
-  allowed_channels   String[] // e.g. ["ecommerce_store", "support_chat"]
-  sender_email       String?           @db.VarChar(255)
-  sender_name        String?           @db.VarChar(255)
-  provider_config_id String?           @db.Uuid
-  provider_config    provider_configs? @relation(fields: [provider_config_id], references: [id])
-  created_at         DateTime          @default(now()) @db.Timestamp(6)
-  is_active          Boolean           @default(true)
+  id                     String            @id @default(uuid()) @db.Uuid
+  name                   String
+  api_key                String            @unique
+  webhook_secret         String?           @unique @db.VarChar(255)
+  allowed_channels       String[] // e.g. ["ecommerce_store", "support_chat"]
+  sender_email           String?           @db.VarChar(255)
+  sender_name            String?           @db.VarChar(255)
+  provider_config_id     String?           @db.Uuid
+  provider_config        provider_configs? @relation(fields: [provider_config_id], references: [id])
+  created_at             DateTime          @default(now()) @db.Timestamp(6)
+  is_active              Boolean           @default(true)
+  rate_limit_per_minute  Int               @default(100)
+  daily_notification_cap Int               @default(10000)
+  max_template_count     Int               @default(50)
+}
+
+// ─── Idempotency ────────────────────────────────
+model processed_events {
+  id              String   @id @default(uuid()) @db.Uuid
+  idempotency_key String   @db.VarChar(255)
+  tenant_id       String   @db.Uuid
+  event_type      String   @db.VarChar(100)
+  payload_hash    String   @db.VarChar(64)
+  response        Json?
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  expires_at      DateTime @db.Timestamp(6)
+
+  @@unique([tenant_id, idempotency_key])
+  @@index([expires_at])
+}
+
+// ─── Dead Letter Queue ──────────────────────────
+model failed_notifications {
+  id                 String       @id @default(uuid()) @db.Uuid
+  notification_id    String       @db.Uuid
+  tenant_id          String       @db.Uuid
+  channel            channel_enum
+  payload            Json
+  error_details      String
+  retry_count        Int          @default(0)
+  max_retries        Int          @default(5)
+  next_retry_at      DateTime?    @db.Timestamp(6)
+  permanently_failed Boolean      @default(false)
+  created_at         DateTime     @default(now()) @db.Timestamp(6)
+  updated_at         DateTime     @updatedAt @db.Timestamp(6)
+
+  @@index([permanently_failed, next_retry_at])
+  @@index([tenant_id])
 }
 
 enum provider_type {

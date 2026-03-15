@@ -85,61 +85,74 @@ export default function DashboardPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="border-b border-slate-200 pb-6">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">Dashboard</h2>
-        <p className="text-sm text-slate-500">Real-time overview of your notification infrastructure.</p>
+      <div className="border-b border-slate-200 pb-8 mt-2 relative">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-gradient-to-br from-indigo-100 to-purple-50 rounded-full blur-3xl opacity-50 -z-10"></div>
+        <h2 className="text-4xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">DQ SDO Overview</h2>
+        <p className="text-sm font-medium text-slate-500">Real-time telemetry and management plane for your notification microservices.</p>
       </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Active Tenants */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all group">
-          <div className="flex items-center justify-between mb-4">
-            <span className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
-            </span>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Tenants</span>
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:border-indigo-200 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-indigo-50 rounded-full blur-2xl group-hover:bg-indigo-100 transition-colors pointer-events-none"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-6">
+              <span className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-100 transition-all">
+                <svg className="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+              </span>
+              <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Tenants</span>
+            </div>
+            <p className="text-4xl font-black text-slate-900 drop-shadow-sm">{stats.tenants.active}</p>
+            <p className="text-xs text-slate-500 mt-2 font-medium">{stats.tenants.total} total · <span className="text-indigo-600 font-bold">{stats.tenants.active} active</span></p>
           </div>
-          <p className="text-3xl font-black text-slate-900">{stats.tenants.active}</p>
-          <p className="text-xs text-slate-500 mt-1 font-medium">{stats.tenants.total} total · {stats.tenants.active} active</p>
         </div>
 
         {/* Templates */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all group">
-          <div className="flex items-center justify-between mb-4">
-            <span className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-              <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
-            </span>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Templates</span>
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-emerald-50 rounded-full blur-2xl group-hover:bg-emerald-100 transition-colors pointer-events-none"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-6">
+              <span className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-100 transition-all">
+                <svg className="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+              </span>
+              <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Templates</span>
+            </div>
+            <p className="text-4xl font-black text-slate-900 drop-shadow-sm">{stats.templates.total}</p>
+            <p className="text-xs text-slate-500 mt-2 font-medium">Synced globally across all clients.</p>
           </div>
-          <p className="text-3xl font-black text-slate-900">{stats.templates.total}</p>
-          <p className="text-xs text-slate-500 mt-1 font-medium">All versions across all channels</p>
         </div>
 
         {/* Dispatched */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all group">
-          <div className="flex items-center justify-between mb-4">
-            <span className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-              <svg className="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
-            </span>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Dispatched</span>
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:border-sky-200 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-sky-50 rounded-full blur-2xl group-hover:bg-sky-100 transition-colors pointer-events-none"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-6">
+              <span className="w-12 h-12 rounded-2xl bg-sky-50 flex items-center justify-center group-hover:scale-110 group-hover:bg-sky-100 transition-all">
+                <svg className="w-6 h-6 text-sky-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+              </span>
+              <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Dispatched</span>
+            </div>
+            <p className="text-4xl font-black text-slate-900 drop-shadow-sm">{stats.notifications.totalDispatched}</p>
+            <p className="text-xs text-slate-500 mt-2 font-medium">Emails + SMS logs successfully requested.</p>
           </div>
-          <p className="text-3xl font-black text-slate-900">{stats.notifications.totalDispatched}</p>
-          <p className="text-xs text-slate-500 mt-1 font-medium">Email + SMS logs processed</p>
         </div>
 
         {/* In-App */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all group">
-          <div className="flex items-center justify-between mb-4">
-            <span className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-              <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
-            </span>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">In-App Push</span>
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:border-amber-200 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 w-32 h-32 bg-amber-50 rounded-full blur-2xl group-hover:bg-amber-100 transition-colors pointer-events-none"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-6">
+              <span className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center group-hover:scale-110 group-hover:bg-amber-100 transition-all">
+                <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+              </span>
+              <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">In-App Push</span>
+            </div>
+            <p className="text-4xl font-black text-slate-900 drop-shadow-sm">{stats.notifications.totalInApp}</p>
+            <p className="text-xs text-slate-500 mt-2 font-medium">
+              <span className="text-amber-600 font-black">{stats.notifications.unreadInApp}</span> unread remaining.
+            </p>
           </div>
-          <p className="text-3xl font-black text-slate-900">{stats.notifications.totalInApp}</p>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
-            <span className="text-amber-600 font-semibold">{stats.notifications.unreadInApp}</span> unread
-          </p>
         </div>
       </div>
 

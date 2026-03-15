@@ -60,6 +60,16 @@ export type in_app_notifications = Prisma.in_app_notificationsModel
  */
 export type tenants = Prisma.tenantsModel
 /**
+ * Model processed_events
+ * 
+ */
+export type processed_events = Prisma.processed_eventsModel
+/**
+ * Model failed_notifications
+ * 
+ */
+export type failed_notifications = Prisma.failed_notificationsModel
+/**
  * Model provider_configs
  * 
  */

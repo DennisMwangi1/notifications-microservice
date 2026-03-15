@@ -22,10 +22,12 @@ async function bootstrap() {
       await admin.createTopics({
         topics: [
           { topic: 'tenant.event.received' },
-          { topic: 'notification.dispatch' }
+          { topic: 'notification.dispatch' },
+          { topic: 'notification.retry' },
+          { topic: 'notification.dlq' },
         ],
       });
-      console.log('Ensured system topics exist');
+      console.log('Ensured system topics exist (including retry + DLQ)');
 
       await admin.disconnect();
       adminConnected = true;
