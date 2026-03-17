@@ -4,12 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/DennisMwangi1/notifications-microservice-gateway/gateway/types"
 	"github.com/centrifugal/gocent/v3"
 )
+
+var stripHTMLRegex = regexp.MustCompile(`<[^>]*>`)
+
+func sanitizeHTML(input string) string {
+	unescaped := html.UnescapeString(input)
+	return stripHTMLRegex.ReplaceAllString(unescaped, "")
+}
 
 // CentrifugoAdapter handles real-time in-app push notifications through Centrifugo WebSockets.
 type CentrifugoAdapter struct {
@@ -34,8 +43,8 @@ func (a *CentrifugoAdapter) Send(payload types.NotificationPayload) types.Delive
 	// Build the realtime message payload with category and eventType for frontend styling
 	realtimeMsg := map[string]interface{}{
 		"type":        "IN_APP_ALERT",
-		"title":       payload.Subject,
-		"body":        payload.Body,
+		"title":       sanitizeHTML(payload.Subject),
+		"body":        sanitizeHTML(payload.Body),
 		"category":    payload.Category,
 		"eventType":   payload.EventType,
 		"timestamp":   time.Now().Unix(),

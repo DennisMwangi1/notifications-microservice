@@ -143,6 +143,12 @@ export class NotificationsController implements OnModuleInit {
       // 🚀 BRANCH C: IN-APP (PUSH) TEMPLATE
       // -----------------------------
       else if (template.channel_type === 'PUSH') {
+        // You cannot send a targeted real-time push if there is no user
+        if (!userId) {
+          console.warn(`Skipping PUSH notification for event '${eventType}' because the payload is missing a userId (e.g., Guest invite).`);
+          continue;
+        }
+
         const finalPushBody = this.renderService.renderText(template.content_body, payloadData as Record<string, unknown>);
         const wsChannel = template.target_ws_channel ? `${template.target_ws_channel}#${userId}` : `global_system#${userId}`;
 

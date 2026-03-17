@@ -225,8 +225,8 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-4">
                     <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider ${chColor.bg} ${chColor.text} border ${chColor.border}`}>{log.channel}</span>
                     <div>
-                      <p className="text-sm font-medium text-slate-700 font-mono truncate max-w-xs" title={log.template_id}>{log.template_id.substring(0, 8)}...</p>
-                      <p className="text-xs text-slate-400 font-mono">{log.user_id.substring(0, 12)}...</p>
+                      <p className="text-sm font-medium text-slate-700 font-mono truncate max-w-xs" title={log.template_id || 'Unknown'}>{(log.template_id || 'Unknown').substring(0, 8)}{log.template_id ? '...' : ''}</p>
+                      <p className="text-xs text-slate-400 font-mono" title={log.user_id || 'System (Guest)'}>{(log.user_id || 'System (Guest)').substring(0, 12)}{log.user_id ? '...' : ''}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

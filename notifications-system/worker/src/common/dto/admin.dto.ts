@@ -10,6 +10,8 @@ export interface CreateTenantDto {
     provider_config_id?: string;
     sender_email?: string;
     sender_name?: string;
+    rate_limit_per_minute?: number;
+    daily_notification_cap?: number;
 }
 
 export interface UpdateTenantDto {
@@ -19,6 +21,8 @@ export interface UpdateTenantDto {
     provider_config_id?: string;
     sender_email?: string;
     sender_name?: string;
+    rate_limit_per_minute?: number;
+    daily_notification_cap?: number;
 }
 
 // ─── Provider Configs ──────────────────────

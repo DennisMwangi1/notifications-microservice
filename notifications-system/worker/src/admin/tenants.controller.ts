@@ -9,7 +9,7 @@ export class TenantsController {
     // 1. Create a brand new tenant (Project Onboarding)
     @Post()
     async createTenant(@Body() body: CreateTenantDto) {
-        const { name, allowed_channels, provider_config_id, sender_email, sender_name } = body;
+        const { name, allowed_channels, provider_config_id, sender_email, sender_name, rate_limit_per_minute, daily_notification_cap } = body;
 
         // Generate a secure, 64-character hex string to act as the Tenant API Key
         const apiKey = randomBytes(32).toString('hex');
@@ -22,6 +22,8 @@ export class TenantsController {
                 provider_config_id,
                 sender_email,
                 sender_name,
+                rate_limit_per_minute,
+                daily_notification_cap,
             }
         });
 

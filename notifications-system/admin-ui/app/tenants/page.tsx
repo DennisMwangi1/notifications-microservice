@@ -13,6 +13,8 @@ interface Tenant {
     provider_config_id?: string | null;
     sender_email?: string | null;
     sender_name?: string | null;
+    rate_limit_per_minute: number;
+    daily_notification_cap: number;
 }
 
 interface ProviderConfig {
@@ -32,6 +34,8 @@ export default function TenantsPage() {
     const [newProviderId, setNewProviderId] = useState('');
     const [newSenderEmail, setNewSenderEmail] = useState('');
     const [newSenderName, setNewSenderName] = useState('');
+    const [newRateLimit, setNewRateLimit] = useState(100);
+    const [newDailyCap, setNewDailyCap] = useState(10000);
 
     // Edit Modal
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -41,6 +45,8 @@ export default function TenantsPage() {
     const [editProviderId, setEditProviderId] = useState('');
     const [editSenderEmail, setEditSenderEmail] = useState('');
     const [editSenderName, setEditSenderName] = useState('');
+    const [editRateLimit, setEditRateLimit] = useState(100);
+    const [editDailyCap, setEditDailyCap] = useState(10000);
 
     // Detail Modal
     const [detailTenant, setDetailTenant] = useState<Tenant | null>(null);
@@ -79,7 +85,9 @@ export default function TenantsPage() {
                     allowed_channels: channelsArray,
                     provider_config_id: newProviderId || undefined,
                     sender_email: newSenderEmail || undefined,
-                    sender_name: newSenderName || undefined
+                    sender_name: newSenderName || undefined,
+                    rate_limit_per_minute: Number(newRateLimit),
+                    daily_notification_cap: Number(newDailyCap)
                 }),
             });
             const json = await res.json();
@@ -87,6 +95,7 @@ export default function TenantsPage() {
                 setTenants([json.data, ...tenants]);
                 setIsModalOpen(false);
                 setNewTenantName(''); setNewChannels(''); setNewProviderId(''); setNewSenderEmail(''); setNewSenderName('');
+                setNewRateLimit(100); setNewDailyCap(10000);
             }
         } catch (err) { console.error('Failed to create tenant', err); }
     };
@@ -98,6 +107,8 @@ export default function TenantsPage() {
         setEditProviderId(tenant.provider_config_id || '');
         setEditSenderEmail(tenant.sender_email || '');
         setEditSenderName(tenant.sender_name || '');
+        setEditRateLimit(tenant.rate_limit_per_minute || 100);
+        setEditDailyCap(tenant.daily_notification_cap || 10000);
         setIsEditModalOpen(true);
     };
 
@@ -113,7 +124,9 @@ export default function TenantsPage() {
                     allowed_channels: channelsArray,
                     provider_config_id: editProviderId || null,
                     sender_email: editSenderEmail || null,
-                    sender_name: editSenderName || null
+                    sender_name: editSenderName || null,
+                    rate_limit_per_minute: Number(editRateLimit),
+                    daily_notification_cap: Number(editDailyCap)
                 }),
             });
             const json = await res.json();
@@ -124,7 +137,9 @@ export default function TenantsPage() {
                     allowed_channels: channelsArray,
                     provider_config_id: editProviderId || null,
                     sender_email: editSenderEmail || null,
-                    sender_name: editSenderName || null
+                    sender_name: editSenderName || null,
+                    rate_limit_per_minute: Number(editRateLimit),
+                    daily_notification_cap: Number(editDailyCap)
                 } : t));
                 setIsEditModalOpen(false);
                 setEditingTenant(null);
@@ -272,6 +287,20 @@ export default function TenantsPage() {
                                     ))}
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Rate Limit (Per Min)</p>
+                                    <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600">
+                                        {detailTenant.rate_limit_per_minute} req/m
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Daily Quota</p>
+                                    <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600">
+                                        {detailTenant.daily_notification_cap?.toLocaleString()}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end">
                             <button onClick={() => setDetailTenant(null)} className="px-5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors">Close</button>
@@ -313,6 +342,16 @@ export default function TenantsPage() {
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Name</label>
                                     <input type="text" value={newSenderName} onChange={e => setNewSenderName(e.target.value)} placeholder="TMaaS App" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Rate Limit (req/min)</label>
+                                    <input type="number" required value={newRateLimit} onChange={e => setNewRateLimit(parseInt(e.target.value) || 0)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Daily Notifications Cap</label>
+                                    <input type="number" required value={newDailyCap} onChange={e => setNewDailyCap(parseInt(e.target.value) || 0)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
                                 </div>
                             </div>
                             <div className="pt-2 flex justify-end space-x-3">
@@ -357,6 +396,16 @@ export default function TenantsPage() {
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Name</label>
                                     <input type="text" value={editSenderName} onChange={e => setEditSenderName(e.target.value)} placeholder="TMaaS App" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Rate Limit (req/min)</label>
+                                    <input type="number" required value={editRateLimit} onChange={e => setEditRateLimit(parseInt(e.target.value) || 0)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Daily Notifications Cap</label>
+                                    <input type="number" required value={editDailyCap} onChange={e => setEditDailyCap(parseInt(e.target.value) || 0)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
                                 </div>
                             </div>
                             <div className="pt-2 flex justify-end space-x-3">

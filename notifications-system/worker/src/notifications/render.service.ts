@@ -31,7 +31,7 @@ export class RenderService {
    * Transforms raw text Handlebars safely without invoking MJML HTML XML parsers
    */
   renderText(templateString: string, context: Record<string, any>): string {
-    const hbTemplate = handlebars.compile(templateString);
+    const hbTemplate = handlebars.compile(templateString, { noEscape: true });
     return hbTemplate(context);
   }
 

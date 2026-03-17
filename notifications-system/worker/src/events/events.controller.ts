@@ -20,13 +20,15 @@ export class EventsController {
         @Body() body: TriggerEventDto,
         @Headers('x-nucleus-signature') signature: string,
         @Headers('x-idempotency-key') idempotencyHeader: string,
+        @Headers('x-api-key') headerApiKey: string,
         @Req() req: Request & { rawBody: Buffer }
     ) {
-        const { apiKey, eventType, payload, idempotencyKey: bodyIdempotencyKey } = body;
+        const { eventType, payload } = body;
+        const apiKey = headerApiKey;
 
         // 1. Basic validation
-        if (!apiKey || !eventType || !payload || !payload.userId) {
-            throw new UnauthorizedException('Missing apiKey, eventType, payload, or userId. Guest notifications are not supported.');
+        if (!apiKey || !eventType || !payload) {
+            throw new UnauthorizedException('Missing x-api-key header, eventType, payload. Guest notifications are not supported.');
         }
 
         const cleanKey = apiKey.trim();
@@ -64,7 +66,7 @@ export class EventsController {
         });
 
         // 4. Idempotency Check — prevent duplicate event processing
-        const idempotencyKey = idempotencyHeader || bodyIdempotencyKey || this.generatePayloadHash(tenant.id, eventType, payload);
+        const idempotencyKey = idempotencyHeader || this.generatePayloadHash(tenant.id, eventType, payload);
         const existingEvent = await this.checkIdempotency(tenant.id, idempotencyKey);
         if (existingEvent) {
             console.log(`🔁 Duplicate event detected for tenant ${tenant.name}, key: ${idempotencyKey}`);

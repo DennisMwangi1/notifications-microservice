@@ -176,7 +176,7 @@ export type notification_logsGroupByArgs<ExtArgs extends runtime.Types.Extension
 export type Notification_logsGroupByOutputType = {
   notification_id: string
   tenant_id: string
-  user_id: string
+  user_id: string | null
   template_id: string
   channel: $Enums.channel_enum
   status: $Enums.status_enum | null
@@ -210,7 +210,7 @@ export type notification_logsWhereInput = {
   NOT?: Prisma.notification_logsWhereInput | Prisma.notification_logsWhereInput[]
   notification_id?: Prisma.UuidFilter<"notification_logs"> | string
   tenant_id?: Prisma.UuidFilter<"notification_logs"> | string
-  user_id?: Prisma.UuidFilter<"notification_logs"> | string
+  user_id?: Prisma.UuidNullableFilter<"notification_logs"> | string | null
   template_id?: Prisma.StringFilter<"notification_logs"> | string
   channel?: Prisma.Enumchannel_enumFilter<"notification_logs"> | $Enums.channel_enum
   status?: Prisma.Enumstatus_enumNullableFilter<"notification_logs"> | $Enums.status_enum | null
@@ -223,7 +223,7 @@ export type notification_logsWhereInput = {
 export type notification_logsOrderByWithRelationInput = {
   notification_id?: Prisma.SortOrder
   tenant_id?: Prisma.SortOrder
-  user_id?: Prisma.SortOrder
+  user_id?: Prisma.SortOrderInput | Prisma.SortOrder
   template_id?: Prisma.SortOrder
   channel?: Prisma.SortOrder
   status?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -239,7 +239,7 @@ export type notification_logsWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.notification_logsWhereInput[]
   NOT?: Prisma.notification_logsWhereInput | Prisma.notification_logsWhereInput[]
   tenant_id?: Prisma.UuidFilter<"notification_logs"> | string
-  user_id?: Prisma.UuidFilter<"notification_logs"> | string
+  user_id?: Prisma.UuidNullableFilter<"notification_logs"> | string | null
   template_id?: Prisma.StringFilter<"notification_logs"> | string
   channel?: Prisma.Enumchannel_enumFilter<"notification_logs"> | $Enums.channel_enum
   status?: Prisma.Enumstatus_enumNullableFilter<"notification_logs"> | $Enums.status_enum | null
@@ -252,7 +252,7 @@ export type notification_logsWhereUniqueInput = Prisma.AtLeast<{
 export type notification_logsOrderByWithAggregationInput = {
   notification_id?: Prisma.SortOrder
   tenant_id?: Prisma.SortOrder
-  user_id?: Prisma.SortOrder
+  user_id?: Prisma.SortOrderInput | Prisma.SortOrder
   template_id?: Prisma.SortOrder
   channel?: Prisma.SortOrder
   status?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -271,7 +271,7 @@ export type notification_logsScalarWhereWithAggregatesInput = {
   NOT?: Prisma.notification_logsScalarWhereWithAggregatesInput | Prisma.notification_logsScalarWhereWithAggregatesInput[]
   notification_id?: Prisma.UuidWithAggregatesFilter<"notification_logs"> | string
   tenant_id?: Prisma.UuidWithAggregatesFilter<"notification_logs"> | string
-  user_id?: Prisma.UuidWithAggregatesFilter<"notification_logs"> | string
+  user_id?: Prisma.UuidNullableWithAggregatesFilter<"notification_logs"> | string | null
   template_id?: Prisma.StringWithAggregatesFilter<"notification_logs"> | string
   channel?: Prisma.Enumchannel_enumWithAggregatesFilter<"notification_logs"> | $Enums.channel_enum
   status?: Prisma.Enumstatus_enumNullableWithAggregatesFilter<"notification_logs"> | $Enums.status_enum | null
@@ -284,7 +284,7 @@ export type notification_logsScalarWhereWithAggregatesInput = {
 export type notification_logsCreateInput = {
   notification_id: string
   tenant_id: string
-  user_id: string
+  user_id?: string | null
   template_id: string
   channel: $Enums.channel_enum
   status?: $Enums.status_enum | null
@@ -297,7 +297,7 @@ export type notification_logsCreateInput = {
 export type notification_logsUncheckedCreateInput = {
   notification_id: string
   tenant_id: string
-  user_id: string
+  user_id?: string | null
   template_id: string
   channel: $Enums.channel_enum
   status?: $Enums.status_enum | null
@@ -310,7 +310,7 @@ export type notification_logsUncheckedCreateInput = {
 export type notification_logsUpdateInput = {
   notification_id?: Prisma.StringFieldUpdateOperationsInput | string
   tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
   status?: Prisma.NullableEnumstatus_enumFieldUpdateOperationsInput | $Enums.status_enum | null
@@ -323,7 +323,7 @@ export type notification_logsUpdateInput = {
 export type notification_logsUncheckedUpdateInput = {
   notification_id?: Prisma.StringFieldUpdateOperationsInput | string
   tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
   status?: Prisma.NullableEnumstatus_enumFieldUpdateOperationsInput | $Enums.status_enum | null
@@ -336,7 +336,7 @@ export type notification_logsUncheckedUpdateInput = {
 export type notification_logsCreateManyInput = {
   notification_id: string
   tenant_id: string
-  user_id: string
+  user_id?: string | null
   template_id: string
   channel: $Enums.channel_enum
   status?: $Enums.status_enum | null
@@ -349,7 +349,7 @@ export type notification_logsCreateManyInput = {
 export type notification_logsUpdateManyMutationInput = {
   notification_id?: Prisma.StringFieldUpdateOperationsInput | string
   tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
   status?: Prisma.NullableEnumstatus_enumFieldUpdateOperationsInput | $Enums.status_enum | null
@@ -362,7 +362,7 @@ export type notification_logsUpdateManyMutationInput = {
 export type notification_logsUncheckedUpdateManyInput = {
   notification_id?: Prisma.StringFieldUpdateOperationsInput | string
   tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
   status?: Prisma.NullableEnumstatus_enumFieldUpdateOperationsInput | $Enums.status_enum | null
@@ -413,16 +413,16 @@ export type StringFieldUpdateOperationsInput = {
   set?: string
 }
 
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
 export type Enumchannel_enumFieldUpdateOperationsInput = {
   set?: $Enums.channel_enum
 }
 
 export type NullableEnumstatus_enumFieldUpdateOperationsInput = {
   set?: $Enums.status_enum | null
-}
-
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
 }
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
@@ -491,7 +491,7 @@ export type $notification_logsPayload<ExtArgs extends runtime.Types.Extensions.I
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     notification_id: string
     tenant_id: string
-    user_id: string
+    user_id: string | null
     template_id: string
     channel: $Enums.channel_enum
     status: $Enums.status_enum | null

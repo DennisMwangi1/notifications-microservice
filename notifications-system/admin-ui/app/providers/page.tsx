@@ -128,7 +128,7 @@ export default function ProvidersPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-200 pb-6 gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">Integrations (BYOP)</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">Integrations </h2>
                     <p className="text-sm text-slate-500">Bring Your Own Provider. Register API keys for external services once and share them across multiple tenants securely.</p>
                 </div>
                 <button onClick={() => setIsModalOpen(true)} className="bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-sm">+ Add Integration</button>

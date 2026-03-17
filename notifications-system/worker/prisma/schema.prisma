@@ -11,7 +11,7 @@ datasource db {
 model notification_logs {
   notification_id String       @id @db.Uuid
   tenant_id       String       @db.Uuid
-  user_id         String       @db.Uuid
+  user_id         String?      @db.Uuid
   template_id     String       @db.VarChar(100)
   channel         channel_enum
   status          status_enum? @default(PENDING)

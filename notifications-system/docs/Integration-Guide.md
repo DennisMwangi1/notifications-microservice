@@ -38,12 +38,12 @@ Whenever a business event occurs that requires user notification, your server sh
 **Headers:**
 ```http
 Content-Type: application/json
+x-api-key: YOUR_SECRET_TENANT_API_KEY
 ```
 
 **Request Body:**
 ```json
 {
-  "apiKey": "YOUR_SECRET_TENANT_API_KEY",
   "eventType": "service.applied",
   "payload": {
     "userId": "uuid-of-the-recipient",
@@ -67,10 +67,24 @@ For production environments, we support signature verification to ensure request
 **Headers:**
 ```http
 Content-Type: application/json
+x-api-key: YOUR_SECRET_TENANT_API_KEY
 X-Nucleus-Signature: <your_computed_hmac_hex>
 ```
 
 Refer to the [SDK Helpers Guide](./SDK-Helpers.md) for a ready-to-use TypeScript snippet for signing your payloads.
+
+### 3.2 Idempotency & Retries
+
+To prevent duplicate notifications when your system retries a failed webhook, our microservice supports idempotency.
+
+By default, the engine will generate a SHA256 hash of your payload. If it sees the exact same hash within a 24-hour window, it will safely ignore the request and return a cached success response. 
+
+**Overriding Idempotency (Retriggering a Broadcast)**
+If you *intentionally* want to resend a duplicate notification within 24 hours (e.g., a reminder), you must provide a unique Idempotency Key. You can do this in two ways:
+
+```http
+X-Idempotency-Key: your-unique-uuid-12345
+```
 
 ---
 
@@ -84,7 +98,6 @@ If a template is active for either channel, ensure these specific keys are inclu
 
 ```json
 {
-  "apiKey": "YOUR_SECRET_TENANT_API_KEY",
   "eventType": "service.applied",
   "payload": {
     "userId": "uuid-of-the-recipient",

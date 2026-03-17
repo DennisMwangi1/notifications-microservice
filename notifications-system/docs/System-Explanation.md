@@ -43,7 +43,10 @@ Traditional HTTP requests are stateless—the server cannot "push" data directly
 
 Managing thousands of open WebSocket connections is computationally resource-intensive. Therefore, we offloaded this capability to a dedicated technology stack:
 *   **Centrifugo:** A highly optimized scalable WebSocket server that specializes in holding open connections for millions of users across different channels.
+*   **Redis:** Centrifugo heavily relies on Redis as its Engine. When running multiple Centrifugo nodes (for high availability), Redis acts as the central state store, keeping track of active subscriptions, caching missed messages (history/presence features), and executing fast Pub/Sub to instantly synchronize events across all Centrifugo instances.
 *   **Go Gateway:** A high-performance API written in Golang that securely interfaces between the NestJS Worker and Centrifugo.
+
+*(Note on Redis utilization: Currently, our `docker-compose.yml` mounts a single Redis container primarily for Centrifugo's engine. As the microservice evolves, this identical Redis instance can and should be heavily utilized by the NestJS Worker as well, particularly for caching high-read/low-write data, like mapping resolved API Keys to Tenant IDs, or temporarily caching the Idempotency state, rather than hitting PostgreSQL on every webhook request).*
 
 **The Real-Time Process:**
 1. **Authentication:** When a user logs into a Tenant application, the frontend requests a secure JWT (JSON Web Token). This token strictly authenticates which WebSocket channels that specific user is authorized to listen to (e.g., `ecommerce_tenant#user_123`).

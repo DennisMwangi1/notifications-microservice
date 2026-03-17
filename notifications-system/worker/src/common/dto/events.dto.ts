@@ -3,10 +3,8 @@
  */
 
 export interface TriggerEventDto {
-    apiKey: string;
     eventType: string;
     payload: EventPayload;
-    idempotencyKey?: string; // Optional: client-provided dedup key
 }
 
 export interface EventPayload {
