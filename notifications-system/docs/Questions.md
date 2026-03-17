@@ -367,3 +367,21 @@ Retaining raw MJML input in the UI is okay for an **MVP (Minimum Viable Product)
 
 **The Verdict:**
 For the immediate future (Phase 1), it is perfectly fine to retain the raw-MJML input just to ensure the plumbing works. However, for Phase 2 (Polishing the UI), we should absolutely implement **Approach 1**. Adding a React-based visual builder like `react-email-editor` (Unlayer) gives us the ultimate enterprise feel without forcing us to redesign our robust backend architecture!
+
+### Q15: Under utilization of the redis container
+
+**Answer:**
+To directly address your question: No, the Redis container is not currently being used to its full capacity.
+
+Right now, based on your docker-compose.yml, the redis:7-alpine container is running exclusively to serve as the CENTRIFUGO_ENGINE_REDIS_ADDRESS.
+
+Centrifugo uses Redis for horizontal scalability (fast Pub/Sub between multiple Centrifugo nodes, though you only spin up one node currently) and for keeping state (memory of who is connected, and storing the exact missed socket messages for short "history" recovery when a mobile user reconnects).
+
+While Centrifugo easily requires Redis to function optimally in production, your NestJS Worker and Admin Backend are notably absent from connecting to it.
+
+How We Can Fully Utilize It in the Future:
+Instead of treating Redis as just "Centrifugo's Database", the rest of the Notifications Microservice could leverage the exact same container to drastically lower the load on your PostgreSQL database:
+
+1. **Idempotency Caching**: Right now, when a webhook triggers, NestJS hashes the payload and queries the PostgreSQL processed_events table. If thousands of requests hit per second, hitting Postgres for idempotency deduping gets very expensive. This should be a fast SETNX (Set if Not Exists) operation in Redis with an automatic 24-hour TTL expiration.
+2. **API Key -> Tenant Resolution**: Your Webhook heavily queries PostgreSQL to check where: { api_key } simply to get the active Tenant identity. API Keys rarely change. This resolution should be instantly cached in Redis.
+3. **Rate Limiting**: If your RateLimiterService is counting API hits in Postgres, moving this to Redis logic (like Lua sliding windows) is industry standard and significantly faster.

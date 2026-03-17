@@ -6,6 +6,7 @@ import { StatsController } from './stats.controller';
 import { LogsController } from './logs.controller';
 import { ProvidersController } from './providers.controller';
 import { DlqController } from './dlq.controller';
+import { RateLimiterService } from '../common/rate-limiter.service';
 
 @Module({
     imports: [
@@ -23,7 +24,7 @@ import { DlqController } from './dlq.controller';
             },
         ]),
     ],
+    providers: [RateLimiterService],
     controllers: [TenantsController, TemplatesController, StatsController, LogsController, ProvidersController, DlqController],
 })
 export class AdminModule { }
-

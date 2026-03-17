@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, ForbiddenException } from '@nestjs/common';
 import prisma from '../config/prisma.config';
 import { randomUUID } from 'crypto';
 import { CreateTemplateDto } from '../common/dto/admin.dto';
@@ -20,6 +20,29 @@ export class TemplatesController {
             },
             orderBy: { version: 'desc' }
         });
+
+        if (tenant_id && !existing) {
+            const tenant = await prisma.tenants.findUnique({
+                where: { id: tenant_id },
+                select: { id: true, name: true, max_template_count: true },
+            });
+
+            if (!tenant) {
+                throw new ForbiddenException('Tenant not found for template creation');
+            }
+
+            const currentTemplateCount = await prisma.templates.findMany({
+                where: { tenant_id },
+                distinct: ['template_id'],
+                select: { template_id: true },
+            });
+
+            if (currentTemplateCount.length >= tenant.max_template_count) {
+                throw new ForbiddenException(
+                    `Template quota exceeded for tenant ${tenant.name}. Limit: ${tenant.max_template_count}`,
+                );
+            }
+        }
 
         const newVersion = existing ? existing.version + 1 : 1;
         // Group iterative versions under the exact same template_id. If none exists, generate a new one.

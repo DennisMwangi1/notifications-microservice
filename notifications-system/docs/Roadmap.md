@@ -1,459 +1,318 @@
-# Nucleus Notification Engine — Roadmap & Technical Debt
+# Nucleus Notification Engine — Roadmap & Delivery Status
 
-> **Last Updated:** 15 March 2026
-> **Status:** MVP Complete — Production Hardening Required
-> **Architecture:** NestJS Worker → Kafka → Go Gateway → Centrifugo / SendGrid / Twilio
-> **Review Reference:** [SystemReview.md](./SystemReview.md) — Consolidated improvement suggestions incorporated below
+> **Last Updated:** 17 March 2026
+> **Status:** Functional MVP with core hardening features already implemented; production readiness still requires admin auth, provider completion, and validation hardening
+> **Architecture:** NestJS Worker → Kafka → Go Gateway → Centrifugo / Resend / Twilio / SendGrid
+> **Review Reference:** [SystemReview.md](./SystemReview.md)
 
 ---
 
 ## Current State Summary
 
-The Nucleus Engine has a validated MVP covering:
-- ✅ Multi-tenant API key authentication (webhook + realtime-token)
-- ✅ Event-driven template resolution (global + tenant-scoped)
-- ✅ MJML → HTML email rendering via Handlebars
-- ✅ SMS text template rendering
-- ✅ Real-time In-App push via Centrifugo WebSockets
-- ✅ Persistent notification history (in_app_notifications)
-- ✅ Notification logs audit trail
-- ✅ Admin UI (Dashboard, Tenants, Templates, Routing, Logs)
-- ✅ Template versioning with rollback
-- ✅ Webhook HMAC-SHA256 signature verification
-- ✅ Bring Your Own Provider (BYOP) — tenant-level provider configurations
+The platform is more mature than the previous roadmap reflected. The current implementation already includes:
+
+- ✅ Multi-tenant webhook authentication via tenant API keys
+- ✅ HMAC-SHA256 webhook signature verification
+- ✅ Realtime token issuance for Centrifugo
+- ✅ Global and tenant-scoped template resolution
+- ✅ MJML + Handlebars email rendering
+- ✅ SMS and in-app text rendering
+- ✅ Template versioning with deactivate/reactivate rollback flows
+- ✅ In-app persistence via `in_app_notifications`
+- ✅ Notification audit logging via `notification_logs`
+- ✅ Redis-backed idempotency and rate-limiting foundations
+- ✅ Kafka dispatch, retry, and dead-letter topic flow
+- ✅ Go gateway channel adapter pattern and provider registry
+- ✅ BYOP-style provider configuration through `provider_configs`
+- ✅ Admin APIs for tenants, templates, providers, logs, stats, and DLQ management
+- ✅ Admin UI pages for Dashboard, Tenants, Templates, Routing, Logs, and Providers
+
+The largest gaps that still block production are:
+
+- ❌ No authentication on `/api/v1/admin/*`
+- ❌ Provider delivery is incomplete: Resend is live, Twilio is simulated, SendGrid is still a stub
+- ❌ DTO validation and structured exception handling are still missing
+- ❌ DLQ management exists in the admin API, but not yet in the Admin UI
+- ❌ No health endpoints or observability stack
+
+---
+
+## ✅ Implemented
+
+### 1. Secure Event Ingestion
+- [x] Tenant API key authentication on `POST /api/v1/events/trigger`
+- [x] Optional HMAC verification using `X-Nucleus-Signature`
+- [x] Realtime token generation on `POST /api/v1/auth/realtime-token`
+
+### 2. Template Resolution, Rendering & Versioning
+- [x] Global templates (`tenant_id = null`)
+- [x] Tenant-specific routing overrides
+- [x] Latest active version resolution per channel
+- [x] MJML email rendering through Handlebars
+- [x] SMS/PUSH text rendering through Handlebars
+- [x] Template version history and rollback endpoints
+- [x] Admin UI flows for publishing, editing, deactivating, and restoring templates
+
+### 3. Dispatch Pipeline & Adapter Pattern
+- [x] Kafka topics for intake and dispatch
+- [x] Go `ChannelAdapter` interface
+- [x] Adapter registry for provider/channel resolution
+- [x] Centrifugo realtime adapter
+- [x] Resend email adapter with live API integration
+- [x] Tenant-level provider configuration model (`provider_configs`)
+
+### 4. Reliability Features Already Added
+- [x] Idempotency support using `processed_events`
+- [x] 24-hour idempotency TTL with duplicate response reuse
+- [x] Redis-backed per-minute rate limiting
+- [x] Redis-backed daily notification caps
+- [x] Retry topic publishing with exponential backoff
+- [x] Dead-letter topic publishing after max retries
+- [x] DLQ persistence to `failed_notifications`
+- [x] `notification_logs` update to `FAILED` with DLQ error context
+
+### 5. Admin API & UI Surface
+- [x] Tenant CRUD and API key rotation
+- [x] Provider config CRUD
+- [x] Dashboard stats endpoint and UI
+- [x] Logs endpoint and UI
+- [x] Error boundary support in the Admin UI
+- [x] Shared Admin UI API config refactor
+
+### 6. DLQ Management Setup
+DLQ management has already been set up in the admin backend.
+
+- [x] `worker/src/admin/dlq.controller.ts` exposes list, detail, retry, retry-all, purge, and summary endpoints
+- [x] Manual replay is supported by re-publishing DLQ payloads back to `notification.dispatch`
+- [x] Failed notifications are queryable from PostgreSQL through the admin API
+
+---
+
+## 🟡 Partially Implemented
+
+### 7. Provider Integration
+**Status:** Partial
+
+- [x] Resend is implemented for email dispatch
+- [x] Provider reference IDs can be stored in `notification_logs.provider_ref`
+- [~] Twilio adapter exists but still simulates delivery
+- [~] SendGrid adapter exists but currently returns a not-implemented failure
+- [ ] Provider callback webhooks for `DELIVERED` / `FAILED` updates are missing
+- [ ] Provider-specific error normalization is incomplete
+
+### 8. Retry, DLQ & Replay Workflow
+**Status:** Partial
+
+- [x] Retry and DLQ topics are in place
+- [x] Retry consumer exists in the Go gateway
+- [x] DLQ persistence consumer exists in the NestJS worker
+- [x] Admin API supports listing, retrying, bulk retrying, purging, and summary stats
+- [~] Replay is available through the admin API only
+- [ ] DLQ viewer page is still missing in the Admin UI
+
+### 9. Rate Limiting, Throttling & Quotas
+**Status:** Partial
+
+- [x] Rate limit fields exist on `tenants`
+- [x] Redis sliding-window style enforcement exists for per-minute traffic
+- [x] Daily notification caps are enforced
+- [~] Retry timing is returned in the 429 response body
+- [ ] `Retry-After` header is not set explicitly
+- [ ] Burst protection / token bucket logic is not implemented
+- [ ] `max_template_count` exists in schema but is not enforced
+- [ ] Rate limit stats are not yet surfaced in the dashboard
+
+### 10. Delivery Status Tracking
+**Status:** Partial
+
+- [x] `notification_logs` track `PENDING`, `SENT`, `FAILED`, and `RETRYING`
+- [x] In-app notifications track `UNREAD` and `READ`
+- [~] `DELIVERED` exists in the enum but is not wired end-to-end
+- [ ] No unified status lifecycle across all channels yet
+- [ ] No Admin UI detail view for delivery timelines
+- [ ] Read receipts do not update `notification_logs`
+
+### 11. Input Validation & Error Handling
+**Status:** Partial
+
+- [x] Typed interfaces exist for event, auth, admin, and dispatch payloads
+- [x] Some controllers perform manual guard checks
+- [~] Realtime payload content is sanitized before Centrifugo publish
+- [ ] No `class-validator` DTO classes
+- [ ] No global `ValidationPipe`
+- [ ] No MJML validation on template save
+- [ ] No standardized exception filter
+- [ ] No per-event payload schema validation
 
 ---
 
 ## 🔴 Critical — Must Have Before Production
 
-### 1. Dead Letter Queue (DLQ) & Retry Topics
+### 12. Admin API Authentication
 **Priority:** P0 — Critical
-**Components:** Go Gateway, Kafka, PostgreSQL
-**Source:** Roadmap original + SystemReview §2, §8
+**Components:** NestJS Worker, Admin UI
 
-Currently, if the Go Gateway fails to deliver an email (SendGrid down) or SMS (Twilio error), the message is silently logged and dropped. There is no retry mechanism.
+The full admin surface is still unauthenticated.
 
-**What to build:**
-- [ ] Create Kafka topic structure: `notifications.events` → `notifications.retry` → `notifications.dead_letter`
-- [ ] In the Go Gateway, on provider failure → publish to `notifications.retry` with retry metadata
-- [ ] Implement graduated retry with exponential backoff (1min → 5min → 15min → 1hr)
-- [ ] After max retries (e.g. 5), move to `notifications.dead_letter` topic and persist to a `failed_notifications` table with full error context
-- [ ] Build a DLQ consumer for manual inspection and replay
-- [ ] Add a DLQ viewer page in the Admin UI with manual retry/purge buttons
-- [ ] Update `notification_logs` status to `FAILED` with `error_details` populated
+- [ ] Add auth guard for all `/api/v1/admin/*` routes
+- [ ] Create `admin_users` table with hashed passwords
+- [ ] Add login endpoint
+- [ ] Add Admin UI login/session flow
+- [ ] Add RBAC for super admin vs tenant admin
 
-### 2. Actual Provider Integration (SendGrid + Twilio)
+### 13. Complete Real Provider Delivery
 **Priority:** P0 — Critical
 **Components:** Go Gateway
-**Source:** Roadmap original
 
-The Go Gateway currently **simulates** email and SMS delivery with `time.Sleep()`. No actual provider SDKs are integrated.
+- [ ] Replace Twilio simulation with real API integration
+- [ ] Implement actual SendGrid email delivery
+- [ ] Add provider delivery callback receivers
+- [ ] Normalize retryable vs permanent provider failures
 
-**What to build:**
-- [ ] Integrate SendGrid v3 REST API for EMAIL dispatch (with API key from env)
-- [ ] Integrate Twilio REST API for SMS dispatch (with Account SID + Auth Token from env)
-- [ ] Add provider-specific error parsing (rate limits, invalid recipients, etc.)
-- [ ] Store the provider's external reference ID in `notification_logs.provider_ref`
-- [ ] Add webhook receivers for SendGrid/Twilio delivery status callbacks to update `notification_logs` to `DELIVERED` or `FAILED`
-
-### 3. Rate Limiting, Throttling & Tenant Quotas
+### 14. Validation Hardening
 **Priority:** P0 — Critical
-**Components:** NestJS Worker, Go Gateway
-**Source:** Roadmap original + SystemReview §1, §7
+**Components:** NestJS Worker
 
-No rate limiting exists. A misconfigured integration could flood the system with thousands of webhook calls per second.
+- [ ] Replace interface-only DTOs with validated DTO classes
+- [ ] Add global `ValidationPipe`
+- [ ] Add structured exception filters
+- [ ] Validate MJML and payload shape before publish
 
-**What to build:**
-- [ ] Add per-tenant rate limits on `/api/v1/events/trigger` (e.g., 100 req/min default)
-- [ ] Store rate limit config per tenant in the `tenants` table
-- [ ] Add Redis-based sliding window counter in the webhook controller
-- [ ] Implement burst protection (e.g., token bucket algorithm)
-- [ ] Return `429 Too Many Requests` with `Retry-After` header when exceeded
-- [ ] Add tenant-level resource quotas: max notifications per day, max template count
-- [ ] Add rate limit stats to the Admin Dashboard
-
-### 4. Admin API Authentication
+### 15. Admin DLQ UI
 **Priority:** P0 — Critical
-**Components:** NestJS Worker (Admin Module)
+**Components:** Admin UI
 
-The entire Admin API (`/api/v1/admin/*`) is currently **wide open** with zero authentication. Anyone with the URL can create tenants, modify templates, and view API keys.
+Backend support is present, but the user-facing management page does not exist yet.
 
-**What to build:**
-- [ ] Add JWT-based authentication guard for all `/api/v1/admin/*` routes
-- [ ] Create an `admin_users` table with hashed passwords
-- [ ] Build login endpoint (`POST /api/v1/admin/auth/login`)
-- [ ] Add auth middleware to the Admin UI (login page, token storage)
-- [ ] Add RBAC: `super_admin` (full access) vs `tenant_admin` (scoped to own project)
-
-### 5. Idempotency Support
-**Priority:** P0 — Critical
-**Components:** Events Controller, PostgreSQL
-**Source:** SystemReview §1 (New)
-
-Webhook producers may retry requests, which can cause duplicate notifications. There is no deduplication mechanism.
-
-**What to build:**
-- [ ] Add idempotency key support to the webhook API (via `X-Idempotency-Key` header or `event_id` in payload)
-- [ ] Create a `processed_events` table or Redis cache with fields: `event_id`, `tenant_id`, `payload_hash`, `created_at`
-- [ ] Workers verify if an event with the same key was already processed before continuing
-- [ ] Return the original response for duplicate requests
-- [ ] Auto-expire idempotency records after a configurable TTL (e.g., 24 hours)
-
-### 6. Channel Adapter Pattern
-**Priority:** P0 — Critical
-**Components:** Go Gateway, NestJS Worker
-**Source:** SystemReview §5 (New)
-
-All provider integrations are currently tightly coupled. Swapping or adding providers requires modifying core dispatch logic.
-
-**What to build:**
-- [ ] Define a unified `ChannelAdapter` interface: `send(message) → DeliveryResult`
-- [ ] Implement concrete adapters: `SendGridAdapter`, `TwilioAdapter`, `FCMAdapter`, `CentrifugoAdapter`
-- [ ] Add adapter registry that resolves the correct adapter per tenant + channel based on `provider_configs`
-- [ ] Ensure all adapters return standardized delivery results (status, provider_ref, error)
-- [ ] Enable hot-swapping providers per tenant without code changes (BYOP architecture)
+- [ ] Add DLQ list page
+- [ ] Add failed notification detail view
+- [ ] Add retry and purge actions in UI
+- [ ] Surface DLQ counts on the dashboard
 
 ---
 
 ## 🟡 High Priority — Should Have Before GA
 
-### 7. Input Validation & Error Handling
-**Priority:** P1 — High
-**Components:** All controllers
-**Source:** Roadmap original + SystemReview §4
+### 16. Template Duplicate Version Prevention
+- [ ] Avoid creating a new version when nothing changed
+- [ ] Return current version instead of creating noise
+- [ ] Show “No changes detected” feedback in Admin UI
 
-Currently using `any` types throughout. No DTO validation, no payload sanitization.
+### 17. Unified Delivery Lifecycle
+- [ ] Add status model covering processing through read/delivered
+- [ ] Persist timestamps for transitions
+- [ ] Update from provider callbacks and in-app read receipts
 
-**What to build:**
-- [ ] Create DTOs with `class-validator` decorators for all endpoints
-- [ ] Add `ValidationPipe` globally in `main.ts`
-- [ ] Sanitize Handlebars templates to prevent XSS injection via `{{payload}}`
-- [ ] Add proper NestJS exception filters for structured error responses
-- [ ] Validate MJML syntax before saving templates (parse dry-run)
-- [ ] Define per-event-type payload schemas for template variable validation
-- [ ] Validate incoming webhook payloads against expected schema before processing
+### 18. Notification Preferences / Opt-Out Registry
+- [ ] Create centralized preference store
+- [ ] Add set/get preference endpoints
+- [ ] Enforce preferences in the worker before dispatch
 
-### 8. Template Duplicate Version Prevention
-**Priority:** P1 — High
-**Components:** Templates Controller
+### 19. Batch / Bulk Event Triggers
+- [ ] Add `POST /api/v1/events/trigger-batch`
+- [ ] Fan out efficiently to Kafka
+- [ ] Track batch completion status
 
-When clicking "Edit → Publish", the backend always creates a new version even if the content hasn't changed. This creates noise in version history.
-
-**What to build:**
-- [ ] Compare `content_body`, `subject_line`, and `target_ws_channel` with the latest version
-- [ ] If identical, return the existing version instead of creating a duplicate
-- [ ] Show a "No changes detected" toast in the Admin UI
-
-### 9. Delivery Status Tracking (Unified Lifecycle)
-**Priority:** P1 — High
-**Components:** NestJS Worker, Go Gateway, PostgreSQL
-**Source:** SystemReview §3 (Enhanced)
-
-No unified lifecycle tracking for notifications across all channels. Status tracking is fragmented.
-
-**What to build:**
-- [ ] Implement unified notification status model: `PENDING → PROCESSING → SENT → DELIVERED → READ → FAILED → RETRYING`
-- [ ] Track status transitions with timestamps in `notification_logs`
-- [ ] Update status from provider callbacks (SendGrid/Twilio webhooks → `DELIVERED`)
-- [ ] Update status from frontend read receipts (In-App → `READ`)
-- [ ] Expose status timeline via Admin UI notification detail view
-- [ ] Surface delivery status in the webhook receipt response (see #12)
-
-### 10. Notification Preferences / Opt-Out Registry
-**Priority:** P1 — High
-**Components:** New module
-
-Currently, the Integration Guide tells developers to check opt-out status **before** calling the webhook. But there's no centralized preference store.
-
-**What to build:**
-- [ ] Create `user_preferences` table: `(user_id, tenant_id, channel, enabled, updated_at)`
-- [ ] `PUT /api/v1/preferences/:tenantId/:userId` — Set preferences
-- [ ] `GET /api/v1/preferences/:tenantId/:userId` — Get preferences
-- [ ] Check preferences in the notification worker **before** dispatching each channel
-- [ ] Add "Mute" endpoint so users can suppress notifications temporarily
-
-### 11. Batch / Bulk Event Triggers
-**Priority:** P1 — High
-**Components:** Events Controller
-
-Currently only supports 1-to-1 webhook calls. Broadcasting to 1000 users requires 1000 HTTP calls.
-
-**What to build:**
-- [ ] `POST /api/v1/events/trigger-batch` accepting an array of payloads
-- [ ] Fan-out to Kafka in a single producer session
-- [ ] Add progress tracking for large batches
-- [ ] Return a `batchId` that can be queried for completion status
-
-### 12. Template Preview / Playground
-**Priority:** P1 — High
-**Components:** Admin UI, Templates Controller
-
-No way to preview how a template will render without actually firing an event.
-
-**What to build:**
-- [ ] `POST /api/v1/admin/templates/:template_id/preview` — accepts mock data, returns rendered HTML
-- [ ] Add a "Preview" button in the Admin UI template editor
-- [ ] Show rendered MJML in an iframe for EMAIL templates
-- [ ] Show rendered text for SMS/PUSH templates
+### 20. Template Preview / Playground
+- [ ] Add preview endpoint for mock payload rendering
+- [ ] Add Admin UI preview for EMAIL, SMS, and PUSH
 
 ---
 
 ## 🟢 Medium Priority — Nice to Have
 
-### 13. Webhook Delivery Receipts
-**Priority:** P2 — Medium
-**Components:** Events Controller
+### 21. Webhook Delivery Receipts
+- [ ] Return tracking IDs from trigger endpoint
+- [ ] Add status polling endpoint
 
-Currently the webhook returns immediately after publishing to Kafka. The caller has no way to know if delivery actually succeeded.
+### 22. Scheduled / Delayed Notifications
+- [ ] Add delayed-send support
+- [ ] Build scheduler worker and persistence model
 
-**What to build:**
-- [ ] Return a `trackingId` from the webhook response
-- [ ] `GET /api/v1/events/status/:trackingId` — Poll delivery status
-- [ ] Optional: Webhook callback URL in the tenant config for push-based status updates
+### 23. Standardized WebSocket Channel Naming
+- [ ] Replace `channel#userId` / `global_system#userId` naming
+- [ ] Update token claims and publish logic together
 
-### 14. Scheduled / Delayed Notifications
-**Priority:** P2 — Medium
-**Components:** New module, Redis/BullMQ
+### 24. Template Rendering Optimization
+- [ ] Cache compiled MJML/Handlebars artifacts
+- [ ] Add invalidation strategy and latency benchmarks
 
-No support for "send this email at 9am tomorrow" or "send reminder in 2 hours."
+### 25. Kafka Partition Strategy
+- [ ] Add tenant-aware partitioning
+- [ ] Include partition keys in producer messages
 
-**What to build:**
-- [ ] Add `scheduledAt` field to webhook payload
-- [ ] If `scheduledAt` is present, store in a Redis sorted set keyed by timestamp
-- [ ] Build a scheduler worker that polls and publishes to Kafka when due
-- [ ] Add scheduled notifications view in Admin UI
+### 26. Analytics & Metrics
+- [ ] Add time-series dashboard data
+- [ ] Add per-tenant and per-channel trends
+- [ ] Add delivery latency metrics
 
-### 15. Standardized WebSocket Channel Naming
-**Priority:** P2 — Medium
-**Components:** Go Gateway, NestJS Auth Module, Centrifugo
-**Source:** SystemReview §6 (New)
+### 27. Audit Trail & Activity Log
+- [ ] Add admin mutation audit table
+- [ ] Record actor, action, target, and diff
+- [ ] Add an audit trail page in the Admin UI
 
-Current channel naming uses `tenant#userId` which is prone to naming collisions and makes permission enforcement harder.
+### 28. Multi-Language / Locale Support
+- [ ] Use the existing `locale` field during template resolution
+- [ ] Add locale-aware fallbacks and UI controls
 
-**What to build:**
-- [ ] Migrate channel naming to structured format: `tenant:{tenantId}:user:{userId}`
-- [ ] Update JWT channel authorization to use explicit `channels` array claim
-- [ ] Update Go Gateway publish logic to use new naming convention
-- [ ] Update Auth Controller token generation
-- [ ] Write migration guide for existing tenant integrations
-- [ ] Ensure backwards-compatible transition period
-
-### 16. Template Rendering Optimization
-**Priority:** P2 — Medium
-**Components:** NestJS Worker (RenderService)
-**Source:** SystemReview §4 (New)
-
-MJML compilation and Handlebars rendering can become CPU-intensive under high load.
-
-**What to build:**
-- [ ] Implement template precompilation (compile MJML on save, store compiled HTML structure)
-- [ ] Add Redis-based cache for compiled templates keyed by `template_id:version`
-- [ ] Precompile Handlebars templates and cache the compiled function
-- [ ] Add cache invalidation on template update
-- [ ] Benchmark and monitor rendering latency per template
-
-### 17. Kafka Partition Strategy
-**Priority:** P2 — Medium
-**Components:** Kafka, NestJS Worker, Go Gateway
-**Source:** SystemReview §2 (New)
-
-Events are not partitioned by tenant, which limits scalability and isolation.
-
-**What to build:**
-- [ ] Configure `notifications.events` topic with tenant-aware partitioning (`partition_key: tenant_id`)
-- [ ] Update Kafka producers to include partition key in message publishing
-- [ ] Ensure consumer group assignments support tenant-level isolation
-- [ ] Benchmark partition distribution under multi-tenant load
-
-### 18. Analytics & Metrics
-**Priority:** P2 — Medium
-**Components:** Admin UI, Stats Controller
-
-The dashboard shows basic counts but no trends, time-series, or performance metrics.
-
-**What to build:**
-- [ ] Track delivery latency (time between webhook receipt and provider confirmation)
-- [ ] Time-series charts: notifications/hour, notifications/day
-- [ ] Per-tenant breakdown: which projects send the most notifications?
-- [ ] Channel success rates over time (EMAIL: 98.5%, SMS: 94.2%)
-- [ ] Template popularity ranking
-
-### 19. Audit Trail & Activity Log
-**Priority:** P2 — Medium
-**Components:** All Admin controllers
-
-No record of who created/edited/deactivated templates or tenants in the Admin UI.
-
-**What to build:**
-- [ ] Create `admin_audit_log` table: `(action, resource, resource_id, actor, timestamp, diff)`
-- [ ] Log all admin mutations (create tenant, edit template, rotate key, etc.)
-- [ ] Add an "Audit Trail" page in the Admin UI
-
-### 20. Multi-Language / Locale Support
-**Priority:** P2 — Medium
-**Components:** Templates, Notification Controller
-
-The schema has a `locale` field on templates but it's never used. All templates are English-only.
-
-**What to build:**
-- [ ] Allow creating locale variants of the same template (e.g., `global.success` in `en`, `fr`, `sw`)
-- [ ] Accept `locale` in the webhook payload
-- [ ] Resolve the correct locale template, falling back to `en` if not found
-- [ ] Add locale selector in the Admin UI template editor
-
-### 21. Observability & Monitoring Stack
-**Priority:** P2 — Medium
-**Components:** All services
-**Source:** SystemReview §9 (New — expanded from previous #18)
-
-The system lacks comprehensive operational monitoring across all components.
-
-**What to build:**
-
-**Kafka Metrics:**
-- [ ] Monitor consumer lag per consumer group
-- [ ] Track message throughput (messages/sec)
-- [ ] Monitor partition utilization and rebalancing events
-
-**Worker Metrics:**
-- [ ] Track processing latency (event received → dispatch complete)
-- [ ] Monitor template rendering error rates
-- [ ] Track event failure rates by tenant, event type, and channel
-
-**Channel Delivery Metrics:**
-- [ ] Email success/bounce/complaint rates
-- [ ] SMS delivery rate and provider error breakdown
-- [ ] WebSocket publish latency and connection counts
-
-**Infrastructure:**
-- [ ] Deploy Prometheus metrics exporters for NestJS and Go Gateway
-- [ ] Build Grafana dashboards for real-time operational visibility
-- [ ] Integrate OpenTelemetry for distributed tracing across the pipeline
-- [ ] Configure alert rules: DLQ depth > threshold, failure rate > 5%, Kafka lag > threshold
+### 29. Observability & Monitoring Stack
+- [ ] Add service health endpoints
+- [ ] Add Kafka, worker, and gateway operational metrics
+- [ ] Add dashboards, tracing, and alerting
 
 ---
 
 ## 🔵 Low Priority — Future Enhancements
 
-### 22. Additional Channel Support
-**Priority:** P3 — Low
-**Components:** Go Gateway, Templates, Channel Adapters
-**Source:** Roadmap original (WhatsApp) + SystemReview §5 (expanded)
+### 30. Additional Channel Support
+- [ ] WhatsApp
+- [ ] FCM / APNS mobile push
+- [ ] Slack
+- [ ] Custom webhook delivery
 
-Expand beyond EMAIL/SMS/PUSH to additional delivery channels.
+### 31. Template Marketplace / Import-Export
+- [ ] Export/import template sets between environments or tenants
 
-**Channels to add:**
-- [ ] WhatsApp (WhatsApp Business API)
-- [ ] Push Notifications — Firebase Cloud Messaging (FCM) / Apple Push Notification Service (APNS)
-- [ ] Slack (Incoming Webhooks / Slack API)
-- [ ] Custom Webhooks (tenant-defined HTTP callback endpoints)
+### 32. Containerization & CI/CD
+**Current state:** infra services are already present in `docker-compose.yml`, but app services are not fully containerized.
 
-### 23. Template Marketplace / Import-Export
-**Priority:** P3 — Low
-**Components:** Admin UI
-
-Allow exporting template sets as JSON and importing them into other environments or sharing across tenants.
-
-### ✅ 24. Webhook Signature Verification
-**Priority:** P1 (Completed)
-**Components:** Events Controller, Security Service
-
-Successfully implemented HMAC-SHA256 signature verification via headers to secure incoming webhook calls.
-
-**What was built:**
-- [x] Sign webhook payloads with `X-Nucleus-Signature` header using HMAC-SHA256
-- [x] Verify signature server-side before processing (SecurityService + NestJS rawBody)
-- [x] Provide SDK helpers for integration teams (`SDK-Helpers.md`)
-
-### 25. Health Check & Readiness Endpoints
-**Priority:** P3 — Low
-**Components:** All services
-
-No health check endpoints for container orchestration (K8s liveness/readiness probes).
-
-**What to build:**
-- [ ] `GET /health` on NestJS worker (DB, Kafka, Redis connectivity)
-- [ ] `GET /health` on Go Gateway (DB, Kafka, Centrifugo connectivity)
-- [ ] K8s-compatible liveness and readiness probe endpoints
-
-### 26. Containerization & CI/CD
-**Priority:** P3 — Low
-**Components:** DevOps
-
-The NestJS Worker and Go Gateway currently run as bare processes. Not containerized or orchestrated.
-
-**What to build:**
+- [x] Compose support for Kafka, Postgres, Redis, Centrifugo, Kafka UI, and pgAdmin
 - [ ] Dockerfile for NestJS Worker
 - [ ] Dockerfile for Go Gateway
-- [ ] Dockerfile for Admin UI (Next.js)
-- [ ] Add all services to `docker-compose.yml`
-- [ ] GitHub Actions CI pipeline: lint → test → build → push images
-- [ ] Kubernetes manifests or Helm charts for production deployment
+- [ ] Dockerfile for Admin UI
+- [ ] Add app services to compose
+- [ ] CI pipeline and deployment manifests
 
-### 27. Worker Decomposition (Microservice Split)
-**Priority:** P3 — Low (Future Architecture)
-**Components:** NestJS Worker
-**Source:** SystemReview §3 (New)
+### 33. Worker Decomposition
+- [ ] Split event processing, rendering, routing, and dispatch concerns as scale grows
 
-The worker currently handles event processing, template rendering, routing, and dispatch coordination. As the system scales, this "God Service" pattern becomes difficult to maintain.
-
-**Future decomposition plan:**
-- [ ] Extract **Event Processor** — validates and enriches incoming events
-- [ ] Extract **Template Renderer** — handles MJML compilation, Handlebars rendering, caching
-- [ ] Extract **Notification Router** — resolves templates, applies preferences, determines channels
-- [ ] Extract **Channel Dispatchers** — independent services per channel type for isolated scaling
-- [ ] Define inter-service communication contracts (Kafka topics or gRPC)
-
-### 28. Notification Orchestration Engine
-**Priority:** P3 — Low (Strategic Future)
-**Components:** New orchestration module
-**Source:** SystemReview §11 (New)
-
-Move from static, single-shot notifications to workflow-based notification chains supporting conditional logic, delays, and multi-step sequences.
-
-**Example workflow:**
-```
-Event: order.created
-  → Step 1: Send Email (Order Confirmation)
-  → Step 2: Wait 2 hours
-  → Step 3: If order_not_paid → Send SMS reminder
-  → Step 4: Wait 24 hours
-  → Step 5: If still_not_paid → Send final warning email
-```
-
-**Enables:**
-- Marketing automation sequences
-- Customer lifecycle messaging
-- Engagement and drip campaign flows
-- Event-driven conditional branching
+### 34. Notification Orchestration Engine
+- [ ] Add multi-step workflow support with delays and branching
 
 ---
 
-## 🛠 Technical Debt / Refactors
+## 🛠 Technical Debt / Refactors Completed
 
-### ✅ R1. Remove `any` Types
-All Kafka message handlers and controller bodies use `any`. Replace with typed DTOs and interfaces.
+### ✅ R1. Replace raw inserts with Prisma `create()`
+Implemented in the notification flow.
 
-### ✅ R2. Extract Shared Config
-`API_URL` is duplicated across every Admin UI page. Extract to a shared `lib/api.ts` config module.
+### ✅ R2. Extract shared Admin UI API config
+Implemented in `admin-ui/lib/api.ts`.
 
-### ✅ R3. Go Gateway — Hardcoded Addresses
-Centrifugo address (`http://localhost:8000/api`) and Kafka broker (`localhost:9092`) are hardcoded. Move to environment variables.
+### ✅ R3. Move gateway addresses behind environment variables
+Implemented with local defaults in the Go gateway.
 
-### ✅ R4. Prisma Raw Queries
-`notification.controller.ts` uses `$executeRaw` for inserts. Migrate to Prisma's typed `create()` method for type safety and error handling.
+### ✅ R4. Latest template version selection per channel
+Implemented in the worker before dispatch.
 
-### ✅ R5. Template Version Fetching
-The notification worker fetches ALL active versions of a template, but only the latest should be used per channel. Add `DISTINCT ON` or `take: 1` per channel_type group.
+### ✅ R5. Error boundary support in Admin UI
+Implemented through `lib/error-boundary.tsx` and layout integration.
 
-### ✅ R6. Error Boundaries in Admin UI
-No error boundaries or error states in the React components. Add `try/catch` with user-friendly error toasts.
+### ✅ R6. Avoid leaking full tenant secrets through Kafka payloads
+Implemented by forwarding only minimal tenant identity.
 
-### ✅ R7. Tenant Object in Kafka Payload
-The full `tenant` object is currently serialized into Kafka messages (includes `api_key`). Only `tenant.id` and `tenant.name` should be forwarded to avoid leaking secrets through message brokers.
-
-### ✅ R8. Go Gateway — Category Field
-The Go Gateway's `NotificationPayload` struct doesn't include `category` or `eventType` fields added in the worker. Update the struct and forward them to Centrifugo.
+### ✅ R7. Extend gateway payload contract with `category` and `eventType`
+Implemented for realtime dispatch.
 
 ---
 
@@ -461,12 +320,12 @@ The Go Gateway's `NotificationPayload` struct doesn't include `category` or `eve
 
 | Phase | Items | Target |
 |-------|-------|--------|
-| **Phase 1 — Hardening** | DLQ & Retry (#1), Provider Integration (#2), Admin Auth (#4), Rate Limiting & Quotas (#3), Idempotency (#5), Channel Adapters (#6) | Before any production deployment |
-| **Phase 2 — Reliability** | Input Validation (#7), Template Dedup (#8), Delivery Status Tracking (#9), Preferences (#10) | Before GA |
-| **Phase 3 — Features** | Batch (#11), Preview (#12), Webhook Receipts (#13), WS Channel Naming (#15), Template Caching (#16) | Post-GA sprint 1 |
-| **Phase 4 — Scale** | Kafka Partitioning (#17), Analytics (#18), Audit (#19), Locale (#20), Observability (#21) | Post-GA sprint 2 |
-| **Phase 5 — Expansion** | Additional Channels (#22), Export (#23), Health Checks (#25), CI/CD (#26), Scheduling (#14) | Ongoing |
-| **Phase 6 — Strategic** | Worker Decomposition (#27), Orchestration Engine (#28) | Long-term evolution |
+| **Phase 1 — Production Gate** | Admin Auth (#12), Real Provider Delivery (#13), Validation Hardening (#14), Admin DLQ UI (#15) | Before production rollout |
+| **Phase 2 — Reliability** | Template Dedup (#16), Unified Lifecycle (#17), Preferences (#18) | Before GA |
+| **Phase 3 — Product Features** | Batch (#19), Preview (#20), Receipts (#21), Scheduling (#22) | Post-GA sprint 1 |
+| **Phase 4 — Scale & Operations** | WS Naming (#23), Rendering Optimization (#24), Partitioning (#25), Analytics (#26), Audit (#27), Locale (#28), Observability (#29) | Post-GA sprint 2 |
+| **Phase 5 — Expansion** | Additional Channels (#30), Import/Export (#31), CI/CD (#32) | Ongoing |
+| **Phase 6 — Strategic** | Worker Decomposition (#33), Orchestration Engine (#34) | Long-term evolution |
 
 ---
 
@@ -475,4 +334,5 @@ The Go Gateway's `NotificationPayload` struct doesn't include `category` or `eve
 | Date | Change |
 |------|--------|
 | 12 Mar 2026 | Initial roadmap created with MVP assessment |
-| 15 Mar 2026 | Incorporated SystemReview.md analysis: added Idempotency (#5), Channel Adapter Pattern (#6), Delivery Status Tracking (#9), WS Channel Naming (#15), Template Caching (#16), Kafka Partitioning (#17), Observability Stack (#21), Additional Channels (#22), Worker Decomposition (#27), Orchestration Engine (#28). Enhanced Rate Limiting (#3) with quotas & burst protection. Enhanced Input Validation (#7) with schema validation. Added Phase 6 for strategic items. Renumbered all items. Marked BYOP and Webhook Signatures as completed. |
+| 15 Mar 2026 | Expanded roadmap with hardening, observability, and future architecture items |
+| 17 Mar 2026 | Reconciled roadmap against the implemented platform. Marked idempotency, rate limiting, adapter registry, retry/DLQ flow, provider configs, admin APIs, and DLQ management as implemented or partially implemented where appropriate. Reprioritized remaining work around admin auth, provider completion, validation, DLQ UI, and operational readiness. |

@@ -14,6 +14,14 @@ export interface RateLimitResult {
     limit: number;
     retryAfterSeconds?: number;
     reason?: string;
+    bucketCapacity?: number;
+}
+
+export interface TenantRateLimitStats {
+    minuteCount: number;
+    dailyCount: number;
+    burstRemaining: number;
+    burstCapacity: number;
 }
 
 @Injectable()
@@ -23,7 +31,22 @@ export class RateLimiterService {
      * Throws HttpException(429) if either limit is exceeded.
      */
     async checkLimit(tenant: TenantRateLimits): Promise<RateLimitResult> {
-        // 1. Per-minute sliding window check
+        // 1. Short-term burst protection
+        const burstResult = await this.checkBurstLimit(tenant);
+        if (!burstResult.allowed) {
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.TOO_MANY_REQUESTS,
+                    error: 'Too Many Requests',
+                    message: `Burst protection triggered for tenant ${tenant.name}. Reduce request spikes and retry shortly.`,
+                    retryAfter: burstResult.retryAfterSeconds,
+                    burstCapacity: burstResult.bucketCapacity,
+                },
+                HttpStatus.TOO_MANY_REQUESTS,
+            );
+        }
+
+        // 2. Per-minute sliding window check
         const minuteResult = await this.checkMinuteLimit(tenant);
         if (!minuteResult.allowed) {
             throw new HttpException(
@@ -37,7 +60,7 @@ export class RateLimiterService {
             );
         }
 
-        // 2. Daily cap check
+        // 3. Daily cap check
         const dailyResult = await this.checkDailyCap(tenant);
         if (!dailyResult.allowed) {
             throw new HttpException(
@@ -51,7 +74,77 @@ export class RateLimiterService {
             );
         }
 
-        return minuteResult;
+        return {
+            ...minuteResult,
+            bucketCapacity: burstResult.bucketCapacity,
+        };
+    }
+
+    /**
+     * Token bucket burst protection to smooth sudden spikes inside the broader
+     * minute-based limit. This protects the worker from short traffic floods.
+     */
+    private async checkBurstLimit(tenant: TenantRateLimits): Promise<RateLimitResult> {
+        const capacity = this.getBurstCapacity(tenant.rate_limit_per_minute);
+        const refillRatePerSecond = Math.max(tenant.rate_limit_per_minute / 60, 0.1);
+        const nowMs = Date.now();
+        const key = `burstlimit:${tenant.id}`;
+
+        const result = await redis.eval(
+            `
+            local key = KEYS[1]
+            local capacity = tonumber(ARGV[1])
+            local refillRate = tonumber(ARGV[2])
+            local nowMs = tonumber(ARGV[3])
+            local requested = tonumber(ARGV[4])
+            local ttl = tonumber(ARGV[5])
+
+            local bucket = redis.call('HMGET', key, 'tokens', 'lastRefillMs')
+            local tokens = tonumber(bucket[1])
+            local lastRefillMs = tonumber(bucket[2])
+
+            if tokens == nil then tokens = capacity end
+            if lastRefillMs == nil then lastRefillMs = nowMs end
+
+            local elapsedMs = math.max(0, nowMs - lastRefillMs)
+            local refill = (elapsedMs / 1000) * refillRate
+            tokens = math.min(capacity, tokens + refill)
+
+            local allowed = 0
+            local retryAfter = 0
+
+            if tokens >= requested then
+                tokens = tokens - requested
+                allowed = 1
+            else
+                local deficit = requested - tokens
+                retryAfter = math.ceil(deficit / refillRate)
+            end
+
+            redis.call('HMSET', key, 'tokens', tokens, 'lastRefillMs', nowMs)
+            redis.call('EXPIRE', key, ttl)
+
+            return {allowed, tokens, retryAfter}
+            `,
+            1,
+            key,
+            capacity,
+            refillRatePerSecond,
+            nowMs,
+            1,
+            120,
+        ) as [number, number, number];
+
+        const [allowed, remainingTokens, retryAfterSeconds] = result;
+
+        return {
+            allowed: allowed === 1,
+            remaining: Math.max(0, Math.floor(remainingTokens)),
+            limit: tenant.rate_limit_per_minute,
+            retryAfterSeconds,
+            reason: allowed === 1 ? undefined : 'burst_limit_exceeded',
+            bucketCapacity: capacity,
+        };
     }
 
     /**
@@ -123,21 +216,62 @@ export class RateLimiterService {
     /**
      * Get current rate limit stats for a tenant (used by Admin Dashboard).
      */
-    async getStats(tenantId: string): Promise<{ minuteCount: number; dailyCount: number }> {
+    async getStats(tenantId: string, perMinuteLimit?: number): Promise<TenantRateLimitStats> {
         const minuteBucket = Math.floor(Date.now() / 60000);
         const today = new Date().toISOString().split('T')[0];
 
         const minuteKey = `ratelimit:${tenantId}:${minuteBucket}`;
         const dailyKey = `dailycap:${tenantId}:${today}`;
+        const burstKey = `burstlimit:${tenantId}`;
 
-        const [minuteCount, dailyCount] = await Promise.all([
+        const [minuteCount, dailyCount, burstBucket] = await Promise.all([
             redis.get(minuteKey),
             redis.get(dailyKey),
+            redis.hmget(burstKey, 'tokens', 'lastRefillMs'),
         ]);
+
+        const burstCapacity = this.getBurstCapacity(perMinuteLimit ?? 100);
+        const refillRatePerSecond = Math.max((perMinuteLimit ?? 100) / 60, 0.1);
+        const burstRemaining = this.computeBurstRemaining(
+            burstBucket[0],
+            burstBucket[1],
+            burstCapacity,
+            refillRatePerSecond,
+        );
 
         return {
             minuteCount: parseInt(minuteCount || '0', 10),
             dailyCount: parseInt(dailyCount || '0', 10),
+            burstRemaining,
+            burstCapacity,
         };
+    }
+
+    private getBurstCapacity(rateLimitPerMinute: number): number {
+        const configuredCapacity = parseInt(process.env.BURST_CAPACITY || '0', 10);
+        if (configuredCapacity > 0) {
+            return configuredCapacity;
+        }
+
+        return Math.max(10, Math.min(rateLimitPerMinute, Math.ceil(rateLimitPerMinute / 4)));
+    }
+
+    private computeBurstRemaining(
+        storedTokens: string | null,
+        storedLastRefillMs: string | null,
+        burstCapacity: number,
+        refillRatePerSecond: number,
+    ): number {
+        if (!storedTokens || !storedLastRefillMs) {
+            return burstCapacity;
+        }
+
+        const nowMs = Date.now();
+        const lastRefillMs = parseInt(storedLastRefillMs, 10);
+        const tokens = parseFloat(storedTokens);
+        const elapsedSeconds = Math.max(0, nowMs - lastRefillMs) / 1000;
+        const refilled = tokens + elapsedSeconds * refillRatePerSecond;
+
+        return Math.max(0, Math.min(burstCapacity, Math.floor(refilled)));
     }
 }

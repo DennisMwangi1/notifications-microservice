@@ -1,10 +1,10 @@
-import { Controller, Post, Body, UnauthorizedException, Inject, Headers, Req } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Inject, Headers, Req, HttpException, Res } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import prisma from '../config/prisma.config';
 import { TriggerEventDto, EnrichedKafkaPayload } from '../common/dto/events.dto';
 import { SecurityService } from '../common/security.service';
 import { RateLimiterService } from '../common/rate-limiter.service';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { createHash } from 'crypto';
 
 @Controller('api/v1/events')
@@ -21,7 +21,8 @@ export class EventsController {
         @Headers('x-nucleus-signature') signature: string,
         @Headers('x-idempotency-key') idempotencyHeader: string,
         @Headers('x-api-key') headerApiKey: string,
-        @Req() req: Request & { rawBody: Buffer }
+        @Req() req: Request & { rawBody: Buffer },
+        @Res({ passthrough: true }) res: Response,
     ) {
         const { eventType, payload } = body;
         const apiKey = headerApiKey;
@@ -58,12 +59,27 @@ export class EventsController {
         }
 
         // 3. Rate Limiting — check per-minute and daily caps
-        await this.rateLimiterService.checkLimit({
-            id: tenant.id,
-            name: tenant.name,
-            rate_limit_per_minute: tenant.rate_limit_per_minute,
-            daily_notification_cap: tenant.daily_notification_cap,
-        });
+        try {
+            await this.rateLimiterService.checkLimit({
+                id: tenant.id,
+                name: tenant.name,
+                rate_limit_per_minute: tenant.rate_limit_per_minute,
+                daily_notification_cap: tenant.daily_notification_cap,
+            });
+        } catch (error: unknown) {
+            if (error instanceof HttpException && error.getStatus() === 429) {
+                const responseBody = error.getResponse();
+                const retryAfter = typeof responseBody === 'object' && responseBody !== null
+                    ? (responseBody as { retryAfter?: number }).retryAfter
+                    : undefined;
+
+                if (retryAfter !== undefined) {
+                    res.setHeader('Retry-After', String(retryAfter));
+                }
+            }
+
+            throw error;
+        }
 
         // 4. Idempotency Check — prevent duplicate event processing
         const idempotencyKey = idempotencyHeader || this.generatePayloadHash(tenant.id, eventType, payload);

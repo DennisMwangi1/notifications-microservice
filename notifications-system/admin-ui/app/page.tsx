@@ -11,6 +11,27 @@ interface DashboardStats {
     totalInApp: number;
     unreadInApp: number;
   };
+  rateLimits: {
+    activeTenantsTracked: number;
+    currentMinuteRequests: number;
+    currentDailyRequests: number;
+    tenantsNearingLimits: {
+      tenantId: string;
+      tenantName: string;
+      minuteCount: number;
+      minuteLimit: number;
+      minuteUsagePct: number;
+      dailyCount: number;
+      dailyLimit: number;
+      dailyUsagePct: number;
+      burstRemaining: number;
+      burstCapacity: number;
+      burstUsagePct: number;
+      templateCount: number;
+      templateLimit: number;
+      templateUsagePct: number;
+    }[];
+  };
   channelBreakdown: { channel: string; count: number }[];
   statusBreakdown: { status: string; count: number }[];
   recentActivity: {
@@ -154,6 +175,67 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Rate Limit Watch</h3>
+            <p className="text-xs text-slate-400 mt-1">Live usage across burst, minute, daily, and template quota enforcement.</p>
+          </div>
+          <div className="flex gap-5 text-xs text-slate-500">
+            <span>Tracked tenants: <span className="font-bold text-slate-700">{stats.rateLimits.activeTenantsTracked}</span></span>
+            <span>Current minute: <span className="font-bold text-slate-700">{stats.rateLimits.currentMinuteRequests}</span></span>
+            <span>Current day: <span className="font-bold text-slate-700">{stats.rateLimits.currentDailyRequests}</span></span>
+          </div>
+        </div>
+
+        {stats.rateLimits.tenantsNearingLimits.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-8">No tenants are currently trending near burst, rate, daily, or template limits.</p>
+        ) : (
+          <div className="space-y-4">
+            {stats.rateLimits.tenantsNearingLimits.map((tenant) => {
+              const maxUsage = Math.max(tenant.minuteUsagePct, tenant.dailyUsagePct, tenant.templateUsagePct, tenant.burstUsagePct);
+
+              return (
+                <div key={tenant.tenantId} className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{tenant.tenantName}</p>
+                      <p className="text-[11px] font-mono text-slate-400">{tenant.tenantId}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${maxUsage >= 90 ? 'bg-rose-100 text-rose-700 border border-rose-200' : maxUsage >= 70 ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-sky-100 text-sky-700 border border-sky-200'}`}>
+                      Peak Usage {maxUsage}%
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                    <div className="bg-white border border-slate-200 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Minute Window</p>
+                      <p className="text-sm font-bold text-slate-800">{tenant.minuteCount} / {tenant.minuteLimit}</p>
+                      <p className="text-xs text-slate-500 mt-1">{tenant.minuteUsagePct}% used</p>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Burst Bucket</p>
+                      <p className="text-sm font-bold text-slate-800">{tenant.burstRemaining} / {tenant.burstCapacity} left</p>
+                      <p className="text-xs text-slate-500 mt-1">{tenant.burstUsagePct}% consumed</p>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Daily Cap</p>
+                      <p className="text-sm font-bold text-slate-800">{tenant.dailyCount} / {tenant.dailyLimit}</p>
+                      <p className="text-xs text-slate-500 mt-1">{tenant.dailyUsagePct}% used</p>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Template Quota</p>
+                      <p className="text-sm font-bold text-slate-800">{tenant.templateCount} / {tenant.templateLimit}</p>
+                      <p className="text-xs text-slate-500 mt-1">{tenant.templateUsagePct}% used</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Channel Breakdown + Status */}
