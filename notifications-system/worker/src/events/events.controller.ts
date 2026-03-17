@@ -1,20 +1,59 @@
 import { Controller, Post, Body, UnauthorizedException, Inject, Headers, Req, HttpException, Res } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
+import { AppLoggerService } from '../common/app-logger.service';
 import prisma from '../config/prisma.config';
 import { TriggerEventDto, EnrichedKafkaPayload } from '../common/dto/events.dto';
 import { SecurityService } from '../common/security.service';
 import { RateLimiterService } from '../common/rate-limiter.service';
 import { Request, Response } from 'express';
 import { createHash } from 'crypto';
+import {
+    cacheTenantIdentity,
+    CachedTenantIdentity,
+    clearIdempotencyEntry,
+    getCachedIdempotencyEntry,
+    getCachedTenantIdentity,
+    markIdempotencyCompleted,
+    reserveIdempotencyEntry,
+} from '../common/ingress-cache';
 
+interface IdempotencyCheckResult {
+    duplicate: boolean;
+    response?: Record<string, unknown>;
+    reservedInRedis: boolean;
+}
+
+/**
+ * Event ingestion API controller. Handles webhook trigger endpoint and any idempotency/
+ * authorization/rate-limiting coordination required before emitting events to internal Kafka.
+ */
 @Controller('api/v1/events')
 export class EventsController {
     constructor(
         @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka,
         private readonly securityService: SecurityService,
         private readonly rateLimiterService: RateLimiterService,
+        private readonly logger: AppLoggerService,
     ) { }
 
+    /**
+     * Webhook entrypoint for tenant events.
+     *
+     * Steps:
+     * 1. Validate request headers and payload
+     * 2. Resolve tenant metadata with cache + DB fallback
+     * 3. Authenticate optional webhook signature
+     * 4. Enforce rate limiting (burst, per-minute, daily)
+     * 5. Enforce idempotency via Redis + Postgres fallback
+     * 6. Emit enriched event to Kafka and persist idempotency record
+     *
+     * @param body incoming TriggerEventDto
+     * @param signature x-nucleus-signature header
+     * @param idempotencyHeader x-idempotency-key header
+     * @param headerApiKey x-api-key header
+     * @param req inbound request with rawBody for signature verification
+     * @param res response object for Retry-After header injection on 429
+     */
     @Post('trigger')
     async triggerEvent(
         @Body() body: TriggerEventDto,
@@ -25,24 +64,19 @@ export class EventsController {
         @Res({ passthrough: true }) res: Response,
     ) {
         const { eventType, payload } = body;
-        const apiKey = headerApiKey;
 
-        // 1. Basic validation
-        if (!apiKey || !eventType || !payload) {
+        if (!headerApiKey || !eventType || !payload) {
             throw new UnauthorizedException('Missing x-api-key header, eventType, payload. Guest notifications are not supported.');
         }
 
-        const cleanKey = apiKey.trim();
-        const tenant = await prisma.tenants.findFirst({
-            where: { api_key: cleanKey }
-        });
+        const cleanKey = headerApiKey.trim();
+        const tenant = await this.resolveTenant(cleanKey);
 
         if (!tenant || !tenant.is_active) {
-            console.error(`Webhook Auth Failed. Received Key: ${cleanKey}`);
+            this.logger.error(`Webhook Auth Failed. Received Key: ${cleanKey}`);
             throw new UnauthorizedException('Invalid or inactive API key');
         }
 
-        // 2. HMAC Signature Verification (if secret is configured)
         if (tenant.webhook_secret) {
             if (!signature) {
                 throw new UnauthorizedException('Missing X-Nucleus-Signature header for secured tenant');
@@ -50,15 +84,14 @@ export class EventsController {
 
             const isValid = this.securityService.verifySignature(req.rawBody, signature, tenant.webhook_secret);
             if (!isValid) {
-                console.error(`Invalid Signature for Tenant: ${tenant.name}`);
+                this.logger.error(`Invalid Signature for Tenant: ${tenant.name}`);
                 throw new UnauthorizedException('Invalid HMAC signature');
             }
-            console.log(`✅ Secure Signature Verified for ${tenant.name}`);
+            this.logger.log(`✅ Secure Signature Verified for ${tenant.name}`);
         } else if (signature) {
-            console.warn(`Warning: Signature provided but tenant ${tenant.name} has no webhook_secret configured.`);
+            this.logger.warn(`Warning: Signature provided but tenant ${tenant.name} has no webhook_secret configured.`);
         }
 
-        // 3. Rate Limiting — check per-minute and daily caps
         try {
             await this.rateLimiterService.checkLimit({
                 id: tenant.id,
@@ -81,19 +114,19 @@ export class EventsController {
             throw error;
         }
 
-        // 4. Idempotency Check — prevent duplicate event processing
+        const payloadHash = this.hashPayload(payload);
         const idempotencyKey = idempotencyHeader || this.generatePayloadHash(tenant.id, eventType, payload);
-        const existingEvent = await this.checkIdempotency(tenant.id, idempotencyKey);
-        if (existingEvent) {
-            console.log(`🔁 Duplicate event detected for tenant ${tenant.name}, key: ${idempotencyKey}`);
-            return existingEvent.response || {
+        const idempotencyState = await this.checkIdempotency(tenant.id, idempotencyKey, payloadHash, eventType);
+
+        if (idempotencyState.duplicate) {
+            this.logger.warn(`🔁 Duplicate event detected for tenant ${tenant.name}, key: ${idempotencyKey}`);
+            return idempotencyState.response || {
                 success: true,
                 message: `Event ${eventType} already processed (duplicate)`,
                 duplicate: true,
             };
         }
 
-        // R7: Only forward minimal tenant identity — NEVER include api_key in Kafka messages
         const enrichedPayload: EnrichedKafkaPayload = {
             ...payload,
             tenant: {
@@ -101,30 +134,219 @@ export class EventsController {
                 name: tenant.name,
                 sender_email: tenant.sender_email,
                 sender_name: tenant.sender_name,
-                provider_config_id: tenant.provider_config_id
+                provider_config_id: tenant.provider_config_id,
             },
-            eventType: eventType
+            eventType,
         };
 
-        // Forward to Kafka's universal generic topic so the asynchronous stream handles rendering & delivery
         try {
             this.kafkaClient.emit('tenant.event.received', enrichedPayload);
 
             const response = { success: true, message: `Event ${eventType} dispatched securely for ${tenant.name}` };
 
-            // Store idempotency record
-            await this.storeIdempotencyRecord(tenant.id, idempotencyKey, eventType, payload, response);
+            if (idempotencyState.reservedInRedis) {
+                await markIdempotencyCompleted(tenant.id, idempotencyKey, payloadHash, eventType, response)
+                    .catch((error) => this.logger.error('Failed to update Redis idempotency cache:', error));
+            }
+
+            await this.storeIdempotencyRecord(tenant.id, idempotencyKey, eventType, payload, response)
+                .catch((error) => this.logger.error('Failed to persist idempotency audit record:', error));
 
             return response;
         } catch (error) {
-            console.error('Failed to emit to Kafka from webhook', error);
+            if (idempotencyState.reservedInRedis) {
+                await clearIdempotencyEntry(tenant.id, idempotencyKey)
+                    .catch((clearError) => this.logger.error('Failed to clear Redis idempotency reservation:', clearError));
+            }
+
+            this.logger.error('Failed to emit to Kafka from webhook', error);
             throw new Error('Internal messaging failure');
         }
     }
 
     /**
-     * Generate a SHA256 hash of the payload as a fallback idempotency key.
-     * This catches accidental retries even without explicit SDK integration.
+     * Resolve tenant identity from API key.
+     * Tries cache first, then PostgreSQL, and warms cache on miss.
+     *
+     * @param apiKey tenant API key
+     * @returns cached tenant metadata or null when invalid
+     */
+    private async resolveTenant(apiKey: string): Promise<CachedTenantIdentity | null> {
+        try {
+            const cachedTenant = await getCachedTenantIdentity(apiKey);
+            if (cachedTenant) {
+                return cachedTenant;
+            }
+        } catch (error) {
+            this.logger.error('Tenant cache lookup failed, falling back to PostgreSQL:', error);
+        }
+
+        const tenant = await prisma.tenants.findFirst({
+            where: { api_key: apiKey },
+            select: {
+                id: true,
+                name: true,
+                is_active: true,
+                webhook_secret: true,
+                sender_email: true,
+                sender_name: true,
+                provider_config_id: true,
+                rate_limit_per_minute: true,
+                daily_notification_cap: true,
+            },
+        });
+
+        if (!tenant) {
+            return null;
+        }
+
+        try {
+            await cacheTenantIdentity(apiKey, tenant);
+        } catch (error) {
+            this.logger.error('Failed to warm tenant API-key cache:', error);
+        }
+
+        return tenant;
+    }
+
+    /**
+     * Idempotency orchestration for event processing.
+     *
+     * Priority order:
+     * 1. Redis cache entry (fast path)
+     * 2. Reservation attempt (processing state)
+     * 3. PostgreSQL audit fallback (completed state persistence)
+     *
+     * @param tenantId tenant ID
+     * @param idempotencyKey request idempotency key
+     * @param payloadHash SHA256 hash of incoming payload
+     * @param eventType event type
+     */
+    private async checkIdempotency(
+        tenantId: string,
+        idempotencyKey: string,
+        payloadHash: string,
+        eventType: string,
+    ): Promise<IdempotencyCheckResult> {
+        try {
+            const cached = await getCachedIdempotencyEntry(tenantId, idempotencyKey);
+            if (!cached) {
+                const reserved = await reserveIdempotencyEntry(tenantId, idempotencyKey, payloadHash, eventType);
+                if (reserved) {
+                    return { duplicate: false, reservedInRedis: true };
+                }
+            }
+
+            const latestCached = cached || await getCachedIdempotencyEntry(tenantId, idempotencyKey);
+            if (latestCached) {
+                return this.resolveCachedIdempotency(latestCached, tenantId, idempotencyKey, payloadHash, eventType);
+            }
+        } catch (error) {
+            this.logger.error('Redis idempotency check failed, falling back to PostgreSQL:', error);
+        }
+
+        const existingEvent = await this.checkPostgresIdempotency(tenantId, idempotencyKey);
+        if (existingEvent?.response) {
+            await markIdempotencyCompleted(tenantId, idempotencyKey, payloadHash, eventType, existingEvent.response as Record<string, unknown>)
+                .catch(() => undefined);
+        }
+
+        return existingEvent
+            ? {
+                duplicate: true,
+                response: (existingEvent.response as Record<string, unknown>) || {
+                    success: true,
+                    message: `Event ${eventType} already processed (duplicate)`,
+                    duplicate: true,
+                },
+                reservedInRedis: false,
+            }
+            : { duplicate: false, reservedInRedis: false };
+    }
+
+    /**
+     * Interpret a cached idempotency record from Redis and return the workflow result.
+     *
+     * @param cached cached idempotency record
+     * @param tenantId tenant ID
+     * @param idempotencyKey idempotency key
+     * @param payloadHash current payload hash
+     * @param eventType event type
+     */
+    private async resolveCachedIdempotency(
+        cached: { status: 'processing' | 'completed'; payloadHash: string; response?: Record<string, unknown> },
+        tenantId: string,
+        idempotencyKey: string,
+        payloadHash: string,
+        eventType: string,
+    ): Promise<IdempotencyCheckResult> {
+        if (cached.payloadHash !== payloadHash) {
+            this.logger.warn(`Idempotency cache hash mismatch for ${tenantId}:${idempotencyKey}. Falling back to PostgreSQL audit.`);
+
+            const existingEvent = await this.checkPostgresIdempotency(tenantId, idempotencyKey);
+            if (existingEvent) {
+                return {
+                    duplicate: true,
+                    response: (existingEvent.response as Record<string, unknown>) || {
+                        success: true,
+                        message: `Event ${eventType} already processed (duplicate)`,
+                        duplicate: true,
+                    },
+                    reservedInRedis: false,
+                };
+            }
+
+            return {
+                duplicate: true,
+                response: {
+                    success: true,
+                    message: `Event ${eventType} is already being processed`,
+                    duplicate: true,
+                },
+                reservedInRedis: false,
+            };
+        }
+
+        if (cached.status === 'completed') {
+            return {
+                duplicate: true,
+                response: cached.response || {
+                    success: true,
+                    message: `Event ${eventType} already processed (duplicate)`,
+                    duplicate: true,
+                },
+                reservedInRedis: false,
+            };
+        }
+
+        return {
+            duplicate: true,
+            response: {
+                success: true,
+                message: `Event ${eventType} is already being processed`,
+                duplicate: true,
+            },
+            reservedInRedis: false,
+        };
+    }
+
+    /**
+     * Generate SHA256 hash for a payload object (for idempotency compare).
+     *
+     * @param payload event payload
+     * @returns hex hash string
+     */
+    private hashPayload(payload: Record<string, unknown>): string {
+        return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+    }
+
+    /**
+     * Canonical idempotency signature for tenant+event+payload.
+     *
+     * @param tenantId tenant ID
+     * @param eventType event type
+     * @param payload event payload
+     * @returns idempotency key hash string
      */
     private generatePayloadHash(tenantId: string, eventType: string, payload: Record<string, unknown>): string {
         const content = JSON.stringify({ tenantId, eventType, payload });
@@ -132,14 +354,16 @@ export class EventsController {
     }
 
     /**
-     * Check if an event with the same idempotency key was already processed.
-     * Only returns a match if the record hasn't expired.
+     * Verify idempotency in PostgreSQL fallback chain (for entries that survived Redis or when Redis is down).
+     * Also garbage-collects expired processed_events rows.
+     *
+     * @param tenantId tenant ID
+     * @param idempotencyKey idempotency key
      */
-    private async checkIdempotency(tenantId: string, idempotencyKey: string) {
-        // Clean up expired records periodically (best-effort)
+    private async checkPostgresIdempotency(tenantId: string, idempotencyKey: string) {
         await prisma.processed_events.deleteMany({
             where: { expires_at: { lt: new Date() } }
-        }).catch(() => { /* Non-critical cleanup */ });
+        }).catch(() => undefined);
 
         return prisma.processed_events.findUnique({
             where: {
@@ -152,7 +376,14 @@ export class EventsController {
     }
 
     /**
-     * Store an idempotency record with a 24-hour TTL.
+     * Persist an idempotency audit record to PostgreSQL.
+     * On unique constraint collision (duplicate processing race) the error is swallowed.
+     *
+     * @param tenantId tenant ID
+     * @param idempotencyKey idempotency key
+     * @param eventType event type
+     * @param payload original event payload
+     * @param response output response object
      */
     private async storeIdempotencyRecord(
         tenantId: string,
@@ -163,7 +394,7 @@ export class EventsController {
     ) {
         const ttlHours = parseInt(process.env.IDEMPOTENCY_TTL_HOURS || '24', 10);
         const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
-        const payloadHash = createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+        const payloadHash = this.hashPayload(payload);
 
         try {
             await prisma.processed_events.create({
@@ -177,10 +408,9 @@ export class EventsController {
                 }
             });
         } catch (err: unknown) {
-            // Unique constraint violation = concurrent duplicate, safe to ignore
             const msg = err instanceof Error ? err.message : String(err);
             if (!msg.includes('Unique constraint')) {
-                console.error('Failed to store idempotency record:', msg);
+                throw err;
             }
         }
     }

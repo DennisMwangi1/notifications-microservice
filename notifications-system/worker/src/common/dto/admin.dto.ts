@@ -7,6 +7,7 @@
 export interface CreateTenantDto {
     name: string;
     allowed_channels: string[];
+    webhook_secret?: string;
     provider_config_id?: string;
     sender_email?: string;
     sender_name?: string;
@@ -18,6 +19,7 @@ export interface UpdateTenantDto {
     name?: string;
     allowed_channels?: string[];
     is_active?: boolean;
+    webhook_secret?: string;
     provider_config_id?: string;
     sender_email?: string;
     sender_name?: string;

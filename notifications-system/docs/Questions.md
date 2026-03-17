@@ -371,17 +371,34 @@ For the immediate future (Phase 1), it is perfectly fine to retain the raw-MJML 
 ### Q15: Under utilization of the redis container
 
 **Answer:**
-To directly address your question: No, the Redis container is not currently being used to its full capacity.
+This answer needs an update because the architecture has moved forward.
 
-Right now, based on your docker-compose.yml, the redis:7-alpine container is running exclusively to serve as the CENTRIFUGO_ENGINE_REDIS_ADDRESS.
+Redis is no longer exclusive to Centrifugo. The NestJS worker now actively uses the same Redis instance for three ingress-critical responsibilities:
 
-Centrifugo uses Redis for horizontal scalability (fast Pub/Sub between multiple Centrifugo nodes, though you only spin up one node currently) and for keeping state (memory of who is connected, and storing the exact missed socket messages for short "history" recovery when a mobile user reconnects).
+1. **Rate Limiting & Burst Protection**
+   The worker already uses Redis for per-minute counters, daily caps, and a short-term token bucket to smooth request spikes.
 
-While Centrifugo easily requires Redis to function optimally in production, your NestJS Worker and Admin Backend are notably absent from connecting to it.
+2. **Redis-First Idempotency**
+   The webhook now reserves idempotency keys in Redis first using tenant-scoped keys such as `idempotency:{tenantId}:{idempotencyKey}`. This avoids hot-path PostgreSQL reads for duplicate detection while still preserving the `processed_events` table as a durable audit and fallback layer.
 
-How We Can Fully Utilize It in the Future:
-Instead of treating Redis as just "Centrifugo's Database", the rest of the Notifications Microservice could leverage the exact same container to drastically lower the load on your PostgreSQL database:
+3. **API Key -> Tenant Resolution Cache**
+   Tenant lookup by API key is now cached in Redis using `tenant_api_key:{apiKey}` so the webhook no longer has to hit PostgreSQL on every happy-path request.
 
-1. **Idempotency Caching**: Right now, when a webhook triggers, NestJS hashes the payload and queries the PostgreSQL processed_events table. If thousands of requests hit per second, hitting Postgres for idempotency deduping gets very expensive. This should be a fast SETNX (Set if Not Exists) operation in Redis with an automatic 24-hour TTL expiration.
-2. **API Key -> Tenant Resolution**: Your Webhook heavily queries PostgreSQL to check where: { api_key } simply to get the active Tenant identity. API Keys rarely change. This resolution should be instantly cached in Redis.
-3. **Rate Limiting**: If your RateLimiterService is counting API hits in Postgres, moving this to Redis logic (like Lua sliding windows) is industry standard and significantly faster.
+**What Redis is doing today:**
+- Centrifugo engine state and Pub/Sub
+- Tenant API-key resolution cache
+- Idempotency reservation/completion cache
+- Rate limiting and burst protection
+
+**What PostgreSQL is still doing by design:**
+- Durable audit records for `processed_events`
+- Tenant source-of-truth storage
+- Notification history, logs, templates, and admin data
+
+**Current architectural stance:**
+Redis is the fast path for ingress and operational controls. PostgreSQL remains the durable system of record for traceability and recovery.
+
+**Useful future expansions from here:**
+1. Cache provider-config lookups for dispatch-time provider resolution.
+2. Cache template resolution for high-frequency event/template pairs.
+3. Add more explicit Redis namespace/versioning conventions for easier operational debugging.

@@ -1,41 +1,53 @@
-import { Controller, Inject, OnModuleInit, Get, Put, Param } from '@nestjs/common';
-import { ClientKafka, MessagePattern, Payload } from '@nestjs/microservices';
-import { RenderService } from './render.service';
+import { Controller, Inject, OnModuleInit, Get, Put, Param, Logger } from '@nestjs/common';
+import { ClientKafka, MessagePattern, Payload } from '@nestjs/microservices';import { AppLoggerService } from '../common/app-logger.service';import { RenderService } from './render.service';
 import prisma from '../config/prisma.config';
 import { randomUUID } from 'crypto';
 import { EnrichedKafkaPayload } from '../common/dto/events.dto';
 import { EmailDispatchPayload, SmsDispatchPayload, RealtimeDispatchPayload } from '../common/dto/admin.dto';
 
+/**
+ * Message processing controller that listens to enriched tenant events from Kafka
+ * and expands them into delivery actions for Email/SMS/PUSH channels.
+ *
+ * Also exposes REST endpoints for in-app notification history + read tracking.
+ */
 @Controller()
 export class NotificationsController implements OnModuleInit {
   private prisma = prisma;
 
   constructor(
     private readonly renderService: RenderService,
-    @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka
+    @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka,
+    private readonly logger: AppLoggerService,
   ) { }
 
+  /**
+   * Lifecycle hook: forces Kafka connection retry until connected.
+   */
   async onModuleInit() {
     let connected = false;
     while (!connected) {
       try {
         await this.kafkaClient.connect();
-        console.log("Kafka Client Connected to Go gateway");
+        this.logger.log("Kafka Client Connected to Go gateway");
         connected = true;
       } catch (err) {
-        console.error("Kafka not ready yet, retrying in 5 seconds...");
+        this.logger.warn("Kafka not ready yet, retrying in 5 seconds...");
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
   }
 
+  /**
+   * Kafka subscriber for tenant events.
+   * - Looks up active templates (global or tenant-specific)
+   * - Renders content via MJML/Text template service
+   * - Writes PENDING notification logs
+   * - Emits dispatch events for email/sms/realtime
+   */
   @MessagePattern('tenant.event.received')
   async handleTenantEvent(@Payload() data: EnrichedKafkaPayload) {
     const { userId, eventType, tenant, ...payloadData } = data;
-    console.log(`📩 Received generic event '${eventType}' for Tenant ID: ${tenant.id}`);
-
-    // R5: Fetch only the LATEST active version per channel_type using distinct grouping
-    // This prevents processing duplicate channels when multiple versions exist
     const whereClause = eventType.startsWith('global.')
       ? { event_type: eventType, is_active: true }
       : { tenant_id: tenant.id, event_type: eventType, is_active: true };
@@ -45,7 +57,6 @@ export class NotificationsController implements OnModuleInit {
       orderBy: { version: 'desc' },
     });
 
-    // R5: Keep only the latest version per channel_type to avoid duplicate dispatches
     const seenChannels = new Set<string>();
     const templates = allTemplates.filter(tpl => {
       if (seenChannels.has(tpl.channel_type)) return false;
@@ -54,7 +65,7 @@ export class NotificationsController implements OnModuleInit {
     });
 
     if (!templates || templates.length === 0) {
-      console.error(`❌ No Templates for Event '${eventType}' and Tenant '${tenant.id}' found in DB`);
+      this.logger.error(`❌ No Templates for Event '${eventType}' and Tenant '${tenant.id}' found in DB`);
       return;
     }
 
@@ -66,14 +77,9 @@ export class NotificationsController implements OnModuleInit {
       });
     }
 
-    // Iterate through the delivery matrix and dispatch per channel
     for (const template of templates) {
       const dynamicSubject = this.renderService.renderText(template.subject_line || 'Notification', payloadData as Record<string, unknown>).replace(/<[^>]*>?/gm, '');
       const notificationId = randomUUID();
-
-      // -----------------------------
-      // 🚀 BRANCH A: EMAIL TEMPLATE (KAFKA -> GO GATEWAY)
-      // -----------------------------
       if (template.channel_type === 'EMAIL') {
         const finalHtml = this.renderService.render(template.content_body, payloadData as Record<string, unknown>);
 
@@ -145,7 +151,7 @@ export class NotificationsController implements OnModuleInit {
       else if (template.channel_type === 'PUSH') {
         // You cannot send a targeted real-time push if there is no user
         if (!userId) {
-          console.warn(`Skipping PUSH notification for event '${eventType}' because the payload is missing a userId (e.g., Guest invite).`);
+          this.logger.warn(`Skipping PUSH notification for event '${eventType}' because the payload is missing a userId (e.g., Guest invite).`);
           continue;
         }
 
@@ -193,6 +199,12 @@ export class NotificationsController implements OnModuleInit {
   /**
    * Fetch the unread notification history for a specific user within a specific tenant ecosystem.
    */
+  /**
+   * Get unread notification history for a given tenant and user.
+   *
+   * @param tenantId tenant identifier
+   * @param userId user identifier
+   */
   @Get('api/v1/notifications/:tenantId/:userId')
   async getNotifications(
     @Param('tenantId') tenantId: string,
@@ -212,6 +224,13 @@ export class NotificationsController implements OnModuleInit {
 
   /**
    * Mark a specific notification as READ once the user views it.
+   */
+  /**
+   * Mark a user notification as READ.
+   *
+   * @param tenantId tenant identifier
+   * @param userId user identifier
+   * @param notificationId notification UUID
    */
   @Put('api/v1/notifications/:tenantId/:userId/:notificationId/read')
   async markAsRead(
@@ -252,7 +271,7 @@ export class NotificationsController implements OnModuleInit {
     tenantId: string;
     channel: string;
   }) {
-    console.log(`💀 DLQ: Persisting permanently failed notification ${data.notificationId}`);
+    this.logger.warn(`💀 DLQ: Persisting permanently failed notification ${data.notificationId}`);
 
     try {
       // Persist to failed_notifications table for admin review
@@ -278,9 +297,9 @@ export class NotificationsController implements OnModuleInit {
         }
       });
 
-      console.log(`💀 DLQ: Notification ${data.notificationId} persisted to failed_notifications table`);
+      this.logger.log(`💀 DLQ: Notification ${data.notificationId} persisted to failed_notifications table`);
     } catch (err) {
-      console.error(`❌ DLQ: Failed to persist dead letter for ${data.notificationId}:`, err);
+      this.logger.error(`❌ DLQ: Failed to persist dead letter for ${data.notificationId}:`, err);
     }
   }
 }

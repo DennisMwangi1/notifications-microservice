@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import mjml2html from 'mjml';
 import * as handlebars from 'handlebars';
+import { AppLoggerService } from '../common/app-logger.service';
 
 @Injectable()
 export class RenderService {
+  constructor(private readonly logger: AppLoggerService) {}
+
   /**
    * Transforms raw MJML + Data into final responsive HTML
    */
@@ -17,12 +20,12 @@ export class RenderService {
       });
 
       if (errors?.length) {
-        console.warn("MJML warnings:", errors);
+        this.logger.warn("MJML warnings", { errors });
       }
 
       return html;
     } catch (err) {
-      console.error("MJML render failed:", err);
+      this.logger.error("MJML render failed:", err);
       throw err;
     }
   }

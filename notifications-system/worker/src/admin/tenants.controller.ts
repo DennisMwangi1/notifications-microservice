@@ -1,23 +1,34 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException } from '@nestjs/common';
 import prisma from '../config/prisma.config';
+import { AppLoggerService } from '../common/app-logger.service';
 import { randomBytes } from 'crypto';
 import { CreateTenantDto, UpdateTenantDto } from '../common/dto/admin.dto';
+import { cacheTenantIdentity, invalidateTenantIdentityCache } from '../common/ingress-cache';
 
 @Controller('api/v1/admin/tenants')
 export class TenantsController {
+    constructor(private readonly logger: AppLoggerService) {}
 
-    // 1. Create a brand new tenant (Project Onboarding)
     @Post()
     async createTenant(@Body() body: CreateTenantDto) {
-        const { name, allowed_channels, provider_config_id, sender_email, sender_name, rate_limit_per_minute, daily_notification_cap } = body;
+        const {
+            name,
+            allowed_channels,
+            webhook_secret,
+            provider_config_id,
+            sender_email,
+            sender_name,
+            rate_limit_per_minute,
+            daily_notification_cap,
+        } = body;
 
-        // Generate a secure, 64-character hex string to act as the Tenant API Key
         const apiKey = randomBytes(32).toString('hex');
 
         const tenant = await prisma.tenants.create({
             data: {
                 name,
                 api_key: apiKey,
+                webhook_secret,
                 allowed_channels: allowed_channels || [],
                 provider_config_id,
                 sender_email,
@@ -27,10 +38,21 @@ export class TenantsController {
             }
         });
 
+        await cacheTenantIdentity(tenant.api_key, {
+            id: tenant.id,
+            name: tenant.name,
+            is_active: tenant.is_active,
+            webhook_secret: tenant.webhook_secret,
+            sender_email: tenant.sender_email,
+            sender_name: tenant.sender_name,
+            provider_config_id: tenant.provider_config_id,
+            rate_limit_per_minute: tenant.rate_limit_per_minute,
+            daily_notification_cap: tenant.daily_notification_cap,
+        }).catch((error) => this.logger.error('Failed to warm tenant cache after creation:', error));
+
         return { success: true, data: tenant };
     }
 
-    // 2. Fetch all tenants for the Super Admin Dashboard
     @Get()
     async getTenants() {
         const tenants = await prisma.tenants.findMany({
@@ -39,7 +61,6 @@ export class TenantsController {
         return { success: true, data: tenants };
     }
 
-    // 3. Fetch specific tenant details
     @Get(':id')
     async getTenant(@Param('id') id: string) {
         const tenant = await prisma.tenants.findUnique({
@@ -53,19 +74,39 @@ export class TenantsController {
         return { success: true, data: tenant };
     }
 
-    // 4. Update tenant configuration (like modifying their allowed Centrifugo channels)
     @Put(':id')
     async updateTenant(@Param('id') id: string, @Body() body: UpdateTenantDto) {
+        const existingTenant = await prisma.tenants.findUnique({
+            where: { id },
+            select: { api_key: true },
+        });
+
+        if (!existingTenant) {
+            throw new NotFoundException('Tenant not found');
+        }
+
         const tenant = await prisma.tenants.update({
             where: { id },
             data: body
         });
+
+        await invalidateTenantIdentityCache(existingTenant.api_key)
+            .catch((error) => this.logger.error('Failed to invalidate tenant cache after update:', error));
+
         return { success: true, data: tenant };
     }
 
-    // 5. Emergency Action: API Key Rotation
     @Put(':id/rotate-key')
     async rotateApiKey(@Param('id') id: string) {
+        const existingTenant = await prisma.tenants.findUnique({
+            where: { id },
+            select: { api_key: true },
+        });
+
+        if (!existingTenant) {
+            throw new NotFoundException('Tenant not found');
+        }
+
         const newApiKey = randomBytes(32).toString('hex');
 
         const tenant = await prisma.tenants.update({
@@ -73,16 +114,32 @@ export class TenantsController {
             data: { api_key: newApiKey }
         });
 
+        await Promise.all([
+            invalidateTenantIdentityCache(existingTenant.api_key),
+            invalidateTenantIdentityCache(newApiKey),
+        ]).catch((error) => this.logger.error('Failed to invalidate tenant cache after API key rotation:', error));
+
         return { success: true, message: 'API Key rotated securely', data: { api_key: tenant.api_key } };
     }
 
-    // 6. Deactivate a compromised or unpaid tenant
     @Delete(':id')
     async deactivateTenant(@Param('id') id: string) {
+        const existingTenant = await prisma.tenants.findUnique({
+            where: { id },
+            select: { api_key: true },
+        });
+
+        if (!existingTenant) {
+            throw new NotFoundException('Tenant not found');
+        }
+
         const tenant = await prisma.tenants.update({
             where: { id },
             data: { is_active: false }
         });
+
+        await invalidateTenantIdentityCache(existingTenant.api_key)
+            .catch((error) => this.logger.error('Failed to invalidate tenant cache after deactivation:', error));
 
         return { success: true, message: 'Tenant deactivated successfully', data: tenant };
     }

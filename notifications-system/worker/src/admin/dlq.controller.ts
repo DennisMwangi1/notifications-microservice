@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Delete, Param, Query, Inject } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
+import { AppLoggerService } from '../common/app-logger.service';
 import prisma from '../config/prisma.config';
 
 @Controller('api/v1/admin/dlq')
 export class DlqController {
     constructor(
-        @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka
+        @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka,
+        private readonly logger: AppLoggerService,
     ) { }
 
     /**
@@ -100,7 +102,7 @@ export class DlqController {
             },
         });
 
-        console.log(`🔄 DLQ: Manual retry triggered for notification ${item.notification_id}`);
+        this.logger.log(`🔄 DLQ: Manual retry triggered for notification ${item.notification_id}`);
 
         return {
             success: true,
@@ -132,7 +134,7 @@ export class DlqController {
             retried++;
         }
 
-        console.log(`🔄 DLQ: Bulk retry triggered for ${retried} notifications`);
+        this.logger.log(`🔄 DLQ: Bulk retry triggered for ${retried} notifications`);
 
         return {
             success: true,

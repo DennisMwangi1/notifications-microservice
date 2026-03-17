@@ -20,7 +20,7 @@ The platform is more mature than the previous roadmap reflected. The current imp
 - ✅ Template versioning with deactivate/reactivate rollback flows
 - ✅ In-app persistence via `in_app_notifications`
 - ✅ Notification audit logging via `notification_logs`
-- ✅ Redis-backed idempotency and rate-limiting foundations
+- ✅ Redis-backed tenant lookup, idempotency, and rate-limiting fast paths
 - ✅ Kafka dispatch, retry, and dead-letter topic flow
 - ✅ Go gateway channel adapter pattern and provider registry
 - ✅ BYOP-style provider configuration through `provider_configs`
@@ -32,7 +32,6 @@ The largest gaps that still block production are:
 - ❌ No authentication on `/api/v1/admin/*`
 - ❌ Provider delivery is incomplete: Resend is live, Twilio is simulated, SendGrid is still a stub
 - ❌ DTO validation and structured exception handling are still missing
-- ❌ DLQ management exists in the admin API, but not yet in the Admin UI
 - ❌ No health endpoints or observability stack
 
 ---
@@ -62,8 +61,9 @@ The largest gaps that still block production are:
 - [x] Tenant-level provider configuration model (`provider_configs`)
 
 ### 4. Reliability Features Already Added
-- [x] Idempotency support using `processed_events`
+- [x] Redis-first idempotency with PostgreSQL audit fallback
 - [x] 24-hour idempotency TTL with duplicate response reuse
+- [x] Redis-cached tenant API-key resolution for webhook ingress
 - [x] Redis-backed per-minute rate limiting
 - [x] Redis-backed daily notification caps
 - [x] Retry topic publishing with exponential backoff
@@ -111,16 +111,16 @@ DLQ management has already been set up in the admin backend.
 - [ ] DLQ viewer page is still missing in the Admin UI
 
 ### 9. Rate Limiting, Throttling & Quotas
-**Status:** Partial
+**Status:** Implemented
 
 - [x] Rate limit fields exist on `tenants`
 - [x] Redis sliding-window style enforcement exists for per-minute traffic
 - [x] Daily notification caps are enforced
-- [~] Retry timing is returned in the 429 response body
-- [ ] `Retry-After` header is not set explicitly
-- [ ] Burst protection / token bucket logic is not implemented
-- [ ] `max_template_count` exists in schema but is not enforced
-- [ ] Rate limit stats are not yet surfaced in the dashboard
+- [x] Retry timing is returned in the 429 response body
+- [x] `Retry-After` header is set explicitly
+- [x] Burst protection / token bucket logic is implemented
+- [x] `max_template_count` is enforced for tenant template creation
+- [x] Rate limit stats are surfaced in the dashboard
 
 ### 10. Delivery Status Tracking
 **Status:** Partial

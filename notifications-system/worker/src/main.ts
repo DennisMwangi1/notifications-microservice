@@ -1,9 +1,12 @@
 
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
+import { Logger } from '@nestjs/common';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 import { Kafka } from 'kafkajs';
+
+const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const kafka = new Kafka({
@@ -17,7 +20,7 @@ async function bootstrap() {
   while (!adminConnected) {
     try {
       await admin.connect();
-      console.log('Admin connected to Kafka successfully');
+      logger.log('Admin connected to Kafka successfully');
 
       await admin.createTopics({
         topics: [
@@ -27,21 +30,29 @@ async function bootstrap() {
           { topic: 'notification.dlq' },
         ],
       });
-      console.log('Ensured system topics exist (including retry + DLQ)');
+      logger.log('Ensured system topics exist (including retry + DLQ)');
 
       await admin.disconnect();
       adminConnected = true;
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
-      console.error('Kafka broker not quite ready, retrying admin connection in 5 seconds...', errMsg);
+      logger.error('Kafka broker not quite ready, retrying admin connection in 5 seconds...', errMsg);
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
 
   // Create standard HTTP API
+  const logLevels: Array<'log' | 'error' | 'warn' | 'debug' | 'verbose'> =
+      process.env.NODE_ENV === 'production'
+          ? ['error', 'warn', 'log']
+          : ['error', 'warn', 'log', 'debug', 'verbose'];
+
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
+    logger: logLevels,
   });
+
+  app.useLogger(logger);
 
   // Enable CORS so external projects' frontends can fetch tokens
   app.enableCors({
@@ -65,11 +76,11 @@ async function bootstrap() {
 
   // Start the Kafka listener
   await app.startAllMicroservices();
-  console.log('Notification Microservice connected to Kafka.');
+  logger.log('Notification Microservice connected to Kafka.');
 
   // Open HTTP Port for Project Integration (Auth, Webhooks)
   const port = process.env.PORT || 4000;
   await app.listen(port);
-  console.log(`Notification API HTTP Server is running on port ${port}`);
+  logger.log(`Notification API HTTP Server is running on port ${port}`);
 }
 bootstrap();
