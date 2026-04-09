@@ -1,8 +1,8 @@
 # Integration Guide: Utilizing the Notifications Microservice
 
-Welcome! This guide is designed for engineering teams (e.g., E-commerce, Fintech, TMaaS) who need to integrate with the Central Notifications Microservice. 
+Welcome! This guide is designed for engineering teams who need to integrate with the Central Notifications Microservice.
 
-By integrating with this service, your application gains the ability to seamlessly send **Emails**, **SMS**, and **Real-Time In-App popups (via WebSockets)** without having to install third-party SDKs, manage SMTP servers, or scale your own WebSocket infrastructure.
+By integrating with this service, your application gains the ability to send **Emails**, **SMS**, and **Real-Time In-App popups (via WebSockets)** without having to install third-party SDKs, manage SMTP servers, or scale your own WebSocket infrastructure.
 
 ---
 
@@ -11,8 +11,8 @@ By integrating with this service, your application gains the ability to seamless
 The Notifications Microservice follows a strict philosophy: **You provide the data; we handle the delivery.**
 
 1. **You trigger an event:** When something happens in your app (e.g., a service is applied, an order is placed), your backend makes a simple HTTP POST request to our webhook.
-2. **We compile the designs:** We look at database templates specifically tied to your project, merge your data into our beautiful HTML/SMS formats, and decouple the execution.
-3. **We deliver it everywhere:** We blast the Email via SendGrid, the SMS via Twilio, and the Real-time UI popup via Centrifugo—simultaneously.
+2. **We compile the templates:** We look at database templates tied to your project, merge your data into HTML/SMS/In-App content, and decouple execution through internal messaging.
+3. **We deliver it everywhere:** We dispatch Email, SMS, and Real-time UI popup jobs using the tenant's configured providers and channel templates, with Centrifugo used for real-time in-app delivery.
 
 ---
 
@@ -20,18 +20,71 @@ The Notifications Microservice follows a strict philosophy: **You provide the da
 
 Before you can write any code, you need to be onboarded onto the Notifications Engine. Request the following from the Core Notifications Team:
 
-1. **Tenant API Key (BACKEND ONLY):** Your heavily privileged secret key used to launch email/push webhooks. **Never expose this to a browser.** Keep this safely hidden in your backend server's `.env` file.
-2. **Tenant ID (PUBLIC FRONTEND):** Your public UUID identifier. Because you cannot expose your secret API Key to a browser, your React/Angular frontend uses this ID to safely fetch users' unread notification history (`GET /api/v1/notifications/{tenantId}/{userId}`). It poses zero security risk.
-3. **Webhook Secret (OPTIONAL - HIGH SECURITY):** An optional secret used to sign your webhook payloads with HMAC-SHA256. If you configure a secret, our server will reject any request that doesn't include a valid `X-Nucleus-Signature` header. This is the gold standard for prevents spoofing.
-4. **Template Configurations:** Sit down with the Notifications Team to define what events you will fire (e.g., `service.applied`) and design the corresponding Templates (Email MJML, plain text SMS, or short JSON for In-App Push).
+1. **Tenant API Key (BACKEND ONLY):** Your privileged secret key used to trigger notification webhooks. **Never expose this to a browser.** Keep it in your backend server's `.env` file.
+2. **Tenant ID (FRONTEND IDENTIFIER):** Your tenant UUID identifier. Your frontend uses this ID when requesting realtime tokens and when scoping notification-history requests. Treat it as a non-secret identifier, but do **not** assume tenantId alone is sufficient authorization for user data.
+3. **Webhook Secret (OPTIONAL - HIGH SECURITY):** An optional secret used to sign your webhook payloads with HMAC-SHA256. If you configure a secret, the server will reject any request that does not include a valid `X-Nucleus-Signature` header.
+4. **Template Configurations:** Work with the Notifications Team to define which events you will fire and which templates should be active for Email, SMS, or In-App Push.
 
 ---
 
-## 3. Step 1: Triggering Events from Your Backend
+## 3. Global Templates We Currently Support
 
-Whenever a business event occurs that requires user notification, your server should make an HTTPS request to the Microservice. 
+The worker supports **global templates** by resolving any event type that starts with `global.` against active templates where `tenant_id = null`.
 
-**Important:** Our engine ignores user preferences. **You** must check if your user has opted-in to notifications *before* hitting this endpoint!
+### 3.1 Current Standard Global Event Types
+
+These are the standard global template categories currently used in the system design and tenant integration flows:
+
+| `eventType` | Typical Meaning | Common Channel Usage |
+| :--- | :--- | :--- |
+| `global.info` | Informational update, normal workflow progress, non-critical success state | Push, Email |
+| `global.success` | Positive completion or approval outcome | Push, Email |
+| `global.warning` | Reminder, upcoming deadline, or cautionary status | Push, Email |
+| `global.alert` | Important issue, rejection, compliance alert, or urgent state | Push, Email |
+
+### 3.2 Additional Supported Global Category
+
+The current in-app notification styling logic also recognizes:
+
+| `eventType` | Meaning | Notes |
+| :--- | :--- | :--- |
+| `global.error` | System or workflow failure state | Supported by category handling in the worker if a matching active template is configured |
+
+### 3.3 Important Notes About Global Templates
+
+- A `global.*` event only works if a matching active template exists in the database.
+- Global templates are reusable across tenants because they are not tied to a specific `tenant_id`.
+- You can still create tenant-specific event types such as `service.applied` or `tmaas.chat.new_message` when you need custom copy or behavior.
+- For Email-enabled global events, include `recipientEmail` in the payload.
+- For SMS-enabled global events, include `recipientPhone` in the payload.
+- For Push-enabled global events, include `userId` in the payload.
+
+### 3.4 Recommended Payload Shape for Global Templates
+
+For the standard global templates, the safest payload is:
+
+```json
+{
+  "eventType": "global.info",
+  "payload": {
+    "userId": "uuid-of-the-recipient",
+    "recipientEmail": "user@example.com",
+    "recipientPhone": "+12345678900",
+    "title": "Service Request Created",
+    "message": "Your request has been received and is now under review."
+  }
+}
+```
+
+Use `title` and `message` as the baseline content fields for generic global templates unless your content team has explicitly configured different variables.
+
+---
+
+## 4. Step 1: Triggering Events from Your Backend
+
+Whenever a business event occurs that requires user notification, your server should make an HTTPS request to the microservice.
+
+**Important:** The engine does not enforce your app's user notification preferences. **You** must check whether the user has opted in before hitting this endpoint.
 
 ### API Endpoint: `POST /api/v1/events/trigger`
 
@@ -48,17 +101,18 @@ x-api-key: YOUR_SECRET_TENANT_API_KEY
   "payload": {
     "userId": "uuid-of-the-recipient",
     "serviceName": "Premium Subscription",
-    "recipient": "user@example.com",
+    "recipientEmail": "user@example.com",
+    "recipientPhone": "+12345678900",
     "amount": "$49.99"
   }
 }
 ```
 
-*Note: Any arbitrary keys you pass inside `payload` (like `serviceName` or `amount`) will automatically be injected into your dynamic Email/Push templates by the microservice.*
+*Note: Any arbitrary keys you pass inside `payload` (like `serviceName` or `amount`) can be injected into your dynamic templates by the microservice.*
 
-### 3.1 Webhook HMAC Security (Optional but Recommended)
+### 4.1 Webhook HMAC Security (Optional but Recommended)
 
-For production environments, we support signature verification to ensure requests truly originated from your backend.
+For production environments, the service supports signature verification to ensure requests truly originated from your backend.
 
 1. **Configure a Secret:** Provide your project's Webhook Secret to the Notifications Team.
 2. **Sign Your Payload:** Generate an HMAC-SHA256 hash of your **raw JSON request body** using your secret as the key.
@@ -73,14 +127,15 @@ X-Nucleus-Signature: <your_computed_hmac_hex>
 
 Refer to the [SDK Helpers Guide](./SDK-Helpers.md) for a ready-to-use TypeScript snippet for signing your payloads.
 
-### 3.2 Idempotency & Retries
+### 4.2 Idempotency & Retries
 
-To prevent duplicate notifications when your system retries a failed webhook, our microservice supports idempotency.
+To prevent duplicate notifications when your system retries a failed webhook, the microservice supports idempotency.
 
-By default, the engine will generate a SHA256 hash of your payload. If it sees the exact same hash within a 24-hour window, it will safely ignore the request and return a cached success response. 
+By default, the engine derives an idempotency key from the combination of **tenantId + eventType + payload**. If it sees the same effective request within the deduplication window, it will safely ignore the duplicate and return a cached success response.
 
 **Overriding Idempotency (Retriggering a Broadcast)**
-If you *intentionally* want to resend a duplicate notification within 24 hours (e.g., a reminder), you must provide a unique Idempotency Key. You can do this in two ways:
+
+If you intentionally want to resend a duplicate notification within the deduplication window (for example, a reminder), provide a unique idempotency key:
 
 ```http
 X-Idempotency-Key: your-unique-uuid-12345
@@ -88,11 +143,11 @@ X-Idempotency-Key: your-unique-uuid-12345
 
 ---
 
-## 4. Step 2: Email and SMS Delivery (Optional)
+## 5. Step 2: Email and SMS Delivery (Optional)
 
-If your Content Team has configured an **EMAIL** or **SMS** template for your event in the Admin UI, the Microservice needs to know exactly where to send it.
+If your Content Team has configured an **EMAIL** or **SMS** template for your event in the Admin UI, the microservice needs to know exactly where to send it.
 
-Because our engine is completely decoupled from your database, **you** must provide the user's contact information dynamically inside the `payload` object when firing the webhook. 
+Because the engine is completely decoupled from your database, **you** must provide the user's contact information dynamically inside the `payload` object when firing the webhook.
 
 If a template is active for either channel, ensure these specific keys are included in your webhook:
 
@@ -101,37 +156,34 @@ If a template is active for either channel, ensure these specific keys are inclu
   "eventType": "service.applied",
   "payload": {
     "userId": "uuid-of-the-recipient",
-    
-    // Required for EMAIL Templates:
     "recipientEmail": "customer@example.com",
-    
-    // Required for SMS Templates (Must include Country Code):
     "recipientPhone": "+12345678900",
-    
-    // ... any other custom template variables (e.g., amount, serviceName)
+    "amount": "$49.99",
+    "serviceName": "Premium Subscription"
   }
 }
 ```
 
-*Note: If the Content Team created an Email template, but you forget to include `recipientEmail` in the payload, the microservice will log an error and gracefully drop that specific email job while continuing to process the In-App and SMS notifications.*
+**Important:** The current worker implementation expects `recipientEmail` for EMAIL templates and `recipientPhone` for SMS templates. If you omit one of these fields, downstream dispatch may still be attempted with a fallback placeholder value, so your integration should validate these fields before calling the webhook.
 
 ---
 
-## 5. Step 3: Implementing Real-Time UI Popups (Frontend)
+## 6. Step 3: Implementing Real-Time UI Popups (Frontend)
 
-*(Note: If your project only leverages our microservice for Email and SMS delivery, you can skip Step 2 and Step 3 entirely! WebSockets are used **exclusively** for live In-App Push popups).*
+*If your project only uses the microservice for Email and SMS delivery, you can skip this step. WebSockets are used exclusively for live In-App Push notifications.*
 
-To display live pop-up notifications the second your backend fires an In-App event, your frontend (React, Vue, Angular) needs to connect to our **Centrifugo WebSocket Server**. 
+To display live pop-up notifications as soon as your backend fires an In-App event, your frontend (React, Vue, Angular) needs to connect to the **Centrifugo WebSocket Server**.
 
-### 5.1. Requesting a Real-Time Token
-Your frontend cannot connect to Centrifugo directly. It must first request a secure JSON Web Token (JWT) from our Auth bridge.
+### 6.1 Requesting a Real-Time Token
 
-**API Endpoint: `POST /api/v1/auth/realtime-token`**
+Your frontend cannot connect to Centrifugo directly. It must first request a secure JSON Web Token (JWT) from the Auth bridge.
+
+**API Endpoint:** `POST /api/v1/auth/realtime-token`
 
 **Request Body:**
 ```json
 {
-  "tenantId": "YOUR_PUBLIC_PROJECT_ID", // Find this in the Admin UI Tenants Page (Looks like a UUID)
+  "tenantId": "YOUR_TENANT_ID",
   "userId": "uuid-of-the-logged-in-user"
 }
 ```
@@ -147,27 +199,26 @@ Your frontend cannot connect to Centrifugo directly. It must first request a sec
 }
 ```
 
-### 5.2. Connecting to the WebSocket Pipe
-Install the `centrifuge` JavaScript SDK in your frontend application. Pass the generated JWT, and instruct it to loop through and subscribe to the `channels` provided in the HTTP response.
+### 6.2 Connecting to the WebSocket Pipe
+
+Install the `centrifuge` JavaScript SDK in your frontend application. Pass the generated JWT, and subscribe to each channel returned by the API.
 
 ```javascript
 import { Centrifuge } from 'centrifuge';
 
 const centrifuge = new Centrifuge('ws://notifications.yourdomain.com/connection/websocket', {
-    token: response.token // The JWT from Step 5.1
+  token: response.token
 });
 
-// Autonomously subscribe to all allowed channels returned by the API
-response.channels.forEach(channelName => {
-    const sub = centrifuge.newSubscription(channelName);
-    
-    sub.on('publication', function(ctx) {
-        // Here is where you trigger your React Toast/Notification Popup!
-        console.log("New Live Notification Received!", ctx.data);
-        showToast(ctx.data.title, ctx.data.body);
-    });
+response.channels.forEach((channelName) => {
+  const sub = centrifuge.newSubscription(channelName);
 
-    sub.subscribe();
+  sub.on('publication', function (ctx) {
+    console.log('New Live Notification Received!', ctx.data);
+    showToast(ctx.data.title, ctx.data.body);
+  });
+
+  sub.subscribe();
 });
 
 centrifuge.connect();
@@ -175,16 +226,19 @@ centrifuge.connect();
 
 ---
 
-## 6. Step 4: Integrating the "Notification Bell" History (Frontend)
+## 7. Step 4: Integrating the Notification Bell History (Frontend)
 
-What happens if the user was offline when you triggered the event? Our microservice automatically backed it up to a persistent PostgreSQL database! 
+What happens if the user was offline when you triggered the event? The microservice automatically persists the in-app notification in PostgreSQL.
 
-Your frontend should implement a "Notification Bell" icon that pulls this offline history down upon login.
+Your frontend can implement a notification bell that loads this history on login or page refresh.
 
-### 6.1. Fetching Unread History
-When your application loads, hit this endpoint to populate the User's notification feed.
+### 7.1 Fetching Notification History
 
-**API Endpoint: `GET /api/v1/notifications/{tenantId}/{userId}`**
+When your application loads, hit this endpoint to populate the user's notification feed.
+
+**Current behavior:** this endpoint returns the latest notifications for that tenant/user pair (up to 50 records), ordered newest first. It is **not** currently filtered to `UNREAD` only.
+
+**API Endpoint:** `GET /api/v1/notifications/{tenantId}/{userId}`
 
 **Response:**
 ```json
@@ -203,19 +257,41 @@ When your application loads, hit this endpoint to populate the User's notificati
 }
 ```
 
-### 6.2. Marking a Notification as Read
-When the user physically clicks on a notification in the UI drop-down feed, fire a request to mark it as read, removing the red dot from their bell icon.
+### 7.2 Marking a Notification as Read
 
-**API Endpoint: `PUT /api/v1/notifications/{tenantId}/{userId}/{notificationId}/read`**
+When the user clicks on a notification in the UI feed, call the read endpoint so the item can be marked as read.
 
-*(No body required. A simple standard 200 OK will be returned indicating success).*
+**API Endpoint:** `PUT /api/v1/notifications/{tenantId}/{userId}/{notificationId}/read`
+
+No request body is required.
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "Notification marked as READ"
+}
+```
+
+If the notification is not found for that tenant/user combination, the API currently responds with:
+
+```json
+{
+  "success": false,
+  "message": "Notification not found or access denied."
+}
+```
 
 ---
 
-## 7. Project Checklist
+## 8. Project Checklist
 
 Before moving to production, ensure your project team has validated:
-- [ ] You are not exposing your Tenant API Key in your client-side frontend code.
-- [ ] Your backend correctly filters out users who have opted-out of alerts before pinging the webhook.
-- [ ] Your frontend requests a new Centrifugo Token upon user login/authentication refreshes.
-- [ ] The `payload` object structure you send in the Webhook matches the exact variable structure defined in your approved UI Templates.
+
+- [ ] You are not exposing your Tenant API Key in client-side frontend code.
+- [ ] Your backend correctly filters out users who have opted out of alerts before calling the webhook.
+- [ ] Your backend validates `recipientEmail` and `recipientPhone` before calling `POST /api/v1/events/trigger` for EMAIL/SMS-enabled events.
+- [ ] Your backend uses the appropriate `global.*` event types when routing through reusable global templates.
+- [ ] Your frontend requests a new Centrifugo token upon user login and token refresh flows.
+- [ ] Your frontend does not rely on `tenantId` alone as proof of authorization for user notification history.
+- [ ] The `payload` object structure you send in the webhook matches the variable structure defined in your approved templates.
