@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { API_URL } from '../../lib/api';
+import { authHeaders } from '../../lib/auth';
 
 interface ProviderConfig {
     id: string;
@@ -39,7 +40,7 @@ export default function ProvidersPage() {
     const fetchProviders = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${API_URL}/api/v1/admin/providers`);
+            const res = await fetch(`${API_URL}/api/v1/admin/providers`, { headers: authHeaders() });
             const json = await res.json();
             if (json.success) setProviders(json.data);
         } catch (err) { console.error('Failed to fetch provider configs:', err); }
@@ -50,7 +51,7 @@ export default function ProvidersPage() {
         e.preventDefault();
         try {
             const res = await fetch(`${API_URL}/api/v1/admin/providers`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
                     name: newName,
                     provider: newProvider,
@@ -94,7 +95,7 @@ export default function ProvidersPage() {
             }
 
             const res = await fetch(`${API_URL}/api/v1/admin/providers/${editingProvider.id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify(payload),
             });
             const json = await res.json();
@@ -115,7 +116,7 @@ export default function ProvidersPage() {
     const handleDelete = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete ${name}? Projects explicitly relying on this will fallback to system defaults.`)) return;
         try {
-            const res = await fetch(`${API_URL}/api/v1/admin/providers/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_URL}/api/v1/admin/providers/${id}`, { method: 'DELETE', headers: authHeaders() });
             const json = await res.json();
             if (json.success) {
                 setProviders(providers.filter(p => p.id !== id));

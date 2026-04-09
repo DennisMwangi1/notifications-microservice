@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException, UseGuards } from '@nestjs/common';
 import prisma from '../config/prisma.config';
 import { CreateProviderConfigDto, UpdateProviderConfigDto } from '../common/dto/admin.dto';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 
 @Controller('api/v1/admin/providers')
+@UseGuards(AdminAuthGuard)
 export class ProvidersController {
 
     // 1. Create a brand new provider configuration

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { API_URL } from '../../lib/api';
+import { authHeaders } from '../../lib/auth';
 
 interface Tenant { id: string; name: string; }
 
@@ -49,8 +50,8 @@ export default function TemplatesPage() {
         try {
             setLoading(true);
             const [tplRes, tntRes] = await Promise.all([
-                fetch(`${API_URL}/api/v1/admin/templates`),
-                fetch(`${API_URL}/api/v1/admin/tenants`)
+                fetch(`${API_URL}/api/v1/admin/templates`, { headers: authHeaders() }),
+                fetch(`${API_URL}/api/v1/admin/tenants`, { headers: authHeaders() })
             ]);
             const [tplJson, tntJson] = await Promise.all([tplRes.json(), tntRes.json()]);
             if (tplJson.success) setTemplates(tplJson.data.filter((t: Template) => t.tenant_id === null));
@@ -63,7 +64,7 @@ export default function TemplatesPage() {
         e.preventDefault();
         try {
             const res = await fetch(`${API_URL}/api/v1/admin/templates`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
                     tenant_id: null, event_type: eventType, channel_type: channelType,
                     subject_line: subjectLine || null, content_body: contentBody,
@@ -78,7 +79,7 @@ export default function TemplatesPage() {
     const handleDeactivate = async (templateId: string, version: number) => {
         if (!confirm(`Deactivate v${version}? Requests will fallback to the previous active version.`)) return;
         try {
-            const res = await fetch(`${API_URL}/api/v1/admin/templates/${templateId}/version/${version}/deactivate`, { method: 'PUT' });
+            const res = await fetch(`${API_URL}/api/v1/admin/templates/${templateId}/version/${version}/deactivate`, { method: 'PUT', headers: authHeaders() });
             const json = await res.json();
             if (json.success) {
                 setTemplates(prev => prev.map(t => t.template_id === templateId && t.version === version ? { ...t, is_active: false } : t));
@@ -89,7 +90,7 @@ export default function TemplatesPage() {
 
     const handleReactivate = async (templateId: string, version: number) => {
         try {
-            const res = await fetch(`${API_URL}/api/v1/admin/templates/${templateId}/version/${version}/reactivate`, { method: 'PUT' });
+            const res = await fetch(`${API_URL}/api/v1/admin/templates/${templateId}/version/${version}/reactivate`, { method: 'PUT', headers: authHeaders() });
             const json = await res.json();
             if (json.success) {
                 setTemplates(prev => prev.map(t => t.template_id === templateId && t.version === version ? { ...t, is_active: true } : t));
@@ -112,7 +113,7 @@ export default function TemplatesPage() {
         setDetailTemplate(tpl);
         setLoadingHistory(true);
         try {
-            const res = await fetch(`${API_URL}/api/v1/admin/templates/${tpl.template_id}/versions`);
+            const res = await fetch(`${API_URL}/api/v1/admin/templates/${tpl.template_id}/versions`, { headers: authHeaders() });
             const json = await res.json();
             if (json.success) setVersionHistory(json.data);
         } catch (err) { console.error('Failed to fetch history', err); }

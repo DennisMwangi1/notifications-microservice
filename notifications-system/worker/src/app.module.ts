@@ -1,4 +1,4 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Global, Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { EventsModule } from './events/events.module';
@@ -7,6 +7,7 @@ import { AppLoggerService } from './common/app-logger.service';
 import { RequestContextService } from './common/request-context.service';
 import { LoggerMiddleware } from './common/logger.middleware';
 
+@Global()
 @Module({
     imports: [AuthModule, NotificationsModule, EventsModule, AdminModule],
     providers: [AppLoggerService, RequestContextService],

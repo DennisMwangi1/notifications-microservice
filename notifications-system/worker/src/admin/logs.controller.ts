@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import prisma from '../config/prisma.config';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 
 @Controller('api/v1/admin/logs')
+@UseGuards(AdminAuthGuard)
 export class LogsController {
 
     @Get()

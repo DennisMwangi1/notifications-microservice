@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TenantsController } from './tenants.controller';
 import { TemplatesController } from './templates.controller';
@@ -6,8 +6,12 @@ import { StatsController } from './stats.controller';
 import { LogsController } from './logs.controller';
 import { ProvidersController } from './providers.controller';
 import { DlqController } from './dlq.controller';
+import { AdminAuthController } from './admin-auth.controller';
+import { TemplatePreviewController } from './template-preview.controller';
 import { RateLimiterService } from '../common/rate-limiter.service';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 
+@Global()
 @Module({
     imports: [
         ClientsModule.register([
@@ -24,7 +28,16 @@ import { RateLimiterService } from '../common/rate-limiter.service';
             },
         ]),
     ],
-    providers: [RateLimiterService],
-    controllers: [TenantsController, TemplatesController, StatsController, LogsController, ProvidersController, DlqController],
+    providers: [RateLimiterService, AdminAuthGuard],
+    controllers: [
+        AdminAuthController,
+        TenantsController,
+        TemplatesController,
+        TemplatePreviewController,
+        StatsController,
+        LogsController,
+        ProvidersController,
+        DlqController,
+    ],
 })
 export class AdminModule { }

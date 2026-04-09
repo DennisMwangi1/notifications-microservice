@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Put, Body, Param, Query, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, ForbiddenException, UseGuards } from '@nestjs/common';
 import prisma from '../config/prisma.config';
 import { randomUUID } from 'crypto';
 import { CreateTemplateDto } from '../common/dto/admin.dto';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 
 @Controller('api/v1/admin/templates')
+@UseGuards(AdminAuthGuard)
 export class TemplatesController {
 
     // 1. Create a new iteration/version of a template (Content Editing)

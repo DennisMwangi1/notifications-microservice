@@ -1,8 +1,10 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import prisma from '../config/prisma.config';
 import { RateLimiterService } from '../common/rate-limiter.service';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 
 @Controller('api/v1/admin/stats')
+@UseGuards(AdminAuthGuard)
 export class StatsController {
     constructor(private readonly rateLimiterService: RateLimiterService) { }
 

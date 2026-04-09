@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { API_URL } from '../../lib/api';
+import { authHeaders } from '../../lib/auth';
 
 interface Tenant {
     id: string;
@@ -59,7 +60,7 @@ export default function TenantsPage() {
     const fetchTenants = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${API_URL}/api/v1/admin/tenants`);
+            const res = await fetch(`${API_URL}/api/v1/admin/tenants`, { headers: authHeaders() });
             const json = await res.json();
             if (json.success) setTenants(json.data);
         } catch (err) { console.error('Failed to fetch tenants:', err); }
@@ -68,7 +69,7 @@ export default function TenantsPage() {
 
     const fetchProviders = async () => {
         try {
-            const res = await fetch(`${API_URL}/api/v1/admin/providers`);
+            const res = await fetch(`${API_URL}/api/v1/admin/providers`, { headers: authHeaders() });
             const json = await res.json();
             if (json.success) setProviders(json.data);
         } catch (err) { console.error('Failed to fetch providers:', err); }
@@ -79,7 +80,7 @@ export default function TenantsPage() {
         const channelsArray = newChannels.split(',').map(c => c.trim()).filter(Boolean);
         try {
             const res = await fetch(`${API_URL}/api/v1/admin/tenants`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
                     name: newTenantName,
                     allowed_channels: channelsArray,
@@ -118,7 +119,7 @@ export default function TenantsPage() {
         const channelsArray = editChannels.split(',').map(c => c.trim()).filter(Boolean);
         try {
             const res = await fetch(`${API_URL}/api/v1/admin/tenants/${editingTenant.id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
                     name: editTenantName,
                     allowed_channels: channelsArray,
@@ -150,7 +151,7 @@ export default function TenantsPage() {
     const handleRotateKey = async (id: string) => {
         if (!confirm('Are you sure you want to rotate this API key? Existing integrations will break immediately.')) return;
         try {
-            const res = await fetch(`${API_URL}/api/v1/admin/tenants/${id}/rotate-key`, { method: 'PUT' });
+            const res = await fetch(`${API_URL}/api/v1/admin/tenants/${id}/rotate-key`, { method: 'PUT', headers: authHeaders() });
             const json = await res.json();
             if (json.success) {
                 setTenants(tenants.map(t => t.id === id ? { ...t, api_key: json.data.api_key } : t));
@@ -163,7 +164,7 @@ export default function TenantsPage() {
         if (!confirm(`Are you sure you want to ${currentStatus ? 'Deactivate' : 'Reactivate'} this Tenant?`)) return;
         try {
             const res = await fetch(`${API_URL}/api/v1/admin/tenants/${id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({ is_active: !currentStatus })
             });
             const json = await res.json();

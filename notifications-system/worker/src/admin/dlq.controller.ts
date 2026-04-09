@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Delete, Param, Query, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Query, Inject, UseGuards } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { AppLoggerService } from '../common/app-logger.service';
 import prisma from '../config/prisma.config';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 
 @Controller('api/v1/admin/dlq')
+@UseGuards(AdminAuthGuard)
 export class DlqController {
     constructor(
         @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka,

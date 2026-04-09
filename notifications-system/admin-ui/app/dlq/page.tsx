@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { API_URL } from '../../lib/api';
+import { authHeaders } from '../../lib/auth';
 
 interface DLQEntry {
   id: string;
@@ -46,7 +47,7 @@ export default function DLQPage() {
       if (filter === 'permanent') params.set('permanentlyFailed', 'true');
       if (filter === 'retryable') params.set('permanentlyFailed', 'false');
 
-      const res = await fetch(`${API_URL}/api/v1/admin/dlq?${params}`);
+      const res = await fetch(`${API_URL}/api/v1/admin/dlq?${params}`, { headers: authHeaders() });
       const json = await res.json();
       if (json.success) {
         setEntries(json.data);
@@ -66,7 +67,7 @@ export default function DLQPage() {
   const handleRetry = async (id: string) => {
     setActionLoading(id);
     try {
-      await fetch(`${API_URL}/api/v1/admin/dlq/${id}/retry`, { method: 'POST' });
+      await fetch(`${API_URL}/api/v1/admin/dlq/${id}/retry`, { method: 'POST', headers: authHeaders() });
       await fetchEntries();
     } catch (err) {
       console.error('Retry failed:', err);
@@ -78,7 +79,7 @@ export default function DLQPage() {
   const handleRetryAll = async () => {
     setActionLoading('retry-all');
     try {
-      await fetch(`${API_URL}/api/v1/admin/dlq/retry-all`, { method: 'POST' });
+      await fetch(`${API_URL}/api/v1/admin/dlq/retry-all`, { method: 'POST', headers: authHeaders() });
       await fetchEntries();
     } catch (err) {
       console.error('Retry all failed:', err);
@@ -91,7 +92,7 @@ export default function DLQPage() {
     if (!confirm('Are you sure you want to permanently delete this DLQ entry?')) return;
     setActionLoading(id);
     try {
-      await fetch(`${API_URL}/api/v1/admin/dlq/${id}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/api/v1/admin/dlq/${id}`, { method: 'DELETE', headers: authHeaders() });
       setSelectedEntry(null);
       await fetchEntries();
     } catch (err) {

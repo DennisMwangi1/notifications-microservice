@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { API_URL } from '../lib/api';
+import { authHeaders } from '../lib/auth';
 
 interface DashboardStats {
   tenants: { total: number; active: number };
@@ -70,7 +71,7 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/admin/stats`);
+      const res = await fetch(`${API_URL}/api/v1/admin/stats`, { headers: authHeaders() });
       const json = await res.json();
       if (json.success) setStats(json.data);
     } catch (err) {

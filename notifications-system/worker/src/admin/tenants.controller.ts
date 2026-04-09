@@ -1,11 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException, UseGuards } from '@nestjs/common';
 import prisma from '../config/prisma.config';
 import { AppLoggerService } from '../common/app-logger.service';
 import { randomBytes } from 'crypto';
 import { CreateTenantDto, UpdateTenantDto } from '../common/dto/admin.dto';
 import { cacheTenantIdentity, invalidateTenantIdentityCache } from '../common/ingress-cache';
+import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 
 @Controller('api/v1/admin/tenants')
+@UseGuards(AdminAuthGuard)
 export class TenantsController {
     constructor(private readonly logger: AppLoggerService) {}
 
