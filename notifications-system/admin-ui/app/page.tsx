@@ -108,7 +108,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="border-b border-slate-200 pb-8 mt-2 relative">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-gradient-to-br from-indigo-100 to-purple-50 rounded-full blur-3xl opacity-50 -z-10"></div>
-        <h2 className="text-4xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">DQ SDO Overview</h2>
+        <h2 className="text-4xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">Dashboard Overview</h2>
         <p className="text-sm font-medium text-slate-500">Real-time telemetry and management plane for your notification microservices.</p>
       </div>
 

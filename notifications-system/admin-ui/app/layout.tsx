@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Link from 'next/link';
+import { theme } from '../lib/theme-config';
 import { ErrorBoundary } from '../lib/error-boundary';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'DQ SDO | Notifications Microservice',
-  description: 'Notifications Microservice Admin Panel',
+  title: `${theme.brandName} | ${theme.tagline}`,
+  description: theme.description,
 };
 
 export default function RootLayout({
@@ -22,10 +23,10 @@ export default function RootLayout({
         {/* Sidebar */}
         <aside className="w-64 bg-slate-950 border-r border-slate-800 flex flex-col shadow-xl z-10 text-slate-300">
           <div className="p-6 border-b border-slate-800/60">
-            <h1 className="text-2xl font-black bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
-              DQ SDO
+            <h1 className={`text-2xl font-black bg-gradient-to-br ${theme.sidebar.logoGradient} bg-clip-text text-transparent drop-shadow-sm`}>
+              {theme.brandName}
             </h1>
-            <p className="text-[10px] text-slate-500 mt-1.5 uppercase tracking-widest font-bold">Notifications Admin</p>
+            <p className="text-[10px] text-slate-500 mt-1.5 uppercase tracking-widest font-bold">{theme.tagline}</p>
           </div>
 
           <nav className="flex-1 px-4 space-y-2 mt-6">
@@ -64,6 +65,12 @@ export default function RootLayout({
                 <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
               </span>
               Integrations
+            </Link>
+            <Link href="/dlq" className="flex items-center px-4 py-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group">
+              <span className="w-5 h-5 mr-3 text-slate-500 group-hover:text-rose-400 transition-colors">
+                <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+              </span>
+              Dead Letter Queue
             </Link>
           </nav>
         </aside>
