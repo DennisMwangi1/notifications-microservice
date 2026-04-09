@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { API_URL } from '../../../lib/api';
-import { authHeaders } from '../../../lib/auth';
+import { API_URL } from '../../../../lib/api';
+import { authHeaders } from '../../../../lib/auth';
 
 const DEFAULT_MJML = `<mjml>
   <mj-body background-color="#f4f4f5">
@@ -132,11 +132,10 @@ export default function TemplatePlaygroundPage() {
                 <button
                     onClick={handleRender}
                     disabled={loading}
-                    className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm ${
-                        loading
+                    className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm ${loading
                             ? 'bg-violet-400 text-white cursor-wait'
                             : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white hover:shadow-violet-500/25 hover:shadow-lg'
-                    }`}
+                        }`}
                 >
                     {loading ? (
                         <span className="flex items-center gap-2">
@@ -163,15 +162,14 @@ export default function TemplatePlaygroundPage() {
                     <button
                         key={ch}
                         onClick={() => handleChannelChange(ch)}
-                        className={`px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
-                            channelType === ch
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${channelType === ch
                                 ? ch === 'EMAIL'
                                     ? 'bg-sky-50 text-sky-600 border-sky-200 ring-2 ring-sky-500/10'
                                     : ch === 'SMS'
-                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200 ring-2 ring-emerald-500/10'
-                                    : 'bg-amber-50 text-amber-600 border-amber-200 ring-2 ring-amber-500/10'
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200 ring-2 ring-emerald-500/10'
+                                        : 'bg-amber-50 text-amber-600 border-amber-200 ring-2 ring-amber-500/10'
                                 : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
-                        }`}
+                            }`}
                     >
                         {ch}
                     </button>
@@ -254,9 +252,8 @@ export default function TemplatePlaygroundPage() {
                             <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
                                 <button
                                     onClick={() => setViewMode('desktop')}
-                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${
-                                        viewMode === 'desktop' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${viewMode === 'desktop' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                                        }`}
                                 >
                                     <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
@@ -265,9 +262,8 @@ export default function TemplatePlaygroundPage() {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('mobile')}
-                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${
-                                        viewMode === 'mobile' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${viewMode === 'mobile' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                                        }`}
                                 >
                                     <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
@@ -289,9 +285,8 @@ export default function TemplatePlaygroundPage() {
                     {/* HTML Preview */}
                     {channelType === 'EMAIL' ? (
                         <div
-                            className={`bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${
-                                viewMode === 'mobile' ? 'max-w-[375px] mx-auto' : 'w-full'
-                            }`}
+                            className={`bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${viewMode === 'mobile' ? 'max-w-[375px] mx-auto' : 'w-full'
+                                }`}
                         >
                             {previewHtml ? (
                                 <iframe

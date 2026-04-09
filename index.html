@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nucleus | Notification Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+                    },
+                    colors: {
+                        gray: {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        }
+        
+        /* SVG Overlay for lines and dots */
+        #svg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Minimalist boxes for architecture section */
+        .arch-box {
+            background: #ffffff;
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* clean light shadow */
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        .arch-box.active-glow {
+            border-color: #111827; /* gray-900 border */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
+            z-index: 20;
+        }
+
+        .container-box {
+            background: #f9fafb; /* gray-50 */
+            border: 1px dashed #d1d5db; /* gray-300 */
+            border-radius: 0.75rem;
+            position: relative;
+            padding: 1.5rem;
+        }
+
+        .container-label {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #f9fafb;
+            padding: 0 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280; /* gray-500 */
+        }
+        
+        /* Specialized container labels that sit on white */
+        .container-label.bg-white-label {
+            background: #ffffff;
+        }
+
+        .connection-line {
+            fill: none;
+            stroke: #d1d5db; /* gray-300 */
+            stroke-width: 1.5;
+            stroke-dasharray: 4, 4;
+            transition: stroke 0.3s ease;
+        }
+
+        .connection-line.active {
+            stroke: #111827; /* gray-900 */
+            stroke-dasharray: none;
+            stroke-width: 2;
+        }
+
+        .pulse-dot {
+            fill: #111827; /* High contrast black/slate-900 ping */
+            filter: drop-shadow(0 0 4px rgba(17, 24, 39, 0.3));
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .fade-in { opacity: 1 !important; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased selection:bg-gray-900 selection:text-white relative w-full h-full">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 z-50">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="font-bold text-xl tracking-tight text-gray-900 flex items-center gap-2">
+                <div class="w-6 h-6 bg-gray-900 rounded flex items-center justify-center">
+                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+                Nucleus
+            </div>
+            <a href="mailto:demo@example.com" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Request Live Demo &rarr;
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="pt-32 pb-20 px-6 border-b border-gray-200 bg-white grid-bg">
+        <div class="max-w-4xl mx-auto text-center mt-12">
+            <h1 class="text-5xl md:text-6xl font-bold tracking-tight text-gray-900 mb-6 leading-tight">
+                Orchestrate multi-tenant notifications at scale.
+            </h1>
+            <p class="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+                A robust pipeline decoupling messaging logic from your microservices. Delivering high-throughput ingestion, intelligent routing, and strict data isolation.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#architecture" class="px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors shadow-sm">
+                    View Architecture
+                </a>
+                <a href="integration.html" class="px-6 py-3 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm">
+                    Read Integration Guide
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- The Problem / Solution -->
+    <section class="py-20 px-6 bg-white border-b border-gray-200">
+        <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 lg:gap-24">
+            <div>
+                <div class="text-sm font-bold tracking-widest text-gray-400 uppercase mb-3">The Challenge</div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4 leading-snug">
+                    Notification handling inevitably pollutes core business logic.
+                </h2>
+                <p class="text-gray-600 leading-relaxed">
+                    As platforms expand into multi-tenancy, developers face fragmented integrations across Email, SMS, and Push providers. Rate limits fail downstream requests, localized templates become unmanageable, and retry mechanisms clutter core microservices resulting in lost messages and poor observability.
+                </p>
+            </div>
+            <div>
+                <div class="text-sm font-bold tracking-widest text-gray-400 uppercase mb-3">The Nucleus Approach</div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4 leading-snug">
+                    A decoupled, event-driven engine acting as the single source of truth.
+                </h2>
+                <p class="text-gray-600 leading-relaxed">
+                    Nucleus acts as a standalone notification utility. Microservices simply fire and forget an event describing the intent. Nucleus intercepts this event in Go, buffers it instantly in Kafka, and delegates processing to Node.js workers that enforce tenant rules, compile MJML templates, and guarantee fault-tolerant delivery.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Diagram (Minimalist Layout) -->
+    <section id="architecture" class="py-24 px-6 bg-gray-50 border-b border-gray-200 relative z-10">
+
+        <div class="max-w-6xl mx-auto relative z-10" id="arch-container">
+            <!-- SVG Layer for connections and glowing pulse -->
+            <svg id="svg-layer" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index: 5; pointer-events: none;"></svg>
+            
+            <div class="mb-16 text-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Pipeline Architecture</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Real-time event processing and dispatch flow with strict tenant boundary enforcement.</p>
+            </div>
+
+            <!-- Top Row: Tenants & Admin -->
+            <div class="flex flex-wrap justify-between gap-6 mb-16">
+                <div class="arch-box p-4 text-center w-40 flex-1" id="tenant-a">
+                    <div class="font-bold text-gray-900 text-sm">Tenant A</div>
+                    <div class="text-xs text-gray-500 mt-1">E-commerce</div>
+                </div>
+                <div class="arch-box p-4 text-center w-40 flex-1" id="tenant-b">
+                    <div class="font-bold text-gray-900 text-sm">Tenant B</div>
+                    <div class="text-xs text-gray-500 mt-1">CRM</div>
+                </div>
+                <div class="arch-box p-4 text-center w-40 flex-1" id="tenant-c">
+                    <div class="font-bold text-gray-900 text-sm">Tenant C</div>
+                    <div class="text-xs text-gray-500 mt-1">Fintech</div>
+                </div>
+                <div class="arch-box p-4 text-center w-40 flex-1 border-gray-300" id="admin-ui">
+                    <div class="font-bold text-gray-900 text-sm">Admin UI</div>
+                    <div class="text-xs text-gray-500 mt-1">Next.js</div>
+                </div>
+            </div>
+
+            <!-- Middle: NestJS Worker -->
+            <div class="container-box mb-16">
+                <div class="container-label border border-gray-200">NestJS Worker (TypeScript)</div>
+                
+                <div class="flex flex-wrap justify-between gap-4 mt-4">
+                    <div class="arch-box p-4 text-center w-36 flex-1" id="ingress">
+                        <div class="text-sm font-semibold text-gray-900">Webhook Ingress</div>
+                    </div>
+                    <div class="arch-box p-4 text-center w-36 flex-1" id="router">
+                        <div class="text-sm font-semibold text-gray-900">Template Router</div>
+                    </div>
+                    <div class="arch-box p-4 text-center w-36 flex-1" id="render">
+                        <div class="text-sm font-semibold text-gray-900">Render Engine</div>
+                    </div>
+                    <div class="arch-box p-4 text-center w-36 flex-1" id="admin-crud">
+                        <div class="text-sm font-semibold text-gray-900">Admin CRUD</div>
+                        <div class="text-[10px] text-gray-500 mt-1">Management APIs</div>
+                    </div>
+                </div>
+
+                <!-- Kafka & Redis -->
+                <div class="flex items-stretch gap-6 mt-12">
+                    <div class="arch-box p-6 flex-1 text-center" id="kafka">
+                        <div class="font-bold text-gray-900 text-lg mb-2">Kafka Broker</div>
+                        <div class="flex justify-center flex-wrap gap-4 text-xs font-mono text-gray-600">
+                            <span class="bg-gray-100 px-2 py-1 rounded">event.received</span>
+                            <span class="bg-gray-100 px-2 py-1 rounded">event.dispatch</span>
+                            <span class="bg-gray-100 px-2 py-1 rounded">event.retry</span>
+                            <span class="bg-red-50 text-red-700 px-2 py-1 rounded">event.dlq</span>
+                        </div>
+                    </div>
+                    <div class="arch-box p-4 text-center w-48 flex justify-center flex-col" id="redis">
+                        <div class="font-bold text-gray-900 text-sm mb-1">Redis</div>
+                        <div class="text-[10px] text-gray-500 text-left space-y-1 mt-2 mx-auto">
+                            <div>&bull; Idempotency Cache</div>
+                            <div>&bull; Rate Limiting</div>
+                            <div>&bull; Tenant Configs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lower: Go Gateway -->
+            <div class="container-box mb-16">
+                <div class="container-label border border-gray-200">Go Gateway (Golang)</div>
+                
+                <div class="arch-box p-4 text-center mt-4 w-full" id="gateway">
+                    <div class="text-sm font-semibold text-gray-900 mb-1">Gateway Core</div>
+                    <div class="text-[10px] text-gray-500">Payload Validation & Retry Backoff</div>
+                </div>
+
+                <div class="container-box mt-6 border-dashed border-gray-300 bg-white">
+                    <div class="container-label bg-white-label border border-gray-200" style="top:-12px;">Channel Adapter Registry</div>
+                    <div class="flex flex-wrap justify-center gap-6 mt-4">
+                        <div class="arch-box p-4 text-center w-32" id="adapt-resend">
+                            <div class="font-bold text-gray-900 text-sm">Resend</div>
+                            <div class="text-[10px] text-gray-500 mt-1">Email</div>
+                        </div>
+                        <div class="arch-box p-4 text-center w-32" id="adapt-twilio">
+                            <div class="font-bold text-gray-900 text-sm">Twilio</div>
+                            <div class="text-[10px] text-gray-500 mt-1">SMS</div>
+                        </div>
+                        <div class="arch-box p-4 text-center w-32" id="adapt-firebase">
+                            <div class="font-bold text-gray-900 text-sm">Firebase</div>
+                            <div class="text-[10px] text-gray-500 mt-1">Push</div>
+                        </div>
+                        <div class="arch-box p-4 text-center w-32" id="adapt-centrifugo">
+                            <div class="font-bold text-gray-900 text-sm">Centrifugo</div>
+                            <div class="text-[10px] text-gray-500 mt-1">WebSockets</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row -->
+            <div class="flex flex-wrap justify-center gap-12">
+                <div class="arch-box p-6 text-center w-64" id="postgres">
+                    <div class="font-bold text-gray-900 text-lg mb-2">PostgreSQL</div>
+                    <div class="text-xs text-gray-500 space-y-1">
+                        <div>Audit Logs</div>
+                        <div>Template Storage</div>
+                        <div>Tenant Definitions</div>
+                    </div>
+                </div>
+                <div class="arch-box p-6 text-center w-64" id="centrifugo">
+                    <div class="font-bold text-gray-900 text-lg mb-2">Centrifugo Server</div>
+                    <div class="text-xs text-gray-500">
+                        Real-time WebSocket Pub/Sub
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Deep Dive Features -->
+    <section class="py-24 px-6 bg-white">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-gray-900 mb-12 text-center">Core Capabilities</h2>
+            
+            <div class="grid md:grid-cols-2 gap-x-12 gap-y-12">
+                
+                <!-- Feature 1 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 border-2 border-gray-900 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">1</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Isolated Multi-Tenancy</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Every microservice or domain operates within strict boundaries. Nucleus maintains independent API keys, preferred SMS/Email provider integrations, and dedicated routing preferences for every registered tenant on the system.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 border-2 border-gray-900 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">2</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Dynamic Provider Fallbacks</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Stop worrying about SendGrid or Twilio outages. If an event attempts delivery via Email through Provider A and fails, the worker immediately escalates the payload to backup Provider B, enforcing guarantees for mission-critical alerts.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 border-2 border-gray-900 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">3</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Resilient Failure Queues (DLQ)</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Hard failures don’t vanish into the logs. Undeliverable payloads are routed to a Kafka Dead Letter Queue topic. The Nucleus Admin Dashboard provides full visibility enabling administrators to diagnose the error, modify the payload, and manually retry.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 border-2 border-gray-900 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">4</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Omnichannel Templating</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Nucleus utilizes robust MJML frameworks for generating heavily compatible responsive emails, bound seamlessly with Handlebars. Developers manage global template definitions centrally instead of burying raw HTML strings into service repositories.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 border-2 border-gray-900 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">5</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Real-Time WebSockets</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Support seamless, instant in-app alerts. Using Centrifugo channels secured via HMAC JWTs, users immediately see push updates in their browser or mobile app without expensive data-polling loops.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 border-2 border-gray-900 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">6</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Bring Your Own Provider</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            A highly modular Adapter Registry in the Go Gateway allows clients to transparently plugin their own preferred CPaaS accounts (SendGrid, Twilio, Resend, Firebase) defined at the Tenant layer.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 7 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 border-2 border-gray-900 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">7</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Zero-Trust Webhooks</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Exposed ingestion paths mandate strictly isolated API keys per tenant alongside rigorous HMAC payload signature validations, stopping malicious or polluted alerts dead in their tracks before they ever hit the Kafka broker.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 8 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 border-2 border-gray-900 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">8</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Cache-Backed Resiliency</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Redis enforces stringent rate limits and payload idempotency constraints locally. This ensures backend services aren't DDOS'd by runaway core loops or retry errors from upstream microservices continuously dumping duplicate events.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Developer Experience (DX) Code Snippet -->
+    <section class="py-24 px-6 bg-white border-t border-gray-200 relative overflow-hidden">
+        <div class="max-w-5xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+                <div class="text-sm font-bold tracking-widest text-gray-400 uppercase mb-3">Developer Experience</div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">One webhook. Infinite channels.</h2>
+                <p class="text-gray-600 leading-relaxed mb-6">
+                    Stop writing bespoke provider integrations and API wrappers into every microservice. Your upstream microservices simply fire an event, and Nucleus evaluates routing rules, hydrates the exact right MJML template, and handles robust delivery guarantees.
+                </p>
+                <ul class="space-y-4 font-mono text-sm text-gray-700">
+                    <li class="flex items-center gap-3">
+                        <div class="w-6 h-6 flex-shrink-0 rounded flex items-center justify-center bg-gray-100 border border-gray-200">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        Language agnostic REST ingestion
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <div class="w-6 h-6 flex-shrink-0 rounded flex items-center justify-center bg-gray-100 border border-gray-200">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        Instant &lt; 10ms acknowledgment
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <div class="w-6 h-6 flex-shrink-0 rounded flex items-center justify-center bg-gray-100 border border-gray-200">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        Decouples core domains from delivery
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-[#0d1117] border border-gray-800 rounded-xl p-6 shadow-2xl relative">
+                <!-- Mac-like buttons -->
+                <div class="flex gap-2 mb-4">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                </div>
+                <pre class="font-mono text-sm overflow-x-auto"><code class="text-gray-300"><span class="text-purple-400">await</span> fetch(<span class="text-green-400">'https://nucleus.internal/v1/events/trigger'</span>, {
+  <span class="text-blue-300">method</span>: <span class="text-green-400">'POST'</span>,
+  <span class="text-blue-300">headers</span>: {
+    <span class="text-green-400">'x-api-key'</span>: <span class="text-green-400">'tenant_prod_8x9A...'</span>,
+    <span class="text-green-400">'Content-Type'</span>: <span class="text-green-400">'application/json'</span>
+  },
+  <span class="text-blue-300">body</span>: JSON.<span class="text-yellow-200">stringify</span>({
+    <span class="text-blue-300">eventType</span>: <span class="text-green-400">"payment.succeeded"</span>,
+    <span class="text-blue-300">recipientId</span>: <span class="text-green-400">"user_9281a"</span>,
+    <span class="text-blue-300">payload</span>: {
+      <span class="text-blue-300">amount</span>: <span class="text-orange-300">49.99</span>,
+      <span class="text-blue-300">currency</span>: <span class="text-green-400">"USD"</span>
+    }
+  })
+});</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="py-20 px-6 bg-white border-t border-gray-200">
+        <div class="max-w-3xl mx-auto text-center">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Ready to explore the microservice?</h2>
+            <p class="text-gray-600 mb-8 max-w-xl mx-auto leading-relaxed">
+                Nucleus is proprietary, production-grade infrastructure. While closed-source, comprehensive integration documentation is available and live walkthroughs of the administrative dashboard can be scheduled on demand.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="mailto:demo@example.com" class="inline-flex items-center justify-center px-8 py-3.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    Request a Demo
+                </a>
+                <a href="integration.html" class="inline-flex items-center justify-center px-8 py-3.5 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm">
+                    Read Integration Guide &rarr;
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-50 border-t border-gray-200 py-12">
+        <div class="max-w-6xl mx-auto px-6 text-center">
+            <div class="font-bold text-lg text-gray-900 mb-2">Nucleus</div>
+            <p class="text-gray-500 text-sm">Centralized Notification Infrastructure.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Define all valid connections to map the full circuit board
+        const networkConnections = [
+            { from: 'tenant-a', to: 'ingress' },
+            { from: 'tenant-b', to: 'ingress' },
+            { from: 'tenant-c', to: 'ingress' },
+            { from: 'admin-ui', to: 'admin-crud' },
+            { from: 'admin-crud', to: 'postgres' },
+            { from: 'ingress', to: 'router' },
+            { from: 'router', to: 'render' },
+            { from: 'render', to: 'kafka' },
+            { from: 'kafka', to: 'redis' },
+            { from: 'redis', to: 'kafka' },
+            { from: 'kafka', to: 'gateway' },
+            { from: 'gateway', to: 'adapt-resend' },
+            { from: 'gateway', to: 'adapt-twilio' },
+            { from: 'gateway', to: 'adapt-firebase' },
+            { from: 'gateway', to: 'adapt-centrifugo' },
+            { from: 'adapt-resend', to: 'postgres' },
+            { from: 'adapt-twilio', to: 'postgres' },
+            { from: 'adapt-firebase', to: 'postgres' },
+            { from: 'adapt-centrifugo', to: 'centrifugo' }
+        ];
+
+        // Define distinct routing paths to randomly navigate
+        const scenarios = [
+            // Tenant A (E-commerce) -> Email Notification
+            ['tenant-a', 'ingress', 'router', 'render', 'kafka', 'redis', 'kafka', 'gateway', 'adapt-resend', 'postgres'],
+            // Tenant B (CRM) -> SMS Notification
+            ['tenant-b', 'ingress', 'router', 'render', 'kafka', 'redis', 'kafka', 'gateway', 'adapt-twilio', 'postgres'],
+            // Tenant C (Fintech) -> Push Notification
+            ['tenant-c', 'ingress', 'router', 'render', 'kafka', 'redis', 'kafka', 'gateway', 'adapt-firebase', 'postgres'],
+            // Tenant C (Fintech) -> Real-time WebSocket
+            ['tenant-c', 'ingress', 'router', 'render', 'kafka', 'redis', 'kafka', 'gateway', 'adapt-centrifugo', 'centrifugo'],
+            // Admin UI -> Settings Update
+            ['admin-ui', 'admin-crud', 'postgres']
+        ];
+
+        let connections = [];
+        const svgLayer = document.getElementById('svg-layer');
+
+        // Utility to get element coordinates relative to the architecture container
+        function getCenter(elId) {
+            const el = document.getElementById(elId);
+            const container = document.getElementById('arch-container');
+            if (!el || !container) return { x: 0, y: 0 };
+            
+            const elRect = el.getBoundingClientRect();
+            const conRect = container.getBoundingClientRect();
+            
+            return {
+                x: elRect.left - conRect.left + (elRect.width / 2),
+                y: elRect.top - conRect.top + (elRect.height / 2)
+            };
+        }
+
+        // Draw connections
+        function drawConnections() {
+            svgLayer.innerHTML = '';
+            connections = [];
+            
+            const container = document.getElementById('arch-container');
+            if (!container) return;
+
+            // Adjust SVG box to container dimensions
+            svgLayer.setAttribute('width', container.scrollWidth);
+            svgLayer.setAttribute('height', container.scrollHeight);
+
+            // Draw all sequence lines
+            networkConnections.forEach((step, idx) => {
+                const p1 = getCenter(step.from);
+                const p2 = getCenter(step.to);
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                line.setAttribute('class', 'connection-line');
+                line.setAttribute('id', `line-${idx}`);
+                
+                // Draw cubic bezier curves for a smooth circuit mapping
+                const d = `M ${p1.x} ${p1.y} C ${p1.x} ${(p1.y+p2.y)/2}, ${p2.x} ${(p1.y+p2.y)/2}, ${p2.x} ${p2.y}`;
+                line.setAttribute('d', d);
+                svgLayer.appendChild(line);
+
+                connections.push({
+                    path: line,
+                    fromId: step.from,
+                    toId: step.to
+                });
+            });
+
+            // Add the glowing dot
+            const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dot.setAttribute('class', 'pulse-dot');
+            dot.setAttribute('id', 'pulse-dot');
+            dot.setAttribute('r', '6');
+            svgLayer.appendChild(dot);
+        }
+
+        window.addEventListener('resize', drawConnections);
+        
+        // Ensure layouts load before drawing
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                drawConnections();
+                startAnimation();
+            }, 150);
+        });
+
+        // The animation loop
+        let currentStep = 0;
+        
+        async function animatePulseAlongPath(pathElement, duration = 800) {
+            const dot = document.getElementById('pulse-dot');
+            const length = pathElement.getTotalLength();
+            dot.classList.add('fade-in');
+            pathElement.classList.add('active');
+
+            return new Promise(resolve => {
+                let start = null;
+                function step(timestamp) {
+                    if (!start) start = timestamp;
+                    const progress = (timestamp - start) / duration;
+
+                    if (progress < 1) {
+                        const point = pathElement.getPointAtLength(progress * length);
+                        dot.setAttribute('cx', point.x);
+                        dot.setAttribute('cy', point.y);
+                        requestAnimationFrame(step);
+                    } else {
+                        const point = pathElement.getPointAtLength(length);
+                        dot.setAttribute('cx', point.x);
+                        dot.setAttribute('cy', point.y);
+                        pathElement.classList.remove('active');
+                        resolve();
+                    }
+                }
+                requestAnimationFrame(step);
+            });
+        }
+
+        async function highlightBox(boxId) {
+            const box = document.getElementById(boxId);
+            if (box) {
+                box.classList.add('active-glow');
+                await new Promise(r => setTimeout(r, 400));
+                box.classList.remove('active-glow');
+            }
+        }
+
+        async function startAnimation() {
+            if (connections.length === 0) return;
+
+            while (true) {
+                // Pick a random routing scenario
+                const route = scenarios[Math.floor(Math.random() * scenarios.length)];
+                
+                for (let i = 0; i < route.length - 1; i++) {
+                    const fromId = route[i];
+                    const toId = route[i+1];
+                    const conn = connections.find(c => c.fromId === fromId && c.toId === toId);
+                    
+                    if (!conn) continue;
+                    
+                    if (i === 0) {
+                        highlightBox(fromId);
+                        await new Promise(r => setTimeout(r, 200));
+                    }
+
+                    // Animate dot along path
+                    await animatePulseAlongPath(conn.path, 500); // Path transit speed
+
+                    // Highlight destination
+                    highlightBox(toId);
+                    
+                    // Brief pause before next node
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                
+                // End of route, hide dot and wait before starting new scenario
+                const dot = document.getElementById('pulse-dot');
+                dot.classList.remove('fade-in');
+                await new Promise(r => setTimeout(r, 1500));
+            }
+        }
+    </script>
+</body>
+</html>

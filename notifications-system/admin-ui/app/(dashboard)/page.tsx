@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { API_URL } from '../lib/api';
-import { authHeaders } from '../lib/auth';
+import { API_URL } from '../../lib/api';
+import { authHeaders } from '../../lib/auth';
 
 interface DashboardStats {
   tenants: { total: number; active: number };
