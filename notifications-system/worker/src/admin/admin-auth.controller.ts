@@ -29,15 +29,20 @@ export class AdminAuthController {
             throw new UnauthorizedException('Username and password are required');
         }
 
-        const secret = process.env.ADMIN_JWT_SECRET || 'admin123';
+        const secret = process.env.ADMIN_JWT_SECRET;
         if (!secret) {
             throw new UnauthorizedException('Authentication system is not configured. Set ADMIN_JWT_SECRET.');
         }
 
         // Resolve expected credentials from environment
-        const expectedUsername = process.env.ADMIN_USERNAME || 'admin';
+        const expectedUsername = process.env.ADMIN_USERNAME;
+        const plainPassword = process.env.ADMIN_PASSWORD;
         const expectedPasswordHash = process.env.ADMIN_PASSWORD_HASH
-            || this.hashPassword(process.env.ADMIN_PASSWORD || 'admin');
+            || (plainPassword ? this.hashPassword(plainPassword) : null);
+
+        if (!expectedUsername || !expectedPasswordHash) {
+             throw new UnauthorizedException('Authentication credentials are not completely configured on the server.');
+        }
 
         const incomingPasswordHash = this.hashPassword(password);
 

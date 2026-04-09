@@ -10,6 +10,6 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env.DB_URL || 'postgres://admin:password@localhost:5432/notification_db',
+    url: process.env.DB_URL || '',
   },
 });

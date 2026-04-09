@@ -28,7 +28,7 @@ func main() {
 	// ─── Database Connection ────────────────────────────
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
-		dbURL = "postgres://admin:password@localhost:5432/notification_db?sslmode=disable"
+		log.Fatalf("DB_URL environment variable is required")
 	}
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -47,9 +47,6 @@ func main() {
 		centrifugoURL = "http://localhost:8000/api"
 	}
 	centrifugoAPIKey := os.Getenv("CENTRIFUGO_API_KEY")
-	if centrifugoAPIKey == "" {
-		centrifugoAPIKey = "a2aacce4575007dc18c1c2b5b1174f08"
-	}
 	cClient := gocent.New(gocent.Config{
 		Addr: centrifugoURL,
 		Key:  centrifugoAPIKey,
@@ -64,9 +61,6 @@ func main() {
 
 	// ─── Initialize Adapter Registry ────────────────────
 	resendAPIKey := os.Getenv("RESEND_API_KEY")
-	if resendAPIKey == "" {
-		resendAPIKey = "re_Q8AGvT6y_NJbKrpcey1ke4dRq7HhQhMFe"
-	}
 	sendGridAPIKey := os.Getenv("SENDGRID_API_KEY")
 	twilioSID := os.Getenv("TWILIO_ACCOUNT_SID")
 	twilioToken := os.Getenv("TWILIO_AUTH_TOKEN")
