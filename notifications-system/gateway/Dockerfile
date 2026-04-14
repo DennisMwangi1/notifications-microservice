@@ -1,7 +1,7 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
 
-COPY go.mod go.sum ./
+# COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the entire module into the container context
