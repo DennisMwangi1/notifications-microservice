@@ -45,10 +45,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Still verifying auth
     if (checking) {
         return (
-            <div className="flex items-center justify-center h-screen bg-slate-50">
+            <div className="flex items-center justify-center h-screen bg-neutral-50">
                 <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin" />
-                    <p className="text-sm text-slate-400 font-medium">Verifying session...</p>
+                    <div className="w-8 h-8 border-2 border-neutral-300 border-t-neutral-900 rounded-full animate-spin" />
+                    <p className="text-sm text-neutral-400 font-medium">Verifying session...</p>
                 </div>
             </div>
         );
@@ -64,17 +64,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             {/* Top-right user menu (positioned absolutely over the main content) */}
             {user && (
                 <div className="fixed top-4 right-6 z-40 flex items-center gap-3">
-                    <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                    <div className="flex items-center gap-2.5 bg-white border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
+                        <div className="w-7 h-7 rounded-full bg-neutral-900 flex items-center justify-center text-[10px] font-bold text-white uppercase">
                             {user.username.charAt(0)}
                         </div>
                         <div>
-                            <p className="text-xs font-semibold text-slate-700">{user.username}</p>
-                            <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">{user.role}</p>
+                            <p className="text-xs font-semibold text-neutral-700">{user.username}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-neutral-400 font-bold">{user.role}</p>
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="ml-2 text-slate-400 hover:text-rose-500 transition-colors"
+                            className="ml-2 text-neutral-400 hover:text-rose-500 transition-colors"
                             title="Sign out"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

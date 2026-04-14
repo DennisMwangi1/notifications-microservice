@@ -73,7 +73,7 @@ export default function ProvidersPage() {
         setEditingProvider(provider);
         setEditName(provider.name);
         setEditProvider(provider.provider);
-        setEditApiKey(''); // Leave blank unless they want to update it
+        setEditApiKey('');
         setEditSenderEmail(provider.sender_email || '');
         setEditSenderName(provider.sender_name || '');
         setIsEditModalOpen(true);
@@ -89,7 +89,6 @@ export default function ProvidersPage() {
                 sender_email: editSenderEmail || null,
                 sender_name: editSenderName || null
             };
-            // Only update API key if user typed a new one
             if (editApiKey.trim() !== '') {
                 payload.api_key = editApiKey;
             }
@@ -124,22 +123,24 @@ export default function ProvidersPage() {
         } catch (err) { console.error('Failed to delete provider config', err); }
     };
 
+    const inputClasses = "w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white transition-all shadow-sm";
+
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-[1600px] mx-auto space-y-10 pb-10 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-200 pb-6 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-100 pb-6 gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">Integrations </h2>
+                    <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">Integrations </h2>
                     <p className="text-sm text-slate-500">Bring Your Own Provider. Register API keys for external services once and share them across multiple tenants securely.</p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-sm">+ Add Integration</button>
+                <button onClick={() => setIsModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 px-5 py-2.5 rounded-2xl font-medium transition-all shadow-sm">+ Add Integration</button>
             </div>
 
             {/* Table */}
             {loading ? (
-                <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-xl border border-slate-200"></div>)}</div>
+                <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-2xl border border-slate-100"></div>)}</div>
             ) : (
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
                     <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                         <div className="col-span-3">Configuration Name</div>
                         <div className="col-span-2 text-center">Provider</div>
@@ -157,14 +158,14 @@ export default function ProvidersPage() {
                                         <p className="text-[10px] text-slate-400 mt-0.5">{new Date(config.created_at).toLocaleDateString()}</p>
                                     </div>
                                     <div className="col-span-2 text-center">
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">{config.provider}</span>
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-100">{config.provider}</span>
                                     </div>
                                     <div className="col-span-5">
                                         <p className="text-xs font-medium text-slate-700">{config.sender_name || 'System Default Name'}</p>
                                         <p className="text-xs font-mono text-slate-500 mt-0.5">&lt;{config.sender_email || 'system-default@fallback.com'}&gt;</p>
                                     </div>
                                     <div className="col-span-2 flex justify-end gap-2">
-                                        <button onClick={() => handleOpenEdit(config)} className="text-[10px] uppercase tracking-wider font-bold text-indigo-500 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors">Edit</button>
+                                        <button onClick={() => handleOpenEdit(config)} className="text-[10px] uppercase tracking-wider font-bold text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-100 px-2.5 py-1.5 rounded-lg transition-colors">Edit</button>
                                         <button onClick={() => handleDelete(config.id, config.name)} className="text-[10px] uppercase tracking-wider font-bold text-rose-500 hover:bg-rose-50 border border-transparent hover:border-rose-100 px-2.5 py-1.5 rounded-lg transition-colors">Delete</button>
                                     </div>
                                 </div>
@@ -177,7 +178,7 @@ export default function ProvidersPage() {
             {/* Create Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
                             <h3 className="text-lg font-bold text-slate-900">Add New Integration</h3>
                             <p className="text-sm text-slate-500 mt-1">Configure an external dispatch provider like Resend or Twilio.</p>
@@ -185,36 +186,36 @@ export default function ProvidersPage() {
                         <form onSubmit={handleCreateNew} className="p-6 space-y-6">
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Internal Registration Name</label>
-                                <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Master Resend Account" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm" />
+                                <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Master Resend Account" className={inputClasses} />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Provider Platform</label>
-                                <select value={newProvider} onChange={e => setNewProvider(e.target.value as any)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm select-chevron">
+                                <select value={newProvider} onChange={e => setNewProvider(e.target.value as any)} className={inputClasses}>
                                     <option value="RESEND">Resend (Email)</option>
                                     <option value="SENDGRID">SendGrid (Email)</option>
                                     <option value="TWILIO">Twilio (SMS)</option>
-                                    <option value="AFRICASTALKING">Africa's Talking (SMS)</option>
+                                    <option value="AFRICASTALKING">Africa&apos;s Talking (SMS)</option>
                                     <option value="CUSTOM">Custom Provider</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">API Key / Credentials</label>
-                                <input type="password" required value={newApiKey} onChange={e => setNewApiKey(e.target.value)} placeholder="e.g. re_123456789" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm" />
+                                <input type="password" required value={newApiKey} onChange={e => setNewApiKey(e.target.value)} placeholder="e.g. re_123456789" className={`${inputClasses} font-mono`} />
                                 <p className="text-[11px] text-slate-500 mt-2 font-medium">Encrypted at rest securely.</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Sender Email (Optional)</label>
-                                    <input type="email" value={newSenderEmail} onChange={e => setNewSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm" />
+                                    <input type="email" value={newSenderEmail} onChange={e => setNewSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className={inputClasses} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Sender Name (Optional)</label>
-                                    <input type="text" value={newSenderName} onChange={e => setNewSenderName(e.target.value)} placeholder="TMaaS Core" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm" />
+                                    <input type="text" value={newSenderName} onChange={e => setNewSenderName(e.target.value)} placeholder="TMaaS Core" className={inputClasses} />
                                 </div>
                             </div>
                             <div className="pt-2 flex justify-end space-x-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                                <button type="submit" className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700 shadow-sm">Save Integration</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                                <button type="submit" className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm">Save Integration</button>
                             </div>
                         </form>
                     </div>
@@ -224,7 +225,7 @@ export default function ProvidersPage() {
             {/* Edit Modal */}
             {isEditModalOpen && editingProvider && (
                 <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
                             <h3 className="text-lg font-bold text-slate-900">Edit Integration</h3>
                             <p className="text-sm text-slate-500 mt-1">Update external provider settings.</p>
@@ -232,35 +233,35 @@ export default function ProvidersPage() {
                         <form onSubmit={handleEditSubmit} className="p-6 space-y-6">
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Internal Registration Name</label>
-                                <input type="text" required value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm" />
+                                <input type="text" required value={editName} onChange={e => setEditName(e.target.value)} className={inputClasses} />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Provider Platform</label>
-                                <select value={editProvider} onChange={e => setEditProvider(e.target.value as any)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm select-chevron">
+                                <select value={editProvider} onChange={e => setEditProvider(e.target.value as any)} className={inputClasses}>
                                     <option value="RESEND">Resend (Email)</option>
                                     <option value="SENDGRID">SendGrid (Email)</option>
                                     <option value="TWILIO">Twilio (SMS)</option>
-                                    <option value="AFRICASTALKING">Africa's Talking (SMS)</option>
+                                    <option value="AFRICASTALKING">Africa&apos;s Talking (SMS)</option>
                                     <option value="CUSTOM">Custom Provider</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">API Key / Credentials (Optional - Leave blank to keep existing)</label>
-                                <input type="password" value={editApiKey} onChange={e => setEditApiKey(e.target.value)} placeholder="Enter new API key to update..." className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm" />
+                                <input type="password" value={editApiKey} onChange={e => setEditApiKey(e.target.value)} placeholder="Enter new API key to update..." className={`${inputClasses} font-mono`} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Sender Email (Optional)</label>
-                                    <input type="email" value={editSenderEmail} onChange={e => setEditSenderEmail(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm" />
+                                    <input type="email" value={editSenderEmail} onChange={e => setEditSenderEmail(e.target.value)} className={inputClasses} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Sender Name (Optional)</label>
-                                    <input type="text" value={editSenderName} onChange={e => setEditSenderName(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent shadow-sm" />
+                                    <input type="text" value={editSenderName} onChange={e => setEditSenderName(e.target.value)} className={inputClasses} />
                                 </div>
                             </div>
                             <div className="pt-2 flex justify-end space-x-3">
-                                <button type="button" onClick={() => { setIsEditModalOpen(false); setEditingProvider(null); }} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                                <button type="submit" className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700 shadow-sm">Save Changes</button>
+                                <button type="button" onClick={() => { setIsEditModalOpen(false); setEditingProvider(null); }} className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                                <button type="submit" className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm">Save Changes</button>
                             </div>
                         </form>
                     </div>

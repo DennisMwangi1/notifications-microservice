@@ -178,22 +178,24 @@ export default function TenantsPage() {
         navigator.clipboard.writeText(text);
     };
 
+    const inputClasses = "w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white transition-all shadow-sm";
+
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-[1600px] mx-auto space-y-10 pb-10 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-200 pb-6 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-100 pb-6 gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">Project Tenants</h2>
+                    <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">Project Tenants</h2>
                     <p className="text-sm text-slate-500">Manage decoupled projects, configure channel boundaries, and securely rotate API keys.</p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-sm">+ Onboard Project</button>
+                <button onClick={() => setIsModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 px-5 py-2.5 rounded-2xl font-medium transition-all shadow-sm">+ Onboard Project</button>
             </div>
 
             {/* Table */}
             {loading ? (
-                <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-xl border border-slate-200"></div>)}</div>
+                <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-2xl border border-slate-100"></div>)}</div>
             ) : (
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
                     <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                         <div className="col-span-3">Project Name</div>
                         <div className="col-span-3">Project ID</div>
@@ -214,16 +216,16 @@ export default function TenantsPage() {
                                     <div className="col-span-3">
                                         <div className="flex items-center gap-1.5">
                                             <p className="text-xs font-mono text-slate-500 truncate" title={tenant.id}>{tenant.id}</p>
-                                            <button onClick={() => handleCopyId(tenant.id)} className="text-slate-400 hover:text-indigo-500 transition-colors shrink-0" title="Copy ID">
+                                            <button onClick={() => handleCopyId(tenant.id)} className="text-slate-400 hover:text-slate-700 transition-colors shrink-0" title="Copy ID">
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                                             </button>
                                         </div>
                                     </div>
                                     <div className="col-span-2">
                                         <div className="flex flex-wrap gap-1">
-                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">global_system</span>
+                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-500 border border-slate-100">global_system</span>
                                             {tenant.allowed_channels?.map(ch => (
-                                                <span key={ch} className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100">{ch}</span>
+                                                <span key={ch} className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-100">{ch}</span>
                                             ))}
                                         </div>
                                     </div>
@@ -235,8 +237,8 @@ export default function TenantsPage() {
                                         )}
                                     </div>
                                     <div className="col-span-3 flex justify-end gap-2">
-                                        <button onClick={() => setDetailTenant(tenant)} className="text-[10px] uppercase tracking-wider font-bold text-blue-500 hover:bg-blue-50 border border-transparent hover:border-blue-100 px-2.5 py-1.5 rounded-lg transition-colors">View</button>
-                                        <button onClick={() => handleOpenEdit(tenant)} className="text-[10px] uppercase tracking-wider font-bold text-indigo-500 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors">Edit</button>
+                                        <button onClick={() => setDetailTenant(tenant)} className="text-[10px] uppercase tracking-wider font-bold text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-100 px-2.5 py-1.5 rounded-lg transition-colors">View</button>
+                                        <button onClick={() => handleOpenEdit(tenant)} className="text-[10px] uppercase tracking-wider font-bold text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-100 px-2.5 py-1.5 rounded-lg transition-colors">Edit</button>
                                         <button onClick={() => handleToggleActive(tenant.id, tenant.is_active)} className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1.5 rounded-lg transition-colors border border-transparent ${tenant.is_active ? 'text-rose-500 hover:bg-rose-50 hover:border-rose-100' : 'text-emerald-500 hover:bg-emerald-50 hover:border-emerald-100'}`}>
                                             {tenant.is_active ? 'Suspend' : 'Restore'}
                                         </button>
@@ -251,7 +253,7 @@ export default function TenantsPage() {
             {/* Detail Modal */}
             {detailTenant && (
                 <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setDetailTenant(null)}>
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl flex justify-between items-center">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">{detailTenant.name}</h3>
@@ -267,14 +269,14 @@ export default function TenantsPage() {
                             <div>
                                 <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Project ID (Public — Frontend Safe)</p>
                                 <div className="flex items-center gap-2">
-                                    <code className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 truncate">{detailTenant.id}</code>
+                                    <code className="flex-1 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 truncate">{detailTenant.id}</code>
                                     <button onClick={() => handleCopyId(detailTenant.id)} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors text-xs font-bold">Copy</button>
                                 </div>
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">API Webhook Key (Secret — Backend Only)</p>
                                 <div className="flex items-center gap-2">
-                                    <code className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 truncate">{detailTenant.api_key}</code>
+                                    <code className="flex-1 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 truncate">{detailTenant.api_key}</code>
                                     <button onClick={() => handleCopyId(detailTenant.api_key)} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors text-xs font-bold">Copy</button>
                                     <button onClick={() => handleRotateKey(detailTenant.id)} className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors text-xs font-bold border border-rose-100">Rotate</button>
                                 </div>
@@ -282,29 +284,29 @@ export default function TenantsPage() {
                             <div>
                                 <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">WebSocket Namespaces</p>
                                 <div className="flex flex-wrap gap-2">
-                                    <span className="px-2 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">global_system</span>
+                                    <span className="px-2 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-100">global_system</span>
                                     {detailTenant.allowed_channels?.map(ch => (
-                                        <span key={ch} className="px-2 py-1 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">{ch}</span>
+                                        <span key={ch} className="px-2 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-100">{ch}</span>
                                     ))}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Rate Limit (Per Min)</p>
-                                    <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600">
+                                    <div className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600">
                                         {detailTenant.rate_limit_per_minute} req/m
                                     </div>
                                 </div>
                                 <div>
                                     <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Daily Quota</p>
-                                    <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600">
+                                    <div className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600">
                                         {detailTenant.daily_notification_cap?.toLocaleString()}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end">
-                            <button onClick={() => setDetailTenant(null)} className="px-5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors">Close</button>
+                            <button onClick={() => setDetailTenant(null)} className="px-5 py-2 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors">Close</button>
                         </div>
                     </div>
                 </div>
@@ -313,7 +315,7 @@ export default function TenantsPage() {
             {/* Create Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
                             <h3 className="text-lg font-bold text-slate-900">Configure New Project</h3>
                             <p className="text-sm text-slate-500 mt-1">Generate an independent API Key and WebSocket boundary isolation.</p>
@@ -321,16 +323,16 @@ export default function TenantsPage() {
                         <form onSubmit={handleCreateNew} className="p-6 space-y-6">
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Project Name</label>
-                                <input type="text" required value={newTenantName} onChange={e => setNewTenantName(e.target.value)} placeholder="e.g. TMaaS Processing Engine" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                <input type="text" required value={newTenantName} onChange={e => setNewTenantName(e.target.value)} placeholder="e.g. TMaaS Processing Engine" className={inputClasses} />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">WebSocket Boundaries</label>
-                                <input type="text" value={newChannels} onChange={e => setNewChannels(e.target.value)} placeholder="e.g. ecommerce_store, support_chat" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                <input type="text" value={newChannels} onChange={e => setNewChannels(e.target.value)} placeholder="e.g. ecommerce_store, support_chat" className={inputClasses} />
                                 <p className="text-[11px] text-slate-500 mt-2 font-medium">Comma separated namespaces for real-time In-App Popups (Optional).</p>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Integration Configuration (BYOP)</label>
-                                <select value={newProviderId} onChange={e => setNewProviderId(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm select-chevron">
+                                <select value={newProviderId} onChange={e => setNewProviderId(e.target.value)} className={inputClasses}>
                                     <option value="">System Default</option>
                                     {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
@@ -338,26 +340,26 @@ export default function TenantsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Email</label>
-                                    <input type="email" value={newSenderEmail} onChange={e => setNewSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                    <input type="email" value={newSenderEmail} onChange={e => setNewSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className={inputClasses} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Name</label>
-                                    <input type="text" value={newSenderName} onChange={e => setNewSenderName(e.target.value)} placeholder="TMaaS App" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                    <input type="text" value={newSenderName} onChange={e => setNewSenderName(e.target.value)} placeholder="TMaaS App" className={inputClasses} />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Rate Limit (req/min)</label>
-                                    <input type="number" required value={newRateLimit} onChange={e => setNewRateLimit(parseInt(e.target.value) || 0)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                    <input type="number" required value={newRateLimit} onChange={e => setNewRateLimit(parseInt(e.target.value) || 0)} className={inputClasses} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Daily Notifications Cap</label>
-                                    <input type="number" required value={newDailyCap} onChange={e => setNewDailyCap(parseInt(e.target.value) || 0)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                    <input type="number" required value={newDailyCap} onChange={e => setNewDailyCap(parseInt(e.target.value) || 0)} className={inputClasses} />
                                 </div>
                             </div>
                             <div className="pt-2 flex justify-end space-x-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                                <button type="submit" className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm">Establish Infrastructure</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                                <button type="submit" className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm">Establish Infrastructure</button>
                             </div>
                         </form>
                     </div>
@@ -367,7 +369,7 @@ export default function TenantsPage() {
             {/* Edit Modal */}
             {isEditModalOpen && editingTenant && (
                 <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
                             <h3 className="text-lg font-bold text-slate-900">Edit Project</h3>
                             <p className="text-sm text-slate-500 mt-1">Update the project name and websocket boundaries.</p>
@@ -375,16 +377,16 @@ export default function TenantsPage() {
                         <form onSubmit={handleEditSubmit} className="p-6 space-y-6">
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Project Name</label>
-                                <input type="text" required value={editTenantName} onChange={e => setEditTenantName(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                <input type="text" required value={editTenantName} onChange={e => setEditTenantName(e.target.value)} className={inputClasses} />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">WebSocket Boundaries</label>
-                                <input type="text" value={editChannels} onChange={e => setEditChannels(e.target.value)} placeholder="e.g. ecommerce_store, support_chat" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                <input type="text" value={editChannels} onChange={e => setEditChannels(e.target.value)} placeholder="e.g. ecommerce_store, support_chat" className={inputClasses} />
                                 <p className="text-[11px] text-slate-500 mt-2 font-medium">Comma separated namespaces (Optional).</p>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Integration Configuration (BYOP)</label>
-                                <select value={editProviderId} onChange={e => setEditProviderId(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm select-chevron">
+                                <select value={editProviderId} onChange={e => setEditProviderId(e.target.value)} className={inputClasses}>
                                     <option value="">System Default</option>
                                     {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
@@ -392,26 +394,26 @@ export default function TenantsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Email</label>
-                                    <input type="email" value={editSenderEmail} onChange={e => setEditSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                    <input type="email" value={editSenderEmail} onChange={e => setEditSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className={inputClasses} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Name</label>
-                                    <input type="text" value={editSenderName} onChange={e => setEditSenderName(e.target.value)} placeholder="TMaaS App" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                    <input type="text" value={editSenderName} onChange={e => setEditSenderName(e.target.value)} placeholder="TMaaS App" className={inputClasses} />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Rate Limit (req/min)</label>
-                                    <input type="number" required value={editRateLimit} onChange={e => setEditRateLimit(parseInt(e.target.value) || 0)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                    <input type="number" required value={editRateLimit} onChange={e => setEditRateLimit(parseInt(e.target.value) || 0)} className={inputClasses} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Daily Notifications Cap</label>
-                                    <input type="number" required value={editDailyCap} onChange={e => setEditDailyCap(parseInt(e.target.value) || 0)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" />
+                                    <input type="number" required value={editDailyCap} onChange={e => setEditDailyCap(parseInt(e.target.value) || 0)} className={inputClasses} />
                                 </div>
                             </div>
                             <div className="pt-2 flex justify-end space-x-3">
-                                <button type="button" onClick={() => { setIsEditModalOpen(false); setEditingTenant(null); }} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                                <button type="submit" className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm">Save Changes</button>
+                                <button type="button" onClick={() => { setIsEditModalOpen(false); setEditingTenant(null); }} className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                                <button type="submit" className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm">Save Changes</button>
                             </div>
                         </form>
                     </div>

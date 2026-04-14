@@ -104,30 +104,29 @@ export default function DLQPage() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
+      <div className="max-w-[1600px] mx-auto space-y-10 pb-10 animate-pulse">
         <div className="h-8 bg-slate-200 rounded-lg w-56"></div>
-        <div className="h-12 bg-slate-100 rounded-xl"></div>
+        <div className="h-12 bg-slate-100 rounded-2xl"></div>
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-20 bg-slate-100 rounded-2xl border border-slate-200"></div>
+          <div key={i} className="h-20 bg-slate-100 rounded-[2rem] border border-slate-100"></div>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-[1600px] mx-auto space-y-10 pb-10 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="border-b border-slate-200 pb-8 mt-2 relative">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-gradient-to-br from-rose-100 to-orange-50 rounded-full blur-3xl opacity-50 -z-10"></div>
+      <div className="border-b border-slate-100 pb-8 mt-2">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">Dead Letter Queue</h2>
+            <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">Dead Letter Queue</h2>
             <p className="text-sm font-medium text-slate-500">Manage failed notification deliveries. Retry or purge entries that could not be delivered.</p>
           </div>
           <button
             onClick={handleRetryAll}
             disabled={actionLoading === 'retry-all' || entries.length === 0}
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 whitespace-nowrap"
+            className="px-5 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-2xl shadow-sm hover:bg-slate-800 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 whitespace-nowrap"
           >
             {actionLoading === 'retry-all' ? 'Retrying…' : '🔄 Retry All Failed'}
           </button>
@@ -143,7 +142,7 @@ export default function DLQPage() {
             className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border transition-all ${
               filter === f
                 ? 'bg-slate-900 text-white border-slate-900'
-                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
+                : 'bg-white text-slate-500 border-slate-100 hover:border-slate-400'
             }`}
           >
             {f === 'all' ? 'All' : f === 'permanent' ? 'Permanently Failed' : 'Retryable'}
@@ -158,8 +157,8 @@ export default function DLQPage() {
 
       {/* List */}
       {entries.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
-          <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white border border-slate-100 rounded-[2rem] p-12 text-center">
+          <div className="w-16 h-16 bg-emerald-50 rounded-[2rem] flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -175,8 +174,8 @@ export default function DLQPage() {
               <div
                 key={entry.id}
                 onClick={() => setSelectedEntry(selectedEntry?.id === entry.id ? null : entry)}
-                className={`bg-white border rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer ${
-                  selectedEntry?.id === entry.id ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-slate-200'
+                className={`bg-white border rounded-[2rem] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer ${
+                  selectedEntry?.id === entry.id ? 'border-slate-400 ring-2 ring-slate-200' : 'border-slate-100'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -238,7 +237,7 @@ export default function DLQPage() {
                       <button
                         onClick={() => handleRetry(entry.id)}
                         disabled={actionLoading === entry.id}
-                        className="px-4 py-2 bg-indigo-500 text-white text-xs font-bold rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50"
                       >
                         {actionLoading === entry.id ? 'Retrying…' : '🔄 Retry'}
                       </button>
@@ -264,7 +263,7 @@ export default function DLQPage() {
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 transition-all"
+            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-100 hover:bg-slate-50 disabled:opacity-30 transition-all"
           >
             ← Prev
           </button>
@@ -274,7 +273,7 @@ export default function DLQPage() {
           <button
             onClick={() => setPage(Math.min(pagination.pages, page + 1))}
             disabled={page === pagination.pages}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 transition-all"
+            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-100 hover:bg-slate-50 disabled:opacity-30 transition-all"
           >
             Next →
           </button>

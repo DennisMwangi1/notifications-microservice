@@ -14,7 +14,7 @@ const DEFAULT_MJML = `<mjml>
         <mj-text font-size="14px" color="#64748b" line-height="1.6" font-family="Inter, sans-serif" padding-top="16px">
           Your order <strong>{{orderId}}</strong> for <strong>{{amount}}</strong> has been confirmed and is being processed.
         </mj-text>
-        <mj-button background-color="#4f46e5" color="#ffffff" font-size="14px" font-weight="600" border-radius="8px" padding-top="24px" href="{{action_url}}" font-family="Inter, sans-serif">
+        <mj-button background-color="#171717" color="#ffffff" font-size="14px" font-weight="600" border-radius="8px" padding-top="24px" href="{{action_url}}" font-family="Inter, sans-serif">
           Track Your Order
         </mj-button>
         <mj-divider border-color="#e2e8f0" padding-top="24px" />
@@ -119,13 +119,13 @@ export default function TemplatePlaygroundPage() {
     return (
         <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-200 pb-6 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-neutral-200 pb-6 gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-1 flex items-center gap-3">
+                    <h2 className="text-3xl font-bold tracking-tight text-neutral-900 mb-1 flex items-center gap-3">
                         Template Playground
-                        <span className="text-xs font-bold uppercase tracking-wider bg-violet-100 text-violet-600 px-2.5 py-1 rounded-lg border border-violet-200">Live Preview</span>
+                        <span className="text-xs font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-lg border border-neutral-200">Live Preview</span>
                     </h2>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-neutral-500">
                         Write MJML + Handlebars templates and preview rendered output in real-time.
                     </p>
                 </div>
@@ -133,8 +133,8 @@ export default function TemplatePlaygroundPage() {
                     onClick={handleRender}
                     disabled={loading}
                     className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm ${loading
-                            ? 'bg-violet-400 text-white cursor-wait'
-                            : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white hover:shadow-violet-500/25 hover:shadow-lg'
+                            ? 'bg-neutral-500 text-neutral-200 cursor-wait'
+                            : 'bg-neutral-900 hover:bg-neutral-800 text-white hover:shadow-lg'
                         }`}
                 >
                     {loading ? (
@@ -156,7 +156,7 @@ export default function TemplatePlaygroundPage() {
                 </button>
             </div>
 
-            {/* Channel Selector */}
+            {/* Channel Selector — semantic colors kept for channel badges */}
             <div className="flex gap-3">
                 {(['EMAIL', 'SMS', 'PUSH'] as const).map((ch) => (
                     <button
@@ -168,7 +168,7 @@ export default function TemplatePlaygroundPage() {
                                     : ch === 'SMS'
                                         ? 'bg-emerald-50 text-emerald-600 border-emerald-200 ring-2 ring-emerald-500/10'
                                         : 'bg-amber-50 text-amber-600 border-amber-200 ring-2 ring-amber-500/10'
-                                : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+                                : 'bg-white text-neutral-400 border-neutral-200 hover:border-neutral-300'
                             }`}
                     >
                         {ch}
@@ -176,7 +176,7 @@ export default function TemplatePlaygroundPage() {
                 ))}
             </div>
 
-            {/* Warnings / Errors */}
+            {/* Warnings / Errors — semantic colors kept */}
             {error && (
                 <div className="flex items-start gap-2.5 bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200">
                     <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -201,20 +201,20 @@ export default function TemplatePlaygroundPage() {
                     {/* Subject Line (EMAIL only) */}
                     {channelType === 'EMAIL' && (
                         <div>
-                            <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Subject Line</label>
+                            <label className="block text-xs uppercase tracking-wider font-bold text-neutral-500 mb-2">Subject Line</label>
                             <input
                                 type="text"
                                 value={subjectLine}
                                 onChange={(e) => setSubjectLine(e.target.value)}
                                 placeholder="e.g. Your invoice for {{orderId}}"
-                                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 shadow-sm placeholder-slate-400"
+                                className="w-full bg-white border border-neutral-300 rounded-xl px-4 py-3 text-sm font-mono text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-400 shadow-sm placeholder-neutral-400"
                             />
                         </div>
                     )}
 
                     {/* Template Body */}
                     <div>
-                        <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">
+                        <label className="block text-xs uppercase tracking-wider font-bold text-neutral-500 mb-2">
                             {channelType === 'EMAIL' ? 'MJML + Handlebars Template' : channelType === 'SMS' ? 'Text Template' : 'Push JSON Template'}
                         </label>
                         <textarea
@@ -222,22 +222,22 @@ export default function TemplatePlaygroundPage() {
                             onChange={(e) => setContentBody(e.target.value)}
                             rows={18}
                             spellCheck={false}
-                            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-4 text-sm font-mono text-emerald-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 shadow-inner whitespace-pre custom-scrollbar leading-relaxed selection:bg-violet-500/30"
+                            className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-4 py-4 text-sm font-mono text-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-500/50 shadow-inner whitespace-pre custom-scrollbar leading-relaxed selection:bg-neutral-500/30"
                         />
                     </div>
 
                     {/* Sample Data */}
                     <div>
-                        <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 flex items-center gap-2">
+                        <label className="block text-xs uppercase tracking-wider font-bold text-neutral-500 mb-2 flex items-center gap-2">
                             Sample Data (JSON)
-                            <span className="text-[9px] text-slate-400 normal-case tracking-normal font-medium">Used to fill Handlebars variables</span>
+                            <span className="text-[9px] text-neutral-400 normal-case tracking-normal font-medium">Used to fill Handlebars variables</span>
                         </label>
                         <textarea
                             value={sampleData}
                             onChange={(e) => setSampleData(e.target.value)}
                             rows={8}
                             spellCheck={false}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-4 text-sm font-mono text-indigo-700 focus:outline-none focus:ring-2 focus:ring-violet-500 shadow-sm whitespace-pre custom-scrollbar leading-relaxed"
+                            className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-4 py-4 text-sm font-mono text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-400 shadow-sm whitespace-pre custom-scrollbar leading-relaxed"
                         />
                     </div>
                 </div>
@@ -245,14 +245,14 @@ export default function TemplatePlaygroundPage() {
                 {/* Preview Panel */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <label className="block text-xs uppercase tracking-wider font-bold text-slate-500">
+                        <label className="block text-xs uppercase tracking-wider font-bold text-neutral-500">
                             Rendered Preview
                         </label>
                         {channelType === 'EMAIL' && (
-                            <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                            <div className="flex bg-neutral-100 rounded-lg p-0.5 border border-neutral-200">
                                 <button
                                     onClick={() => setViewMode('desktop')}
-                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${viewMode === 'desktop' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${viewMode === 'desktop' ? 'bg-white text-neutral-700 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'
                                         }`}
                                 >
                                     <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -262,7 +262,7 @@ export default function TemplatePlaygroundPage() {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('mobile')}
-                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${viewMode === 'mobile' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${viewMode === 'mobile' ? 'bg-white text-neutral-700 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'
                                         }`}
                                 >
                                     <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -276,16 +276,16 @@ export default function TemplatePlaygroundPage() {
 
                     {/* Subject Preview */}
                     {previewSubject && (
-                        <div className="bg-white border border-slate-200 rounded-xl px-4 py-3">
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Subject</p>
-                            <p className="text-sm font-semibold text-slate-800">{previewSubject}</p>
+                        <div className="bg-white border border-neutral-200 rounded-xl px-4 py-3">
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 mb-1">Subject</p>
+                            <p className="text-sm font-semibold text-neutral-800">{previewSubject}</p>
                         </div>
                     )}
 
                     {/* HTML Preview */}
                     {channelType === 'EMAIL' ? (
                         <div
-                            className={`bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${viewMode === 'mobile' ? 'max-w-[375px] mx-auto' : 'w-full'
+                            className={`bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${viewMode === 'mobile' ? 'max-w-[375px] mx-auto' : 'w-full'
                                 }`}
                         >
                             {previewHtml ? (
@@ -297,47 +297,47 @@ export default function TemplatePlaygroundPage() {
                                     sandbox="allow-same-origin"
                                 />
                             ) : (
-                                <div className="h-96 flex flex-col items-center justify-center text-slate-300 gap-3">
+                                <div className="h-96 flex flex-col items-center justify-center text-neutral-300 gap-3">
                                     <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" strokeWidth={0.5} stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H6.911a2.25 2.25 0 00-2.15 1.588L2.35 12.838c-.066.214-.1.437-.1.661z" />
                                     </svg>
                                     <p className="text-sm font-medium">Click &quot;Render Preview&quot; to see your email</p>
-                                    <p className="text-xs text-slate-300">MJML → HTML compilation happens server-side</p>
+                                    <p className="text-xs text-neutral-300">MJML → HTML compilation happens server-side</p>
                                 </div>
                             )}
                         </div>
                     ) : (
                         /* SMS / Push Preview */
-                        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
                             {previewHtml ? (
                                 <div className="p-6">
                                     {channelType === 'SMS' ? (
-                                        /* SMS bubble */
+                                        /* SMS bubble — semantic green kept */
                                         <div className="max-w-sm mx-auto">
                                             <div className="bg-emerald-500 text-white px-5 py-3.5 rounded-2xl rounded-bl-md text-sm leading-relaxed shadow-sm">
                                                 {previewHtml}
                                             </div>
-                                            <p className="text-[10px] text-slate-400 mt-2 ml-1">Preview · Not actually sent</p>
+                                            <p className="text-[10px] text-neutral-400 mt-2 ml-1">Preview · Not actually sent</p>
                                         </div>
                                     ) : (
                                         /* Push notification card */
-                                        <div className="max-w-sm mx-auto bg-slate-50 rounded-2xl border border-slate-200 p-4 shadow-sm">
+                                        <div className="max-w-sm mx-auto bg-neutral-50 rounded-2xl border border-neutral-200 p-4 shadow-sm">
                                             <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                                                <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center shrink-0">
                                                     <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                                                     </svg>
                                                 </div>
                                                 <div className="flex-1">
-                                                    <pre className="text-sm text-slate-800 font-mono whitespace-pre-wrap leading-relaxed">{previewHtml}</pre>
+                                                    <pre className="text-sm text-neutral-800 font-mono whitespace-pre-wrap leading-relaxed">{previewHtml}</pre>
                                                 </div>
                                             </div>
-                                            <p className="text-[10px] text-slate-400 mt-3">Preview · Not actually sent</p>
+                                            <p className="text-[10px] text-neutral-400 mt-3">Preview · Not actually sent</p>
                                         </div>
                                     )}
                                 </div>
                             ) : (
-                                <div className="h-48 flex flex-col items-center justify-center text-slate-300 gap-3">
+                                <div className="h-48 flex flex-col items-center justify-center text-neutral-300 gap-3">
                                     <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" strokeWidth={0.5} stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                                     </svg>

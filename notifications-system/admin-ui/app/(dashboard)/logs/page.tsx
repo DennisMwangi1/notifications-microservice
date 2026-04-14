@@ -25,7 +25,7 @@ interface Pagination {
     totalPages: number;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Semantic Constants (RGB — kept for meaning) ─────────────────────────────
 
 const channelColors: Record<string, { bg: string; text: string; border: string }> = {
     EMAIL: { bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-200' },
@@ -75,11 +75,10 @@ export default function LogsPage() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-[1600px] mx-auto space-y-10 pb-10 animate-in fade-in duration-500">
             {/* Page Header */}
-            <div className="border-b border-slate-200 pb-8 mt-2 relative">
-                <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-gradient-to-br from-blue-100 to-indigo-50 rounded-full blur-3xl opacity-50 -z-10"></div>
-                <h2 className="text-4xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-2">
+            <div className="border-b border-slate-100 pb-8 mt-2">
+                <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">
                     Monitoring & Logs
                 </h2>
                 <p className="text-sm font-medium text-slate-500">
@@ -88,7 +87,7 @@ export default function LogsPage() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col md:flex-row md:justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row md:justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm gap-4">
                 <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
                     <span>Total: <span className="font-bold text-slate-700">{pagination.total}</span> records</span>
                     <span className="text-slate-300">|</span>
@@ -98,7 +97,7 @@ export default function LogsPage() {
                     <select
                         value={filterChannel}
                         onChange={(e) => setFilterChannel(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                        className="bg-slate-50 border border-slate-100 rounded-2xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-sm"
                     >
                         <option value="">All Channels</option>
                         <option value="EMAIL">EMAIL</option>
@@ -108,7 +107,7 @@ export default function LogsPage() {
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                        className="bg-slate-50 border border-slate-100 rounded-2xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-sm"
                     >
                         <option value="">All Statuses</option>
                         <option value="PENDING">PENDING</option>
@@ -122,10 +121,10 @@ export default function LogsPage() {
             {/* Logs Table */}
             {loading ? (
                 <div className="animate-pulse space-y-3">
-                    {[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-slate-100 rounded-xl border border-slate-200"></div>)}
+                    {[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-slate-100 rounded-2xl border border-slate-100"></div>)}
                 </div>
             ) : (
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[400px]">
+                <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden flex flex-col min-h-[400px]">
                     <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                         <div className="col-span-1">Channel</div>
                         <div className="col-span-2">Status</div>
@@ -203,7 +202,7 @@ export default function LogsPage() {
                                                     {log.metadata && (
                                                         <div className="col-span-2">
                                                             <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Event Metadata</p>
-                                                            <div className="bg-slate-100 border border-slate-200 rounded-lg p-3 max-h-32 overflow-y-auto">
+                                                            <div className="bg-slate-100 border border-slate-100 rounded-lg p-3 max-h-32 overflow-y-auto">
                                                                 <pre className="text-xs font-mono text-slate-600 whitespace-pre-wrap">{JSON.stringify(log.metadata, null, 2)}</pre>
                                                             </div>
                                                         </div>
@@ -213,7 +212,8 @@ export default function LogsPage() {
                                         )}
                                     </div>
                                 );
-            })}</div>
+            })}
+                        </div>
                     )}
 
                     {/* Pagination */}
@@ -227,7 +227,7 @@ export default function LogsPage() {
                                         <button
                                             key={pageNum}
                                             onClick={() => fetchLogs(pageNum)}
-                                            className={`w-7 h-7 rounded-md text-xs font-semibold transition-colors shrink-0 flex items-center justify-center ${pagination.page === pageNum ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
+                                            className={`w-7 h-7 rounded-md text-xs font-semibold transition-colors shrink-0 flex items-center justify-center ${pagination.page === pageNum ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
                                         >
                                             {pageNum}
                                         </button>

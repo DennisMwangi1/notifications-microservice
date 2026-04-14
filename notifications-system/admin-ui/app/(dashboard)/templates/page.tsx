@@ -19,6 +19,7 @@ interface Template {
     created_at: string | null;
 }
 
+// Semantic channel colors (RGB — kept for meaning)
 const channelBadge: Record<string, string> = {
     EMAIL: 'bg-sky-50 text-sky-600 border-sky-200',
     SMS: 'bg-emerald-50 text-emerald-600 border-emerald-200',
@@ -133,22 +134,24 @@ export default function TemplatesPage() {
         }, {})
     );
 
+    const inputClasses = "w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white transition-all shadow-sm";
+
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-[1600px] mx-auto space-y-10 pb-10 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-200 pb-6 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-100 pb-6 gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">Global Templates</h2>
+                    <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">Global Templates</h2>
                     <p className="text-sm text-slate-500">Manage generic baseline configurations (like &quot;global.success&quot;) reusable by any tenant.</p>
                 </div>
-                <button onClick={() => { closeModal(); setIsModalOpen(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-sm">+ Publish Global Default</button>
+                <button onClick={() => { closeModal(); setIsModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 px-5 py-2.5 rounded-2xl font-medium transition-all shadow-sm">+ Publish Global Default</button>
             </div>
 
             {/* Table */}
             {loading ? (
-                <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-xl border border-slate-200"></div>)}</div>
+                <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-2xl border border-slate-100"></div>)}</div>
             ) : (
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
                     <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                         <div className="col-span-1">Channel</div>
                         <div className="col-span-3">Event Trigger</div>
@@ -174,7 +177,7 @@ export default function TemplatesPage() {
                                         <p className="text-xs text-slate-500 truncate" title={tpl.subject_line || '—'}>{tpl.subject_line || '—'}</p>
                                     </div>
                                     <div className="col-span-1 text-center">
-                                        <span className="font-bold text-fuchsia-600 bg-fuchsia-50 px-1.5 py-0.5 rounded-md text-xs font-mono">v{tpl.version}</span>
+                                        <span className="font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded-md text-xs font-mono">v{tpl.version}</span>
                                     </div>
                                     <div className="col-span-1 text-center">
                                         {tpl.is_active ? (
@@ -191,8 +194,8 @@ export default function TemplatesPage() {
                                         )}
                                     </div>
                                     <div className="col-span-2 flex justify-end gap-1.5">
-                                        <button onClick={() => handleViewDetail(tpl)} className="text-[10px] uppercase tracking-wider font-bold text-blue-500 hover:bg-blue-50 border border-transparent hover:border-blue-100 px-2.5 py-1 rounded-lg transition-colors">View</button>
-                                        <button onClick={() => handleEdit(tpl)} className="text-[10px] uppercase tracking-wider font-bold text-indigo-500 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 px-2.5 py-1 rounded-lg transition-colors">Edit</button>
+                                        <button onClick={() => handleViewDetail(tpl)} className="text-[10px] uppercase tracking-wider font-bold text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-100 px-2.5 py-1 rounded-lg transition-colors">View</button>
+                                        <button onClick={() => handleEdit(tpl)} className="text-[10px] uppercase tracking-wider font-bold text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-100 px-2.5 py-1 rounded-lg transition-colors">Edit</button>
                                         {tpl.is_active ? (
                                             <button onClick={() => handleDeactivate(tpl.template_id, tpl.version)} className="text-[10px] uppercase tracking-wider font-bold text-rose-500 hover:bg-rose-50 border border-transparent hover:border-rose-100 px-2.5 py-1 rounded-lg transition-colors">Drop</button>
                                         ) : (
@@ -209,7 +212,7 @@ export default function TemplatesPage() {
             {/* Detail + Version History Modal */}
             {detailTemplate && (
                 <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => { setDetailTemplate(null); setVersionHistory([]); }}>
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl flex justify-between items-center">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -218,11 +221,10 @@ export default function TemplatesPage() {
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">Template ID: <span className="font-mono">{detailTemplate.template_id}</span></p>
                             </div>
-                            <button onClick={() => { handleEdit(detailTemplate); setDetailTemplate(null); setVersionHistory([]); }} className="px-3 py-1.5 rounded-lg text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 transition-colors">Edit Template</button>
+                            <button onClick={() => { handleEdit(detailTemplate); setDetailTemplate(null); setVersionHistory([]); }} className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-100 transition-colors">Edit Template</button>
                         </div>
 
-                        <div className="overflow-y-auto flex-1 custom-scrollbar">
-                            {/* Current Content */}
+                        <div className="overflow-y-auto flex-1">
                             <div className="p-6 space-y-4 border-b border-slate-100">
                                 {detailTemplate.subject_line && (
                                     <div>
@@ -238,15 +240,13 @@ export default function TemplatesPage() {
                                 )}
                                 <div>
                                     <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Content Body (Latest v{detailTemplate.version})</p>
-                                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 max-h-48 overflow-y-auto custom-scrollbar">
+                                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 max-h-48 overflow-y-auto">
                                         <pre className="text-xs text-slate-600 font-mono whitespace-pre-wrap leading-relaxed">{detailTemplate.content_body}</pre>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Version History */}
                             <div className="p-6">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-violet-600 mb-4 flex items-center gap-2">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                     Version History
                                 </h4>
@@ -255,7 +255,7 @@ export default function TemplatesPage() {
                                 ) : (
                                     <div className="space-y-2">
                                         {versionHistory.map(ver => (
-                                            <div key={ver.version} className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${ver.is_active ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
+                                            <div key={ver.version} className={`flex items-center justify-between px-4 py-3 rounded-2xl border transition-colors ${ver.is_active ? 'bg-white border-slate-100' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
                                                 <div className="flex items-center gap-3">
                                                     <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${ver.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>v{ver.version}</span>
                                                     <div>
@@ -264,7 +264,7 @@ export default function TemplatesPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
-                                                    <button onClick={() => { handleEdit(ver); setDetailTemplate(null); setVersionHistory([]); }} className="text-[9px] uppercase tracking-wider font-bold text-indigo-500 hover:bg-indigo-50 px-2 py-1 rounded transition-colors">Fork</button>
+                                                    <button onClick={() => { handleEdit(ver); setDetailTemplate(null); setVersionHistory([]); }} className="text-[9px] uppercase tracking-wider font-bold text-slate-500 hover:bg-slate-100 px-2 py-1 rounded transition-colors">Fork</button>
                                                     {ver.is_active ? (
                                                         <button onClick={() => handleDeactivate(ver.template_id, ver.version)} className="text-[9px] uppercase tracking-wider font-bold text-rose-500 hover:bg-rose-50 px-2 py-1 rounded transition-colors">Drop</button>
                                                     ) : (
@@ -279,7 +279,7 @@ export default function TemplatesPage() {
                         </div>
 
                         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end">
-                            <button onClick={() => { setDetailTemplate(null); setVersionHistory([]); }} className="px-5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors">Close</button>
+                            <button onClick={() => { setDetailTemplate(null); setVersionHistory([]); }} className="px-5 py-2 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors">Close</button>
                         </div>
                     </div>
                 </div>
@@ -288,13 +288,13 @@ export default function TemplatesPage() {
             {/* Editor Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
                             {editingTemplate ? (
                                 <>
                                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
                                         Edit Template
-                                        <span className="text-xs font-mono bg-violet-50 text-violet-600 border border-violet-200 px-2 py-0.5 rounded-md">v{editingTemplate.version} → v{editingTemplate.version + 1}</span>
+                                        <span className="text-xs font-mono bg-slate-100 text-slate-600 border border-slate-100 px-2 py-0.5 rounded-md">v{editingTemplate.version} → v{editingTemplate.version + 1}</span>
                                     </h3>
                                     <p className="text-sm text-slate-500 mt-1">Saving publishes a new version. Previous versions remain in history.</p>
                                 </>
@@ -305,18 +305,18 @@ export default function TemplatesPage() {
                                 </>
                             )}
                         </div>
-                        <div className="overflow-y-auto p-6 custom-scrollbar">
+                        <div className="overflow-y-auto p-6">
                             <form id="templateForm" onSubmit={handleSubmit} className="space-y-5">
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Event Trigger</label>
                                     <input type="text" required value={eventType} onChange={e => setEventType(e.target.value)} placeholder="e.g. global.success" disabled={!!editingTemplate}
-                                        className={`w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-mono text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm placeholder-slate-400 ${editingTemplate ? 'opacity-60 cursor-not-allowed' : ''}`} />
+                                        className={`${inputClasses} font-mono ${editingTemplate ? 'opacity-60 cursor-not-allowed' : ''}`} />
                                 </div>
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-3">Channel</label>
                                     <div className="flex gap-3">
                                         {['EMAIL', 'SMS', 'PUSH'].map(type => (
-                                            <label key={type} className={`flex-1 cursor-pointer border rounded-xl p-3 flex flex-col items-center transition-all ${editingTemplate ? 'pointer-events-none' : ''} ${channelType === type ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-500/10 text-emerald-700' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}>
+                                            <label key={type} className={`flex-1 cursor-pointer border rounded-2xl p-3 flex flex-col items-center transition-all ${editingTemplate ? 'pointer-events-none' : ''} ${channelType === type ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'}`}>
                                                 <input type="radio" value={type} checked={channelType === type} onChange={() => setChannelType(type as any)} className="sr-only" disabled={!!editingTemplate} />
                                                 <span className="font-extrabold tracking-wider text-sm">{type}</span>
                                             </label>
@@ -327,26 +327,26 @@ export default function TemplatesPage() {
                                 {channelType !== 'PUSH' && (
                                     <div>
                                         <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Subject Line</label>
-                                        <input type="text" value={subjectLine} onChange={e => setSubjectLine(e.target.value)} placeholder="e.g. Your invoice for {{orderId}}" className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm placeholder-slate-400" />
+                                        <input type="text" value={subjectLine} onChange={e => setSubjectLine(e.target.value)} placeholder="e.g. Your invoice for {{orderId}}" className={`${inputClasses} font-mono`} />
                                     </div>
                                 )}
                                 {channelType === 'PUSH' && (
                                     <div>
                                         <label className="block text-xs uppercase tracking-wider font-bold text-amber-500 mb-2">WebSocket Namespace</label>
-                                        <input type="text" value={targetWsChannel} onChange={e => setTargetWsChannel(e.target.value)} placeholder="e.g. application_alerts" className="w-full bg-amber-50/30 border border-amber-200 rounded-xl px-4 py-3 text-sm font-mono text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm placeholder-amber-400/70" />
+                                        <input type="text" value={targetWsChannel} onChange={e => setTargetWsChannel(e.target.value)} placeholder="e.g. application_alerts" className="w-full bg-amber-50/30 border border-amber-200 rounded-2xl px-4 py-3 text-sm font-mono text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm placeholder-amber-400/70" />
                                     </div>
                                 )}
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Content Body</label>
                                     <textarea required rows={8} value={contentBody} onChange={e => setContentBody(e.target.value)}
                                         placeholder={channelType === 'EMAIL' ? '<mjml>\n  <mj-body>...</mj-body>\n</mjml>' : 'Hello {{name}}, your action was successful!'}
-                                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner whitespace-pre custom-scrollbar placeholder-slate-400" />
+                                        className={`${inputClasses} font-mono shadow-inner whitespace-pre placeholder-slate-400`} />
                                 </div>
                             </form>
                         </div>
                         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end space-x-3">
-                            <button type="button" onClick={closeModal} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                            <button type="submit" form="templateForm" className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm">
+                            <button type="button" onClick={closeModal} className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                            <button type="submit" form="templateForm" className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm">
                                 {editingTemplate ? `Publish v${editingTemplate.version + 1}` : 'Deploy Global Branch'}
                             </button>
                         </div>
