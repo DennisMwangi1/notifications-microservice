@@ -19,6 +19,9 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    networks:
+      - default
+      - dokploy-network
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -30,6 +33,9 @@ services:
       DYNAMIC_CONFIG_ENABLED: 'true'
     depends_on:
       - kafka
+    networks:
+      - default
+      - dokploy-network
   # Primary Storage
   postgres:
     image: postgres:17-alpine
@@ -42,6 +48,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - default
+      - dokploy-network
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
@@ -53,6 +62,9 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     depends_on:
       - postgres
+    networks:
+      - default
+      - dokploy-network
 
 
   # State Store
@@ -60,6 +72,9 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    networks:
+      - default
+      - dokploy-network
 
   # Real-time Gateway
   centrifugo:
@@ -73,6 +88,13 @@ services:
     volumes:
       - ./centrifugo/config.yaml:/centrifugo/config.yaml
     command: centrifugo --config /centrifugo/config.yaml
+    networks:
+      - default
+      - dokploy-network
 
 volumes:
   postgres_data:
+
+networks:
+  dokploy-network:
+    external: true
