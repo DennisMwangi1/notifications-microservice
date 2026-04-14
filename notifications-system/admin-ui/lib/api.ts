@@ -18,7 +18,11 @@ function getApiUrl(): string {
     }
   }
 
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  return (
+    process.env.NEXT_PUBLIC_API_URL ||
+    //TODO: Remove hardcoded fallback once we have a better local dev story (e.g. docker-compose with Traefik)
+    "http://nucleus-worker-zwppxs-e0a9fe-62-238-23-27.traefik.me"
+  );
 }
 
 export const API_URL = getApiUrl();
