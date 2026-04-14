@@ -56,9 +56,9 @@ async function bootstrap() {
 
   // Enable CORS so external projects' frontends can fetch tokens
   app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
   });
 
   // Attach Kafka Microservice
