@@ -1,28 +1,27 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:20-alpine AS base
 WORKDIR /app
+ENV npm_config_update_notifier=false \
+    npm_config_fund=false \
+    npm_config_audit=false
 
-# 1. Development dependencies (needed so `@nestjs/cli` is available for build)
+# 1. Install dependencies once and cache the npm download directory
 FROM base AS deps
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline --no-audit
 RUN npx prisma generate
 
 # 2. Build the application
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/generated ./generated
+FROM deps AS builder
 COPY . .
 RUN npm run build
 
-# 3. Production dependencies ONLY (Keep final image slim)
-FROM base AS prod-deps
-COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
-COPY prisma.config.ts ./
-RUN npm ci --omit=dev
-RUN npx prisma generate
+# 3. Remove dev dependencies instead of reinstalling everything
+FROM deps AS prod-deps
+RUN npm prune --omit=dev
 
 # 4. Production Runner
 FROM base AS runner
@@ -31,11 +30,12 @@ ENV NODE_ENV=production
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
-USER nestjs
 
-COPY --from=builder /app/dist ./dist
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/generated ./generated
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=prod-deps --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/generated ./generated
+
+USER nestjs
 
 EXPOSE 4000
 
