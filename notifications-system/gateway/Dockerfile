@@ -4,7 +4,8 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY gateway/ ./gateway/
+# Copy the entire module into the container context
+COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /gateway ./gateway
 
