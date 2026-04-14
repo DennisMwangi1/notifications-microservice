@@ -5,8 +5,23 @@
 
 import { authHeaders, clearAuth } from "./auth";
 
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+function getApiUrl(): string {
+  if (typeof window !== "undefined") {
+    const runtimeConfig = (
+      window as Window & {
+        __RUNTIME_CONFIG__?: { NEXT_PUBLIC_API_URL?: string };
+      }
+    ).__RUNTIME_CONFIG__;
+
+    if (runtimeConfig?.NEXT_PUBLIC_API_URL) {
+      return runtimeConfig.NEXT_PUBLIC_API_URL;
+    }
+  }
+
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+}
+
+export const API_URL = getApiUrl();
 
 /**
  * Type-safe fetch wrapper with standard error handling and automatic auth.
