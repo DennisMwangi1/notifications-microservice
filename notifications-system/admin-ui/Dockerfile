@@ -1,14 +1,18 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:20-alpine AS base
 WORKDIR /app
+ENV npm_config_update_notifier=false \
+    npm_config_fund=false \
+    npm_config_audit=false
 
 # Install dependencies
 FROM base AS deps
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline --no-audit
 
 # Build
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+FROM deps AS builder
 COPY . .
 RUN npm run build
 
@@ -19,11 +23,12 @@ ENV NODE_ENV=production
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
-USER nextjs
 
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+USER nextjs
 
 EXPOSE 3000
 
