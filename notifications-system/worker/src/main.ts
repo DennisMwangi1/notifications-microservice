@@ -108,7 +108,8 @@ async function bootstrap() {
     const requestOrigin = Array.isArray(req.headers.origin)
       ? req.headers.origin[0]
       : req.headers.origin;
-    const corsOrigin = resolveCorsOrigin(requestOrigin);
+    // const corsOrigin = resolveCorsOrigin(requestOrigin);
+    const corsOrigin = process.env.CORS_ALLOWED_ORIGINS
 
     if (corsOrigin) {
       res.header('Vary', 'Origin');
