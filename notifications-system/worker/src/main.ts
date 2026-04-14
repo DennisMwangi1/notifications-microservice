@@ -105,14 +105,7 @@ async function bootstrap() {
   };
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const requestOrigin = Array.isArray(req.headers.origin)
-      ? req.headers.origin[0]
-      : req.headers.origin;
-    // const corsOrigin = resolveCorsOrigin(requestOrigin);
-    const corsOrigin =
-      process.env.CORS_ALLOWED_ORIGINS ||
-      // TODO: Remove hardcoded fallback once we have a better local dev story (e.g. docker-compose with Traefik)
-      'http://nucleus-admin-n4wzzr-57faf6-62-238-23-27.traefik.me/';
+    const corsOrigin = process.env.CORS_ALLOWED_ORIGINS;
 
     if (corsOrigin) {
       res.header('Vary', 'Origin');
