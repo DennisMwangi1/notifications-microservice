@@ -1,4 +1,3 @@
-
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
@@ -22,7 +21,7 @@ const DEFAULT_CORS_HEADERS = [
 function parseAllowedOrigins(value?: string): string[] {
   return (value ?? '')
     .split(',')
-    .map(origin => origin.trim())
+    .map((origin) => origin.trim())
     .filter(Boolean);
 }
 
@@ -31,7 +30,7 @@ function isAllowedOrigin(origin: string, allowedOrigins: string[]): boolean {
     return true;
   }
 
-  if (/^https?:\/\/([a-z0-9-]+\.)*traefik\.me$/i.test(origin)) {
+  if (/^http?:\/\/([a-z0-9-]+\.)*traefik\.me$/i.test(origin)) {
     return true;
   }
 
@@ -70,16 +69,19 @@ async function bootstrap() {
       adminConnected = true;
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
-      logger.error('Kafka broker not quite ready, retrying admin connection in 5 seconds...', errMsg);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      logger.error(
+        'Kafka broker not quite ready, retrying admin connection in 5 seconds...',
+        errMsg,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
 
   // Create standard HTTP API
   const logLevels: Array<'log' | 'error' | 'warn' | 'debug' | 'verbose'> =
-      process.env.NODE_ENV === 'production'
-          ? ['error', 'warn', 'log']
-          : ['error', 'warn', 'log', 'debug', 'verbose'];
+    process.env.NODE_ENV === 'production'
+      ? ['error', 'warn', 'log']
+      : ['error', 'warn', 'log', 'debug', 'verbose'];
 
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
@@ -151,7 +153,7 @@ async function bootstrap() {
         brokers: [process.env.KAFKA_BROKER || 'localhost:9092'],
       },
       consumer: {
-        groupId: 'notification-worker-group'
+        groupId: 'notification-worker-group',
       },
     },
   });
