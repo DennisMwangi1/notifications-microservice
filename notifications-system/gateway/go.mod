@@ -1,4 +1,4 @@
-module github.com/DennisMwangi1/notifications-microservice-gateway
+module github.com/DennisMwangi1/notifications-microservice-gateway/gateway
 
 go 1.25.7
 
