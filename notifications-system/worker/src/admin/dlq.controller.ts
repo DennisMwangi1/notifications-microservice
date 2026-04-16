@@ -6,12 +6,15 @@ import {
   Param,
   Query,
   Inject,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { AppLoggerService } from '../common/app-logger.service';
-import prisma from '../config/prisma.config';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
+import { DbContextService } from '../common/db-context.service';
+import { AuditLogService } from '../common/audit-log.service';
+import { AuthenticatedRequest } from '../common/actor-context';
 
 @Controller('api/v1/admin/dlq')
 @UseGuards(AdminAuthGuard)
@@ -19,6 +22,8 @@ export class DlqController {
   constructor(
     @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka,
     private readonly logger: AppLoggerService,
+    private readonly dbContext: DbContextService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   /**
@@ -28,9 +33,10 @@ export class DlqController {
   async listFailedNotifications(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
-    @Query('tenantId') tenantId?: string,
-    @Query('channel') channel?: string,
-    @Query('permanentlyFailed') permanentlyFailed?: string,
+    @Query('tenantId') tenantId: string | undefined,
+    @Query('channel') channel: string | undefined,
+    @Query('permanentlyFailed') permanentlyFailed: string | undefined,
+    @Req() req: AuthenticatedRequest,
   ) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
@@ -43,15 +49,19 @@ export class DlqController {
       where.permanently_failed = permanentlyFailed === 'true';
     }
 
-    const [items, total] = await Promise.all([
-      prisma.failed_notifications.findMany({
-        where,
-        orderBy: { created_at: 'desc' },
-        skip,
-        take: limitNum,
-      }),
-      prisma.failed_notifications.count({ where }),
-    ]);
+    const [items, total] = await this.dbContext.withActorContext(
+      req.actorContext,
+      async (tx) =>
+        Promise.all([
+          tx.failed_notifications.findMany({
+            where,
+            orderBy: { created_at: 'desc' },
+            skip,
+            take: limitNum,
+          }),
+          tx.failed_notifications.count({ where }),
+        ]),
+    );
 
     return {
       success: true,
@@ -69,10 +79,17 @@ export class DlqController {
    * Get a single failed notification by ID with full payload details.
    */
   @Get(':id')
-  async getFailedNotification(@Param('id') id: string) {
-    const item = await prisma.failed_notifications.findUnique({
-      where: { id },
-    });
+  async getFailedNotification(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const item = await this.dbContext.withActorContext(
+      req.actorContext,
+      (tx) =>
+        tx.failed_notifications.findUnique({
+          where: { id },
+        }),
+    );
 
     if (!item) {
       return { success: false, message: 'DLQ entry not found' };
@@ -86,10 +103,14 @@ export class DlqController {
    * to the notification.dispatch topic.
    */
   @Post(':id/retry')
-  async retryNotification(@Param('id') id: string) {
-    const item = await prisma.failed_notifications.findUnique({
-      where: { id },
-    });
+  async retryNotification(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    const item = await this.dbContext.withActorContext(
+      req.actorContext,
+      (tx) =>
+        tx.failed_notifications.findUnique({
+          where: { id },
+        }),
+    );
 
     if (!item) {
       return { success: false, message: 'DLQ entry not found' };
@@ -99,18 +120,30 @@ export class DlqController {
     this.kafkaClient.emit('notification.dispatch', item.payload);
 
     // Update the notification_logs status back to RETRYING
-    await prisma.notification_logs.updateMany({
-      where: { notification_id: item.notification_id },
-      data: { status: 'RETRYING', error_details: null },
-    });
+    await this.dbContext.withActorContext(req.actorContext, async (tx) => {
+      await tx.notification_logs.updateMany({
+        where: { notification_id: item.notification_id },
+        data: { status: 'RETRYING', error_details: null },
+      });
 
-    // Mark the DLQ entry as no longer permanently failed (it's being retried)
-    await prisma.failed_notifications.update({
-      where: { id },
-      data: {
-        permanently_failed: false,
-        retry_count: { increment: 1 },
-      },
+      await tx.failed_notifications.update({
+        where: { id },
+        data: {
+          permanently_failed: false,
+          retry_count: { increment: 1 },
+        },
+      });
+
+      await this.auditLog.record(tx, req.actorContext, {
+        action: 'dlq.retry_requested',
+        resourceType: 'failed_notification',
+        resourceId: item.id,
+        tenantId: item.tenant_id,
+        afterState: {
+          notification_id: item.notification_id,
+          retry_count: item.retry_count + 1,
+        },
+      });
     });
 
     this.logger.log(
@@ -127,22 +160,39 @@ export class DlqController {
    * Retry all non-permanently-failed DLQ entries.
    */
   @Post('retry-all')
-  async retryAll() {
-    const items = await prisma.failed_notifications.findMany({
-      where: { permanently_failed: true },
-      take: 100, // Process in batches to avoid overwhelming the system
-    });
+  async retryAll(@Req() req: AuthenticatedRequest) {
+    const items = await this.dbContext.withActorContext(
+      req.actorContext,
+      (tx) =>
+        tx.failed_notifications.findMany({
+          where: { permanently_failed: true },
+          take: 100,
+        }),
+    );
 
     let retried = 0;
     for (const item of items) {
       this.kafkaClient.emit('notification.dispatch', item.payload);
 
-      await prisma.failed_notifications.update({
-        where: { id: item.id },
-        data: {
-          permanently_failed: false,
-          retry_count: { increment: 1 },
-        },
+      await this.dbContext.withActorContext(req.actorContext, async (tx) => {
+        await tx.failed_notifications.update({
+          where: { id: item.id },
+          data: {
+            permanently_failed: false,
+            retry_count: { increment: 1 },
+          },
+        });
+
+        await this.auditLog.record(tx, req.actorContext, {
+          action: 'dlq.bulk_retry_requested',
+          resourceType: 'failed_notification',
+          resourceId: item.id,
+          tenantId: item.tenant_id,
+          afterState: {
+            notification_id: item.notification_id,
+            retry_count: item.retry_count + 1,
+          },
+        });
       });
       retried++;
     }
@@ -162,10 +212,26 @@ export class DlqController {
    * Purge a single DLQ entry (permanently remove it).
    */
   @Delete(':id')
-  async purgeNotification(@Param('id') id: string) {
+  async purgeNotification(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     try {
-      await prisma.failed_notifications.delete({
-        where: { id },
+      await this.dbContext.withActorContext(req.actorContext, async (tx) => {
+        const existing = await tx.failed_notifications.findUnique({
+          where: { id },
+        });
+
+        await tx.failed_notifications.delete({
+          where: { id },
+        });
+
+        if (existing) {
+          await this.auditLog.record(tx, req.actorContext, {
+            action: 'dlq.purged',
+            resourceType: 'failed_notification',
+            resourceId: existing.id,
+            tenantId: existing.tenant_id,
+            beforeState: existing as unknown as Record<string, unknown>,
+          });
+        }
       });
 
       return { success: true, message: 'DLQ entry purged' };
@@ -178,16 +244,20 @@ export class DlqController {
    * Get DLQ summary stats for the admin dashboard.
    */
   @Get('stats/summary')
-  async getDlqStats() {
-    const [total, permanentlyFailed, pending] = await Promise.all([
-      prisma.failed_notifications.count(),
-      prisma.failed_notifications.count({
-        where: { permanently_failed: true },
-      }),
-      prisma.failed_notifications.count({
-        where: { permanently_failed: false },
-      }),
-    ]);
+  async getDlqStats(@Req() req: AuthenticatedRequest) {
+    const [total, permanentlyFailed, pending] = await this.dbContext.withActorContext(
+      req.actorContext,
+      (tx) =>
+        Promise.all([
+          tx.failed_notifications.count(),
+          tx.failed_notifications.count({
+            where: { permanently_failed: true },
+          }),
+          tx.failed_notifications.count({
+            where: { permanently_failed: false },
+          }),
+        ]),
+    );
 
     return {
       success: true,

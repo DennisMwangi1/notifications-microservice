@@ -93,7 +93,7 @@ export class RateLimiterService {
       0.1,
     );
     const nowMs = Date.now();
-    const key = `burstlimit:${tenant.id}`;
+    const key = `tenant:${tenant.id}:burst`;
 
     const result = (await redis.eval(
       `
@@ -160,7 +160,7 @@ export class RateLimiterService {
     tenant: TenantRateLimits,
   ): Promise<RateLimitResult> {
     const minuteBucket = Math.floor(Date.now() / 60000);
-    const key = `ratelimit:${tenant.id}:${minuteBucket}`;
+    const key = `tenant:${tenant.id}:rate_limit:minute:${minuteBucket}`;
 
     const current = await redis.incr(key);
 
@@ -197,7 +197,7 @@ export class RateLimiterService {
     tenant: TenantRateLimits,
   ): Promise<RateLimitResult> {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const key = `dailycap:${tenant.id}:${today}`;
+    const key = `tenant:${tenant.id}:rate_limit:daily:${today}`;
 
     const current = await redis.incr(key);
 
@@ -232,9 +232,9 @@ export class RateLimiterService {
     const minuteBucket = Math.floor(Date.now() / 60000);
     const today = new Date().toISOString().split('T')[0];
 
-    const minuteKey = `ratelimit:${tenantId}:${minuteBucket}`;
-    const dailyKey = `dailycap:${tenantId}:${today}`;
-    const burstKey = `burstlimit:${tenantId}`;
+    const minuteKey = `tenant:${tenantId}:rate_limit:minute:${minuteBucket}`;
+    const dailyKey = `tenant:${tenantId}:rate_limit:daily:${today}`;
+    const burstKey = `tenant:${tenantId}:burst`;
 
     const [minuteCount, dailyCount, burstBucket] = await Promise.all([
       redis.get(minuteKey),

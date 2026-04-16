@@ -5,6 +5,7 @@
  * queries for tenant identity and to enforce idempotent event processing.
  */
 import { Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
 import redis from './redis.provider';
 
 const logger = new Logger('IngressCache');
@@ -50,7 +51,7 @@ export interface CachedIdempotencyEntry {
  * @returns redis key string
  */
 export function getTenantApiKeyCacheKey(apiKey: string): string {
-  return `tenant_api_key:${apiKey}`;
+  return `platform:tenant_api_key:${hashCacheKeyComponent(apiKey)}`;
 }
 
 /**
@@ -64,7 +65,7 @@ export function getIdempotencyCacheKey(
   tenantId: string,
   idempotencyKey: string,
 ): string {
-  return `idempotency:${tenantId}:${idempotencyKey}`;
+  return `tenant:${tenantId}:idem:${hashCacheKeyComponent(idempotencyKey)}`;
 }
 
 /**
@@ -234,4 +235,8 @@ async function readJsonValue<T>(key: string): Promise<T | null> {
     await redis.del(key).catch(() => undefined);
     return null;
   }
+}
+
+function hashCacheKeyComponent(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
 }

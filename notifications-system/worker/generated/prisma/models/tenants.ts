@@ -285,6 +285,9 @@ export type tenantsWhereInput = {
   daily_notification_cap?: Prisma.IntFilter<"tenants"> | number
   max_template_count?: Prisma.IntFilter<"tenants"> | number
   provider_config?: Prisma.XOR<Prisma.Provider_configsNullableScalarRelationFilter, Prisma.provider_configsWhereInput> | null
+  owned_provider_configs?: Prisma.Provider_configsListRelationFilter
+  template_library_entries?: Prisma.Template_libraryListRelationFilter
+  tenant_admins?: Prisma.Tenant_adminsListRelationFilter
 }
 
 export type tenantsOrderByWithRelationInput = {
@@ -302,6 +305,9 @@ export type tenantsOrderByWithRelationInput = {
   daily_notification_cap?: Prisma.SortOrder
   max_template_count?: Prisma.SortOrder
   provider_config?: Prisma.provider_configsOrderByWithRelationInput
+  owned_provider_configs?: Prisma.provider_configsOrderByRelationAggregateInput
+  template_library_entries?: Prisma.template_libraryOrderByRelationAggregateInput
+  tenant_admins?: Prisma.tenant_adminsOrderByRelationAggregateInput
 }
 
 export type tenantsWhereUniqueInput = Prisma.AtLeast<{
@@ -322,6 +328,9 @@ export type tenantsWhereUniqueInput = Prisma.AtLeast<{
   daily_notification_cap?: Prisma.IntFilter<"tenants"> | number
   max_template_count?: Prisma.IntFilter<"tenants"> | number
   provider_config?: Prisma.XOR<Prisma.Provider_configsNullableScalarRelationFilter, Prisma.provider_configsWhereInput> | null
+  owned_provider_configs?: Prisma.Provider_configsListRelationFilter
+  template_library_entries?: Prisma.Template_libraryListRelationFilter
+  tenant_admins?: Prisma.Tenant_adminsListRelationFilter
 }, "id" | "api_key" | "webhook_secret">
 
 export type tenantsOrderByWithAggregationInput = {
@@ -377,7 +386,10 @@ export type tenantsCreateInput = {
   rate_limit_per_minute?: number
   daily_notification_cap?: number
   max_template_count?: number
-  provider_config?: Prisma.provider_configsCreateNestedOneWithoutTenantsInput
+  provider_config?: Prisma.provider_configsCreateNestedOneWithoutDefault_for_tenantsInput
+  owned_provider_configs?: Prisma.provider_configsCreateNestedManyWithoutTenantInput
+  template_library_entries?: Prisma.template_libraryCreateNestedManyWithoutTenantInput
+  tenant_admins?: Prisma.tenant_adminsCreateNestedManyWithoutTenantInput
 }
 
 export type tenantsUncheckedCreateInput = {
@@ -394,6 +406,9 @@ export type tenantsUncheckedCreateInput = {
   rate_limit_per_minute?: number
   daily_notification_cap?: number
   max_template_count?: number
+  owned_provider_configs?: Prisma.provider_configsUncheckedCreateNestedManyWithoutTenantInput
+  template_library_entries?: Prisma.template_libraryUncheckedCreateNestedManyWithoutTenantInput
+  tenant_admins?: Prisma.tenant_adminsUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type tenantsUpdateInput = {
@@ -409,7 +424,10 @@ export type tenantsUpdateInput = {
   rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
   daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
   max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
-  provider_config?: Prisma.provider_configsUpdateOneWithoutTenantsNestedInput
+  provider_config?: Prisma.provider_configsUpdateOneWithoutDefault_for_tenantsNestedInput
+  owned_provider_configs?: Prisma.provider_configsUpdateManyWithoutTenantNestedInput
+  template_library_entries?: Prisma.template_libraryUpdateManyWithoutTenantNestedInput
+  tenant_admins?: Prisma.tenant_adminsUpdateManyWithoutTenantNestedInput
 }
 
 export type tenantsUncheckedUpdateInput = {
@@ -426,6 +444,9 @@ export type tenantsUncheckedUpdateInput = {
   rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
   daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
   max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  owned_provider_configs?: Prisma.provider_configsUncheckedUpdateManyWithoutTenantNestedInput
+  template_library_entries?: Prisma.template_libraryUncheckedUpdateManyWithoutTenantNestedInput
+  tenant_admins?: Prisma.tenant_adminsUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type tenantsCreateManyInput = {
@@ -473,6 +494,11 @@ export type tenantsUncheckedUpdateManyInput = {
   rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
   daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
   max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+}
+
+export type TenantsScalarRelationFilter = {
+  is?: Prisma.tenantsWhereInput
+  isNot?: Prisma.tenantsWhereInput
 }
 
 export type StringNullableListFilter<$PrismaModel = never> = {
@@ -551,6 +577,20 @@ export type tenantsOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type tenantsCreateNestedOneWithoutTemplate_library_entriesInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutTemplate_library_entriesInput, Prisma.tenantsUncheckedCreateWithoutTemplate_library_entriesInput>
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutTemplate_library_entriesInput
+  connect?: Prisma.tenantsWhereUniqueInput
+}
+
+export type tenantsUpdateOneRequiredWithoutTemplate_library_entriesNestedInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutTemplate_library_entriesInput, Prisma.tenantsUncheckedCreateWithoutTemplate_library_entriesInput>
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutTemplate_library_entriesInput
+  upsert?: Prisma.tenantsUpsertWithoutTemplate_library_entriesInput
+  connect?: Prisma.tenantsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.tenantsUpdateToOneWithWhereWithoutTemplate_library_entriesInput, Prisma.tenantsUpdateWithoutTemplate_library_entriesInput>, Prisma.tenantsUncheckedUpdateWithoutTemplate_library_entriesInput>
+}
+
 export type tenantsCreateallowed_channelsInput = {
   set: string[]
 }
@@ -562,6 +602,12 @@ export type tenantsUpdateallowed_channelsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type tenantsCreateNestedOneWithoutOwned_provider_configsInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutOwned_provider_configsInput, Prisma.tenantsUncheckedCreateWithoutOwned_provider_configsInput>
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutOwned_provider_configsInput
+  connect?: Prisma.tenantsWhereUniqueInput
 }
 
 export type tenantsCreateNestedManyWithoutProvider_configInput = {
@@ -576,6 +622,14 @@ export type tenantsUncheckedCreateNestedManyWithoutProvider_configInput = {
   connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutProvider_configInput | Prisma.tenantsCreateOrConnectWithoutProvider_configInput[]
   createMany?: Prisma.tenantsCreateManyProvider_configInputEnvelope
   connect?: Prisma.tenantsWhereUniqueInput | Prisma.tenantsWhereUniqueInput[]
+}
+
+export type tenantsUpdateOneRequiredWithoutOwned_provider_configsNestedInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutOwned_provider_configsInput, Prisma.tenantsUncheckedCreateWithoutOwned_provider_configsInput>
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutOwned_provider_configsInput
+  upsert?: Prisma.tenantsUpsertWithoutOwned_provider_configsInput
+  connect?: Prisma.tenantsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.tenantsUpdateToOneWithWhereWithoutOwned_provider_configsInput, Prisma.tenantsUpdateWithoutOwned_provider_configsInput>, Prisma.tenantsUncheckedUpdateWithoutOwned_provider_configsInput>
 }
 
 export type tenantsUpdateManyWithoutProvider_configNestedInput = {
@@ -606,6 +660,149 @@ export type tenantsUncheckedUpdateManyWithoutProvider_configNestedInput = {
   deleteMany?: Prisma.tenantsScalarWhereInput | Prisma.tenantsScalarWhereInput[]
 }
 
+export type tenantsCreateNestedOneWithoutTenant_adminsInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutTenant_adminsInput, Prisma.tenantsUncheckedCreateWithoutTenant_adminsInput>
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutTenant_adminsInput
+  connect?: Prisma.tenantsWhereUniqueInput
+}
+
+export type tenantsUpdateOneRequiredWithoutTenant_adminsNestedInput = {
+  create?: Prisma.XOR<Prisma.tenantsCreateWithoutTenant_adminsInput, Prisma.tenantsUncheckedCreateWithoutTenant_adminsInput>
+  connectOrCreate?: Prisma.tenantsCreateOrConnectWithoutTenant_adminsInput
+  upsert?: Prisma.tenantsUpsertWithoutTenant_adminsInput
+  connect?: Prisma.tenantsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.tenantsUpdateToOneWithWhereWithoutTenant_adminsInput, Prisma.tenantsUpdateWithoutTenant_adminsInput>, Prisma.tenantsUncheckedUpdateWithoutTenant_adminsInput>
+}
+
+export type tenantsCreateWithoutTemplate_library_entriesInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
+  provider_config?: Prisma.provider_configsCreateNestedOneWithoutDefault_for_tenantsInput
+  owned_provider_configs?: Prisma.provider_configsCreateNestedManyWithoutTenantInput
+  tenant_admins?: Prisma.tenant_adminsCreateNestedManyWithoutTenantInput
+}
+
+export type tenantsUncheckedCreateWithoutTemplate_library_entriesInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  provider_config_id?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
+  owned_provider_configs?: Prisma.provider_configsUncheckedCreateNestedManyWithoutTenantInput
+  tenant_admins?: Prisma.tenant_adminsUncheckedCreateNestedManyWithoutTenantInput
+}
+
+export type tenantsCreateOrConnectWithoutTemplate_library_entriesInput = {
+  where: Prisma.tenantsWhereUniqueInput
+  create: Prisma.XOR<Prisma.tenantsCreateWithoutTemplate_library_entriesInput, Prisma.tenantsUncheckedCreateWithoutTemplate_library_entriesInput>
+}
+
+export type tenantsUpsertWithoutTemplate_library_entriesInput = {
+  update: Prisma.XOR<Prisma.tenantsUpdateWithoutTemplate_library_entriesInput, Prisma.tenantsUncheckedUpdateWithoutTemplate_library_entriesInput>
+  create: Prisma.XOR<Prisma.tenantsCreateWithoutTemplate_library_entriesInput, Prisma.tenantsUncheckedCreateWithoutTemplate_library_entriesInput>
+  where?: Prisma.tenantsWhereInput
+}
+
+export type tenantsUpdateToOneWithWhereWithoutTemplate_library_entriesInput = {
+  where?: Prisma.tenantsWhereInput
+  data: Prisma.XOR<Prisma.tenantsUpdateWithoutTemplate_library_entriesInput, Prisma.tenantsUncheckedUpdateWithoutTemplate_library_entriesInput>
+}
+
+export type tenantsUpdateWithoutTemplate_library_entriesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  provider_config?: Prisma.provider_configsUpdateOneWithoutDefault_for_tenantsNestedInput
+  owned_provider_configs?: Prisma.provider_configsUpdateManyWithoutTenantNestedInput
+  tenant_admins?: Prisma.tenant_adminsUpdateManyWithoutTenantNestedInput
+}
+
+export type tenantsUncheckedUpdateWithoutTemplate_library_entriesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provider_config_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  owned_provider_configs?: Prisma.provider_configsUncheckedUpdateManyWithoutTenantNestedInput
+  tenant_admins?: Prisma.tenant_adminsUncheckedUpdateManyWithoutTenantNestedInput
+}
+
+export type tenantsCreateWithoutOwned_provider_configsInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
+  provider_config?: Prisma.provider_configsCreateNestedOneWithoutDefault_for_tenantsInput
+  template_library_entries?: Prisma.template_libraryCreateNestedManyWithoutTenantInput
+  tenant_admins?: Prisma.tenant_adminsCreateNestedManyWithoutTenantInput
+}
+
+export type tenantsUncheckedCreateWithoutOwned_provider_configsInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  provider_config_id?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
+  template_library_entries?: Prisma.template_libraryUncheckedCreateNestedManyWithoutTenantInput
+  tenant_admins?: Prisma.tenant_adminsUncheckedCreateNestedManyWithoutTenantInput
+}
+
+export type tenantsCreateOrConnectWithoutOwned_provider_configsInput = {
+  where: Prisma.tenantsWhereUniqueInput
+  create: Prisma.XOR<Prisma.tenantsCreateWithoutOwned_provider_configsInput, Prisma.tenantsUncheckedCreateWithoutOwned_provider_configsInput>
+}
+
 export type tenantsCreateWithoutProvider_configInput = {
   id?: string
   name: string
@@ -619,6 +816,9 @@ export type tenantsCreateWithoutProvider_configInput = {
   rate_limit_per_minute?: number
   daily_notification_cap?: number
   max_template_count?: number
+  owned_provider_configs?: Prisma.provider_configsCreateNestedManyWithoutTenantInput
+  template_library_entries?: Prisma.template_libraryCreateNestedManyWithoutTenantInput
+  tenant_admins?: Prisma.tenant_adminsCreateNestedManyWithoutTenantInput
 }
 
 export type tenantsUncheckedCreateWithoutProvider_configInput = {
@@ -634,6 +834,9 @@ export type tenantsUncheckedCreateWithoutProvider_configInput = {
   rate_limit_per_minute?: number
   daily_notification_cap?: number
   max_template_count?: number
+  owned_provider_configs?: Prisma.provider_configsUncheckedCreateNestedManyWithoutTenantInput
+  template_library_entries?: Prisma.template_libraryUncheckedCreateNestedManyWithoutTenantInput
+  tenant_admins?: Prisma.tenant_adminsUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type tenantsCreateOrConnectWithoutProvider_configInput = {
@@ -644,6 +847,53 @@ export type tenantsCreateOrConnectWithoutProvider_configInput = {
 export type tenantsCreateManyProvider_configInputEnvelope = {
   data: Prisma.tenantsCreateManyProvider_configInput | Prisma.tenantsCreateManyProvider_configInput[]
   skipDuplicates?: boolean
+}
+
+export type tenantsUpsertWithoutOwned_provider_configsInput = {
+  update: Prisma.XOR<Prisma.tenantsUpdateWithoutOwned_provider_configsInput, Prisma.tenantsUncheckedUpdateWithoutOwned_provider_configsInput>
+  create: Prisma.XOR<Prisma.tenantsCreateWithoutOwned_provider_configsInput, Prisma.tenantsUncheckedCreateWithoutOwned_provider_configsInput>
+  where?: Prisma.tenantsWhereInput
+}
+
+export type tenantsUpdateToOneWithWhereWithoutOwned_provider_configsInput = {
+  where?: Prisma.tenantsWhereInput
+  data: Prisma.XOR<Prisma.tenantsUpdateWithoutOwned_provider_configsInput, Prisma.tenantsUncheckedUpdateWithoutOwned_provider_configsInput>
+}
+
+export type tenantsUpdateWithoutOwned_provider_configsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  provider_config?: Prisma.provider_configsUpdateOneWithoutDefault_for_tenantsNestedInput
+  template_library_entries?: Prisma.template_libraryUpdateManyWithoutTenantNestedInput
+  tenant_admins?: Prisma.tenant_adminsUpdateManyWithoutTenantNestedInput
+}
+
+export type tenantsUncheckedUpdateWithoutOwned_provider_configsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provider_config_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  template_library_entries?: Prisma.template_libraryUncheckedUpdateManyWithoutTenantNestedInput
+  tenant_admins?: Prisma.tenant_adminsUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type tenantsUpsertWithWhereUniqueWithoutProvider_configInput = {
@@ -681,6 +931,94 @@ export type tenantsScalarWhereInput = {
   max_template_count?: Prisma.IntFilter<"tenants"> | number
 }
 
+export type tenantsCreateWithoutTenant_adminsInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
+  provider_config?: Prisma.provider_configsCreateNestedOneWithoutDefault_for_tenantsInput
+  owned_provider_configs?: Prisma.provider_configsCreateNestedManyWithoutTenantInput
+  template_library_entries?: Prisma.template_libraryCreateNestedManyWithoutTenantInput
+}
+
+export type tenantsUncheckedCreateWithoutTenant_adminsInput = {
+  id?: string
+  name: string
+  api_key: string
+  webhook_secret?: string | null
+  allowed_channels?: Prisma.tenantsCreateallowed_channelsInput | string[]
+  sender_email?: string | null
+  sender_name?: string | null
+  provider_config_id?: string | null
+  created_at?: Date | string
+  is_active?: boolean
+  rate_limit_per_minute?: number
+  daily_notification_cap?: number
+  max_template_count?: number
+  owned_provider_configs?: Prisma.provider_configsUncheckedCreateNestedManyWithoutTenantInput
+  template_library_entries?: Prisma.template_libraryUncheckedCreateNestedManyWithoutTenantInput
+}
+
+export type tenantsCreateOrConnectWithoutTenant_adminsInput = {
+  where: Prisma.tenantsWhereUniqueInput
+  create: Prisma.XOR<Prisma.tenantsCreateWithoutTenant_adminsInput, Prisma.tenantsUncheckedCreateWithoutTenant_adminsInput>
+}
+
+export type tenantsUpsertWithoutTenant_adminsInput = {
+  update: Prisma.XOR<Prisma.tenantsUpdateWithoutTenant_adminsInput, Prisma.tenantsUncheckedUpdateWithoutTenant_adminsInput>
+  create: Prisma.XOR<Prisma.tenantsCreateWithoutTenant_adminsInput, Prisma.tenantsUncheckedCreateWithoutTenant_adminsInput>
+  where?: Prisma.tenantsWhereInput
+}
+
+export type tenantsUpdateToOneWithWhereWithoutTenant_adminsInput = {
+  where?: Prisma.tenantsWhereInput
+  data: Prisma.XOR<Prisma.tenantsUpdateWithoutTenant_adminsInput, Prisma.tenantsUncheckedUpdateWithoutTenant_adminsInput>
+}
+
+export type tenantsUpdateWithoutTenant_adminsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  provider_config?: Prisma.provider_configsUpdateOneWithoutDefault_for_tenantsNestedInput
+  owned_provider_configs?: Prisma.provider_configsUpdateManyWithoutTenantNestedInput
+  template_library_entries?: Prisma.template_libraryUpdateManyWithoutTenantNestedInput
+}
+
+export type tenantsUncheckedUpdateWithoutTenant_adminsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  webhook_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowed_channels?: Prisma.tenantsUpdateallowed_channelsInput | string[]
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provider_config_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
+  daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
+  max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  owned_provider_configs?: Prisma.provider_configsUncheckedUpdateManyWithoutTenantNestedInput
+  template_library_entries?: Prisma.template_libraryUncheckedUpdateManyWithoutTenantNestedInput
+}
+
 export type tenantsCreateManyProvider_configInput = {
   id?: string
   name: string
@@ -709,6 +1047,9 @@ export type tenantsUpdateWithoutProvider_configInput = {
   rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
   daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
   max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  owned_provider_configs?: Prisma.provider_configsUpdateManyWithoutTenantNestedInput
+  template_library_entries?: Prisma.template_libraryUpdateManyWithoutTenantNestedInput
+  tenant_admins?: Prisma.tenant_adminsUpdateManyWithoutTenantNestedInput
 }
 
 export type tenantsUncheckedUpdateWithoutProvider_configInput = {
@@ -724,6 +1065,9 @@ export type tenantsUncheckedUpdateWithoutProvider_configInput = {
   rate_limit_per_minute?: Prisma.IntFieldUpdateOperationsInput | number
   daily_notification_cap?: Prisma.IntFieldUpdateOperationsInput | number
   max_template_count?: Prisma.IntFieldUpdateOperationsInput | number
+  owned_provider_configs?: Prisma.provider_configsUncheckedUpdateManyWithoutTenantNestedInput
+  template_library_entries?: Prisma.template_libraryUncheckedUpdateManyWithoutTenantNestedInput
+  tenant_admins?: Prisma.tenant_adminsUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type tenantsUncheckedUpdateManyWithoutProvider_configInput = {
@@ -742,6 +1086,53 @@ export type tenantsUncheckedUpdateManyWithoutProvider_configInput = {
 }
 
 
+/**
+ * Count Type TenantsCountOutputType
+ */
+
+export type TenantsCountOutputType = {
+  owned_provider_configs: number
+  template_library_entries: number
+  tenant_admins: number
+}
+
+export type TenantsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  owned_provider_configs?: boolean | TenantsCountOutputTypeCountOwned_provider_configsArgs
+  template_library_entries?: boolean | TenantsCountOutputTypeCountTemplate_library_entriesArgs
+  tenant_admins?: boolean | TenantsCountOutputTypeCountTenant_adminsArgs
+}
+
+/**
+ * TenantsCountOutputType without action
+ */
+export type TenantsCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TenantsCountOutputType
+   */
+  select?: Prisma.TenantsCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * TenantsCountOutputType without action
+ */
+export type TenantsCountOutputTypeCountOwned_provider_configsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.provider_configsWhereInput
+}
+
+/**
+ * TenantsCountOutputType without action
+ */
+export type TenantsCountOutputTypeCountTemplate_library_entriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.template_libraryWhereInput
+}
+
+/**
+ * TenantsCountOutputType without action
+ */
+export type TenantsCountOutputTypeCountTenant_adminsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.tenant_adminsWhereInput
+}
+
 
 export type tenantsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -758,6 +1149,10 @@ export type tenantsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   daily_notification_cap?: boolean
   max_template_count?: boolean
   provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
+  owned_provider_configs?: boolean | Prisma.tenants$owned_provider_configsArgs<ExtArgs>
+  template_library_entries?: boolean | Prisma.tenants$template_library_entriesArgs<ExtArgs>
+  tenant_admins?: boolean | Prisma.tenants$tenant_adminsArgs<ExtArgs>
+  _count?: boolean | Prisma.TenantsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tenants"]>
 
 export type tenantsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -813,6 +1208,10 @@ export type tenantsSelectScalar = {
 export type tenantsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "api_key" | "webhook_secret" | "allowed_channels" | "sender_email" | "sender_name" | "provider_config_id" | "created_at" | "is_active" | "rate_limit_per_minute" | "daily_notification_cap" | "max_template_count", ExtArgs["result"]["tenants"]>
 export type tenantsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
+  owned_provider_configs?: boolean | Prisma.tenants$owned_provider_configsArgs<ExtArgs>
+  template_library_entries?: boolean | Prisma.tenants$template_library_entriesArgs<ExtArgs>
+  tenant_admins?: boolean | Prisma.tenants$tenant_adminsArgs<ExtArgs>
+  _count?: boolean | Prisma.TenantsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type tenantsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   provider_config?: boolean | Prisma.tenants$provider_configArgs<ExtArgs>
@@ -825,6 +1224,9 @@ export type $tenantsPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   name: "tenants"
   objects: {
     provider_config: Prisma.$provider_configsPayload<ExtArgs> | null
+    owned_provider_configs: Prisma.$provider_configsPayload<ExtArgs>[]
+    template_library_entries: Prisma.$template_libraryPayload<ExtArgs>[]
+    tenant_admins: Prisma.$tenant_adminsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1235,6 +1637,9 @@ readonly fields: tenantsFieldRefs;
 export interface Prisma__tenantsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   provider_config<T extends Prisma.tenants$provider_configArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tenants$provider_configArgs<ExtArgs>>): Prisma.Prisma__provider_configsClient<runtime.Types.Result.GetResult<Prisma.$provider_configsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  owned_provider_configs<T extends Prisma.tenants$owned_provider_configsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tenants$owned_provider_configsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$provider_configsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  template_library_entries<T extends Prisma.tenants$template_library_entriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tenants$template_library_entriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$template_libraryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tenant_admins<T extends Prisma.tenants$tenant_adminsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tenants$tenant_adminsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$tenant_adminsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1689,6 +2094,78 @@ export type tenants$provider_configArgs<ExtArgs extends runtime.Types.Extensions
    */
   include?: Prisma.provider_configsInclude<ExtArgs> | null
   where?: Prisma.provider_configsWhereInput
+}
+
+/**
+ * tenants.owned_provider_configs
+ */
+export type tenants$owned_provider_configsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the provider_configs
+   */
+  select?: Prisma.provider_configsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the provider_configs
+   */
+  omit?: Prisma.provider_configsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.provider_configsInclude<ExtArgs> | null
+  where?: Prisma.provider_configsWhereInput
+  orderBy?: Prisma.provider_configsOrderByWithRelationInput | Prisma.provider_configsOrderByWithRelationInput[]
+  cursor?: Prisma.provider_configsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Provider_configsScalarFieldEnum | Prisma.Provider_configsScalarFieldEnum[]
+}
+
+/**
+ * tenants.template_library_entries
+ */
+export type tenants$template_library_entriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the template_library
+   */
+  select?: Prisma.template_librarySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the template_library
+   */
+  omit?: Prisma.template_libraryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
+  where?: Prisma.template_libraryWhereInput
+  orderBy?: Prisma.template_libraryOrderByWithRelationInput | Prisma.template_libraryOrderByWithRelationInput[]
+  cursor?: Prisma.template_libraryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Template_libraryScalarFieldEnum | Prisma.Template_libraryScalarFieldEnum[]
+}
+
+/**
+ * tenants.tenant_admins
+ */
+export type tenants$tenant_adminsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the tenant_admins
+   */
+  select?: Prisma.tenant_adminsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the tenant_admins
+   */
+  omit?: Prisma.tenant_adminsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tenant_adminsInclude<ExtArgs> | null
+  where?: Prisma.tenant_adminsWhereInput
+  orderBy?: Prisma.tenant_adminsOrderByWithRelationInput | Prisma.tenant_adminsOrderByWithRelationInput[]
+  cursor?: Prisma.tenant_adminsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Tenant_adminsScalarFieldEnum | Prisma.Tenant_adminsScalarFieldEnum[]
 }
 
 /**

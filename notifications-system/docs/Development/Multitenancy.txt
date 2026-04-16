@@ -1,0 +1,274 @@
+Goal of Level 2
+
+Move Nucleus from:
+
+shared system with tenant-aware records
+
+to:
+
+shared system with enforced logical isolation across data, APIs, templates, cache, messaging, and admin UX
+
+At Level 2, tenants still share infrastructure, but the platform behaves as though each tenant has its own bounded space.
+
+Level 1 → Level 2 Target State
+
+A Level 2 Nucleus should guarantee:
+
+tenant admins can only see and manage their own data
+tenant templates, logs, provider configs, and routing rules are isolated
+mistakes in API code do not automatically become cross-tenant leaks
+internal platform operators use a separate privileged path
+all runtime components consistently carry tenant context
+every sensitive tenant action is auditable
+What must change
+
+There are 6 major workstreams.
+
+1. Tenant boundary model
+
+Right now, “tenant” exists, but the system likely does not treat it as a hard architectural boundary.
+
+Needed change
+
+Define tenant boundary rules for every resource.
+
+Each resource must be classified as one of:
+
+Platform-owned
+example: platform default templates, internal ops users, provider adapter catalog
+Tenant-owned
+example: templates, routing rules, logs, provider credentials, API keys, inbox items
+Hybrid
+example: global default template with tenant override
+Deliverable
+
+Create a resource boundary matrix like this:
+
+Resource	Scope	Editable by	Visible to
+Tenant	Platform	Platform ops	Platform ops
+Template	Tenant	Tenant admin	Tenant admin
+Global Template	Platform	Platform ops	Platform ops / runtime
+Provider Config	Tenant	Tenant admin	Tenant admin
+Delivery Logs	Tenant	System	Tenant admin + platform ops
+API Keys	Tenant	Tenant admin	Tenant admin
+
+This becomes the source of truth for the rest of the design.
+
+2. Data isolation
+
+This is the foundation.
+
+Needed change
+
+Every tenant-owned row must carry tenant_id, and queries must be tenant-scoped by default.
+
+Required schema work
+
+Review all tables and ensure tenant_id exists where needed.
+
+Likely tenant-scoped tables:
+
+templates
+template_versions
+routing_rules
+provider_configs
+notifications
+dispatch_jobs
+delivery_attempts
+audit_logs
+api_keys
+webhook_events
+inbox_notifications
+dlq_entries
+Required constraints
+
+Add tenant-safe uniqueness rules such as:
+
+(tenant_id, template_key, channel)
+(tenant_id, event_type, channel)
+(tenant_id, api_key_hash)
+(tenant_id, external_event_id) for idempotency
+Critical design rule
+
+No application code should query tenant-owned tables without explicit tenant context.
+
+3. Database-enforced protection
+
+This is what upgrades you from “discipline-based isolation” to “platform-enforced isolation.”
+
+Needed change
+
+Introduce PostgreSQL Row Level Security on all tenant-owned tables.
+
+Why
+
+Without this, one missed WHERE tenant_id = ... can expose another tenant’s data.
+
+How it should work
+
+For each request or job:
+
+resolve authenticated tenant
+set DB session context
+allow DB policies to restrict rows automatically
+
+Example approach:
+
+application sets app.current_tenant_id
+RLS policies check row tenant_id = current_setting('app.current_tenant_id')
+Result
+
+Even if a repository query is too broad, the DB still blocks cross-tenant reads and writes.
+
+This is one of the biggest Level 2 upgrades.
+
+4. Authorization and admin separation
+
+A big weakness in early multi-tenant systems is mixing platform admin powers with tenant admin actions.
+
+Needed change
+
+Split actors clearly.
+
+Actor types
+Platform Operator
+internal team
+can access cross-tenant operations, manage tenants (rate limitis, quotas, billing), provision and deprovision tenants, Audit tenant usage logs
+Tenant Admin
+manages templates, routing, providers, logs for one tenant
+
+Separate:
+
+Platform Console
+Tenant Console
+
+Do not just hide controls conditionally in one shared UI.
+The separation should exist in routes, API policies, and mental model.
+
+Key principle
+
+A tenant admin should never “switch tenant.”
+
+If they can switch tenant, you are really building an internal ops UI, not a tenant-safe console.
+
+5. Runtime isolation across Kafka, Redis, and workers
+
+Even with correct DB isolation, background systems can still leak tenant state.
+
+Kafka changes
+
+Every message must carry:
+
+tenant_id
+event_id
+event_type
+trace_id
+channel
+payload
+
+Consumers must reject malformed or unscoped messages.
+
+Retry and DLQ entries must remain tenant-scoped too.
+
+Redis changes
+
+Namespace everything by tenant.
+
+Examples:
+
+tenant:{tenantId}:idem:{key}
+tenant:{tenantId}:rate_limit:{actor}
+tenant:{tenantId}:template_cache:{templateKey}
+Worker changes
+
+The NestJS worker and Go gateway must treat tenant context as mandatory, not optional.
+
+That means:
+
+no dispatch job without tenant context
+no provider config resolution without tenant context
+no log write without tenant context
+6. Template and provider isolation
+
+These are the most commercially sensitive tenant assets.
+
+Template changes
+
+Introduce explicit template scopes:
+
+platform default
+tenant override
+tenant custom
+
+Define deterministic resolution:
+
+tenant-specific override
+tenant-specific default
+platform default
+
+Tenant users should only see their own templates.
+
+Provider changes
+
+Provider configs must be fully tenant-scoped:
+
+each tenant has its own provider credentials/config
+credentials are encrypted at rest
+secret reads/writes are audited
+provider test/send actions are tenant-scoped
+
+A provider lookup should never be global unless it is intentionally platform-managed.
+Recommended sequence
+
+I would implement Level 1 → Level 2 in this order:
+
+Phase 1 — Boundary definition
+classify all resources by ownership and scope
+identify unsafe shared endpoints and shared UI screens
+map all background jobs and where tenant context is lost
+Phase 2 — Auth and actor model
+define roles and permissions
+split platform operator and tenant admin concerns
+update JWT/API key claims to include tenant scope
+Phase 3 — Data model hardening
+add missing tenant_id
+add tenant-safe indexes and constraints
+clean up global vs tenant-owned tables
+Phase 4 — Database enforcement
+add PostgreSQL RLS
+set DB session tenant context from app layer
+validate every repository pattern against RLS
+Phase 5 — Runtime propagation
+standardize Kafka message envelope
+namespace Redis
+enforce tenant context in worker/gateway execution path
+Phase 6 — UI isolation
+split platform console and tenant console
+remove cross-tenant visibility from tenant-facing APIs
+add tenant-scoped audit/logging views
+Phase 7 — Secret and audit hardening
+encrypt provider credentials
+audit secret changes
+audit tenant admin actions
+add support-access trail for platform operators
+What “done” looks like
+
+You are at Level 2 when the following are true:
+
+a tenant admin cannot read or mutate another tenant’s data even if an API bug exists
+every tenant-owned table has enforced tenant scope
+every job/message/cache key carries tenant context
+platform operators use separate privileged flows
+templates and provider configs are fully tenant-scoped
+tenant-facing UI behaves as a single-tenant product experience
+audit logs can explain who accessed or changed what, for which tenant
+My recommendation for Nucleus specifically
+
+For Nucleus, I would define Level 2 as these four non-negotiables:
+
+Postgres RLS on tenant-owned tables
+separate platform vs tenant admin surfaces
+tenant-scoped provider/template isolation
+mandatory tenant context in Kafka + Redis + workers
+
+Those four changes move the platform from “multi-tenant in concept” to “multi-tenant by enforcement.”

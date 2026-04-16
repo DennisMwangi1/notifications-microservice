@@ -1,16 +1,7 @@
-import {
-  Controller,
-  Inject,
-  OnModuleInit,
-  Get,
-  Put,
-  Param,
-  Logger,
-} from '@nestjs/common';
+import { Controller, Get, Inject, OnModuleInit, Param, Put } from '@nestjs/common';
 import { ClientKafka, MessagePattern, Payload } from '@nestjs/microservices';
 import { AppLoggerService } from '../common/app-logger.service';
 import { RenderService } from './render.service';
-import prisma from '../config/prisma.config';
 import { randomUUID } from 'crypto';
 import { EnrichedKafkaPayload } from '../common/dto/events.dto';
 import {
@@ -18,6 +9,8 @@ import {
   SmsDispatchPayload,
   RealtimeDispatchPayload,
 } from '../common/dto/admin.dto';
+import { DbContextService } from '../common/db-context.service';
+import { AuditLogService } from '../common/audit-log.service';
 
 /**
  * Message processing controller that listens to enriched tenant events from Kafka
@@ -27,12 +20,12 @@ import {
  */
 @Controller()
 export class NotificationsController implements OnModuleInit {
-  private prisma = prisma;
-
   constructor(
     private readonly renderService: RenderService,
     @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka,
     private readonly logger: AppLoggerService,
+    private readonly dbContext: DbContextService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   /**
@@ -61,39 +54,61 @@ export class NotificationsController implements OnModuleInit {
    */
   @MessagePattern('tenant.event.received')
   async handleTenantEvent(@Payload() data: EnrichedKafkaPayload) {
-    const { userId, eventType, tenant, ...payloadData } = data;
-    const whereClause = eventType.startsWith('global.')
-      ? { event_type: eventType, is_active: true }
-      : { tenant_id: tenant.id, event_type: eventType, is_active: true };
+    const { userId, eventType, eventId, traceId, tenant, ...payloadData } = data;
+    const [templates, providerConfig] = await this.dbContext.withActorContext(
+      {
+        actorType: 'system',
+        actorId: 'notifications-controller',
+        tenantId: tenant.id,
+      },
+      async (tx) => {
+        const allTemplates = await tx.templates.findMany({
+          where: {
+            event_type: eventType,
+            is_active: true,
+            OR: [
+              { tenant_id: tenant.id, scope: 'TENANT_OVERRIDE' },
+              { tenant_id: tenant.id, scope: 'TENANT_CUSTOM' },
+              { tenant_id: null, scope: 'PLATFORM_DEFAULT' },
+            ],
+          },
+          orderBy: { version: 'desc' },
+        });
 
-    const allTemplates = await this.prisma.templates.findMany({
-      where: whereClause,
-      orderBy: { version: 'desc' },
-    });
+        const resolvedProviderConfig = tenant.provider_config_id
+          ? await tx.provider_configs.findFirst({
+              where: { id: tenant.provider_config_id, tenant_id: tenant.id },
+            })
+          : null;
+
+        return [allTemplates, resolvedProviderConfig] as const;
+      },
+    );
 
     const seenChannels = new Set<string>();
-    const templates = allTemplates.filter((tpl) => {
-      if (seenChannels.has(tpl.channel_type)) return false;
-      seenChannels.add(tpl.channel_type);
-      return true;
-    });
+    const resolvedTemplates = [...templates]
+      .sort((left, right) => {
+        const leftRank = this.resolveTemplatePriority(left.scope);
+        const rightRank = this.resolveTemplatePriority(right.scope);
+        if (leftRank !== rightRank) {
+          return leftRank - rightRank;
+        }
+        return right.version - left.version;
+      })
+      .filter((tpl) => {
+        if (seenChannels.has(tpl.channel_type)) return false;
+        seenChannels.add(tpl.channel_type);
+        return true;
+      });
 
-    if (!templates || templates.length === 0) {
+    if (!resolvedTemplates || resolvedTemplates.length === 0) {
       this.logger.error(
         `❌ No Templates for Event '${eventType}' and Tenant '${tenant.id}' found in DB`,
       );
       return;
     }
 
-    // BYOP: Check for custom provider config
-    let providerConfig = null;
-    if (tenant.provider_config_id) {
-      providerConfig = await this.prisma.provider_configs.findUnique({
-        where: { id: tenant.provider_config_id },
-      });
-    }
-
-    for (const template of templates) {
+    for (const template of resolvedTemplates) {
       const dynamicSubject = this.renderService
         .renderText(
           template.subject_line || 'Notification',
@@ -108,21 +123,53 @@ export class NotificationsController implements OnModuleInit {
         );
 
         // Initialize log as PENDING
-        await this.prisma.notification_logs.create({
-          data: {
-            notification_id: notificationId,
-            tenant_id: tenant.id,
-            user_id: userId,
-            template_id: template.template_id,
-            channel: 'EMAIL',
-            status: 'PENDING',
-            metadata: data as object,
+        await this.dbContext.withActorContext(
+          {
+            actorType: 'system',
+            actorId: 'notifications-controller',
+            tenantId: tenant.id,
           },
-        });
+          async (tx) => {
+            await tx.notification_logs.create({
+              data: {
+                notification_id: notificationId,
+                tenant_id: tenant.id,
+                user_id: userId,
+                template_id: template.template_id,
+                channel: 'EMAIL',
+                status: 'PENDING',
+                metadata: data as object,
+              },
+            });
+
+            await this.auditLog.record(
+              tx,
+              {
+                actorType: 'system',
+                actorId: 'notifications-controller',
+                tenantId: tenant.id,
+              },
+              {
+                action: 'notification_log.created',
+                resourceType: 'notification_log',
+                resourceId: notificationId,
+                tenantId: tenant.id,
+                afterState: {
+                  eventId,
+                  traceId,
+                  template_id: template.template_id,
+                  channel: 'EMAIL',
+                },
+              },
+            );
+          },
+        );
         const emailPayload: EmailDispatchPayload = {
           actionType: 'EMAIL',
           notificationId,
           tenantId: tenant.id,
+          eventId,
+          traceId,
           userId,
           recipient:
             (payloadData.recipientEmail as string) ||
@@ -132,7 +179,7 @@ export class NotificationsController implements OnModuleInit {
           subject: dynamicSubject,
           body: finalHtml,
           provider: providerConfig?.provider || 'RESEND',
-          apiKey: providerConfig?.api_key,
+          providerConfigId: providerConfig?.id,
         };
 
         this.kafkaClient.emit('notification.dispatch', emailPayload);
@@ -147,29 +194,38 @@ export class NotificationsController implements OnModuleInit {
           payloadData as Record<string, unknown>,
         );
 
-        // R4: Use Prisma typed create() instead of raw SQL
-        await this.prisma.notification_logs.create({
-          data: {
-            notification_id: notificationId,
-            tenant_id: tenant.id,
-            user_id: userId,
-            template_id: template.template_id,
-            channel: 'SMS',
-            status: 'PENDING',
-            metadata: data as object,
+        await this.dbContext.withActorContext(
+          {
+            actorType: 'system',
+            actorId: 'notifications-controller',
+            tenantId: tenant.id,
           },
-        });
+          (tx) =>
+            tx.notification_logs.create({
+              data: {
+                notification_id: notificationId,
+                tenant_id: tenant.id,
+                user_id: userId,
+                template_id: template.template_id,
+                channel: 'SMS',
+                status: 'PENDING',
+                metadata: data as object,
+              },
+            }),
+        );
 
         const smsPayload: SmsDispatchPayload = {
           actionType: 'SMS',
           notificationId,
           tenantId: tenant.id,
+          eventId,
+          traceId,
           userId,
           recipient: (payloadData.recipientPhone as string) || '+10000000000',
           subject: dynamicSubject,
           body: finalSmsText,
           provider: providerConfig?.provider || 'TWILIO',
-          apiKey: providerConfig?.api_key,
+          providerConfigId: providerConfig?.id,
         };
         this.kafkaClient.emit('notification.dispatch', smsPayload);
       }
@@ -207,23 +263,32 @@ export class NotificationsController implements OnModuleInit {
           ? eventParts[1]
           : 'info';
 
-        // R4: Use Prisma typed create() instead of raw SQL
-        await this.prisma.in_app_notifications.create({
-          data: {
-            id: notificationId,
-            user_id: userId,
-            tenant_id: tenant.id,
-            type: eventType,
-            title: dynamicSubject,
-            body: finalPushBody,
-            status: 'UNREAD',
+        await this.dbContext.withActorContext(
+          {
+            actorType: 'system',
+            actorId: 'notifications-controller',
+            tenantId: tenant.id,
           },
-        });
+          (tx) =>
+            tx.in_app_notifications.create({
+              data: {
+                id: notificationId,
+                user_id: userId,
+                tenant_id: tenant.id,
+                type: eventType,
+                title: dynamicSubject,
+                body: finalPushBody,
+                status: 'UNREAD',
+              },
+            }),
+        );
 
         const realtimePayload: RealtimeDispatchPayload = {
           actionType: 'REALTIME',
           notificationId,
           tenantId: tenant.id,
+          eventId,
+          traceId,
           userId,
           subject: dynamicSubject,
           body: finalPushBody,
@@ -254,14 +319,22 @@ export class NotificationsController implements OnModuleInit {
     @Param('tenantId') tenantId: string,
     @Param('userId') userId: string,
   ) {
-    const notifications = await this.prisma.in_app_notifications.findMany({
-      where: {
-        user_id: userId,
-        tenant_id: tenantId,
+    const notifications = await this.dbContext.withActorContext(
+      {
+        actorType: 'system',
+        actorId: 'notifications-controller',
+        tenantId,
       },
-      orderBy: { created_at: 'desc' },
-      take: 50,
-    });
+      (tx) =>
+        tx.in_app_notifications.findMany({
+          where: {
+            user_id: userId,
+            tenant_id: tenantId,
+          },
+          orderBy: { created_at: 'desc' },
+          take: 50,
+        }),
+    );
 
     return { success: true, data: notifications };
   }
@@ -283,16 +356,24 @@ export class NotificationsController implements OnModuleInit {
     @Param('notificationId') notificationId: string,
   ) {
     // using updateMany to apply additional where constraints for strict tenant isolation
-    const result = await this.prisma.in_app_notifications.updateMany({
-      where: {
-        id: notificationId,
-        user_id: userId,
-        tenant_id: tenantId,
+    const result = await this.dbContext.withActorContext(
+      {
+        actorType: 'system',
+        actorId: 'notifications-controller',
+        tenantId,
       },
-      data: {
-        status: 'READ',
-      },
-    });
+      (tx) =>
+        tx.in_app_notifications.updateMany({
+          where: {
+            id: notificationId,
+            user_id: userId,
+            tenant_id: tenantId,
+          },
+          data: {
+            status: 'READ',
+          },
+        }),
+    );
 
     if (result.count === 0) {
       return {
@@ -327,27 +408,43 @@ export class NotificationsController implements OnModuleInit {
 
     try {
       // Persist to failed_notifications table for admin review
-      await this.prisma.failed_notifications.create({
-        data: {
-          notification_id: data.notificationId,
-          tenant_id: data.tenantId,
-          channel: data.channel as 'EMAIL' | 'SMS' | 'PUSH',
-          payload: data.originalPayload as object,
-          error_details: data.lastError,
-          retry_count: data.retryCount,
-          max_retries: data.maxRetries,
-          permanently_failed: true,
+      await this.dbContext.withActorContext(
+        {
+          actorType: 'system',
+          actorId: 'notifications-controller',
+          tenantId: data.tenantId,
         },
-      });
+        (tx) =>
+          tx.failed_notifications.create({
+            data: {
+              notification_id: data.notificationId,
+              tenant_id: data.tenantId,
+              channel: data.channel as 'EMAIL' | 'SMS' | 'PUSH',
+              payload: data.originalPayload as object,
+              error_details: data.lastError,
+              retry_count: data.retryCount,
+              max_retries: data.maxRetries,
+              permanently_failed: true,
+            },
+          }),
+      );
 
       // Update the notification_logs status to FAILED with error context
-      await this.prisma.notification_logs.updateMany({
-        where: { notification_id: data.notificationId },
-        data: {
-          status: 'FAILED',
-          error_details: `DLQ: ${data.lastError} (after ${data.retryCount} retries)`,
+      await this.dbContext.withActorContext(
+        {
+          actorType: 'system',
+          actorId: 'notifications-controller',
+          tenantId: data.tenantId,
         },
-      });
+        (tx) =>
+          tx.notification_logs.updateMany({
+            where: { notification_id: data.notificationId },
+            data: {
+              status: 'FAILED',
+              error_details: `DLQ: ${data.lastError} (after ${data.retryCount} retries)`,
+            },
+          }),
+      );
 
       this.logger.log(
         `💀 DLQ: Notification ${data.notificationId} persisted to failed_notifications table`,
@@ -357,6 +454,17 @@ export class NotificationsController implements OnModuleInit {
         `❌ DLQ: Failed to persist dead letter for ${data.notificationId}:`,
         err,
       );
+    }
+  }
+
+  private resolveTemplatePriority(scope: string): number {
+    switch (scope) {
+      case 'TENANT_OVERRIDE':
+        return 0;
+      case 'TENANT_CUSTOM':
+        return 1;
+      default:
+        return 2;
     }
   }
 }

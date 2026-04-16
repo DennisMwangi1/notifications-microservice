@@ -2,12 +2,18 @@ package main
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -128,6 +134,11 @@ func main() {
 				continue
 			}
 
+			if err := validatePayload(payload); err != nil {
+				log.Printf("Rejecting malformed dispatch message: %v", err)
+				continue
+			}
+
 			wg.Add(1)
 			go func(p types.NotificationPayload) {
 				defer wg.Done()
@@ -151,6 +162,11 @@ func main() {
 			var retryMsg types.RetryMessage
 			if err := json.Unmarshal(message.Value, &retryMsg); err != nil {
 				log.Printf("Failed to unmarshal retry message: %v", err)
+				continue
+			}
+
+			if err := validatePayload(retryMsg.OriginalPayload); err != nil {
+				log.Printf("Rejecting malformed retry message: %v", err)
 				continue
 			}
 
@@ -214,25 +230,33 @@ func processWithAdapters(
 	fmt.Printf("📦 Processing: ActionType=%s, Provider=%s, NotificationID=%s (retry #%d)\n",
 		payload.ActionType, payload.Provider, payload.NotificationID, currentRetryCount)
 
+	resolvedPayload, err := hydrateProviderConfig(db, payload)
+	if err != nil {
+		log.Printf("⚠️ Failed to resolve tenant provider config for notification %s: %v\n", payload.NotificationID, err)
+		publishToDLQ(dlqWriter, payload, currentRetryCount, err.Error())
+		updateAuditLog(payload.NotificationID, payload.TenantID, db, "FAILED")
+		return
+	}
+
 	// Resolve the correct adapter
-	adapter := registry.Resolve(payload.ActionType, payload.Provider)
+	adapter := registry.Resolve(resolvedPayload.ActionType, resolvedPayload.Provider)
 	if adapter == nil {
-		log.Printf("⚠️ No adapter found for ActionType=%s, Provider=%s\n", payload.ActionType, payload.Provider)
+		log.Printf("⚠️ No adapter found for ActionType=%s, Provider=%s\n", resolvedPayload.ActionType, resolvedPayload.Provider)
 		// No adapter = permanent failure, send directly to DLQ
-		publishToDLQ(dlqWriter, payload, currentRetryCount, "No adapter registered for this ActionType/Provider combination")
-		updateAuditLog(payload.NotificationID, db, "FAILED")
+		publishToDLQ(dlqWriter, resolvedPayload, currentRetryCount, "No adapter registered for this ActionType/Provider combination")
+		updateAuditLog(resolvedPayload.NotificationID, resolvedPayload.TenantID, db, "FAILED")
 		return
 	}
 
 	// Dispatch through the adapter
-	result := adapter.Send(payload)
+	result := adapter.Send(resolvedPayload)
 
 	if result.Success {
 		// Update audit log with success
 		if result.ProviderRef != "" {
-			updateAuditLogWithRef(payload.NotificationID, db, "SENT", result.ProviderRef)
+			updateAuditLogWithRef(resolvedPayload.NotificationID, resolvedPayload.TenantID, db, "SENT", result.ProviderRef)
 		} else {
-			updateAuditLog(payload.NotificationID, db, "SENT")
+			updateAuditLog(resolvedPayload.NotificationID, resolvedPayload.TenantID, db, "SENT")
 		}
 		return
 	}
@@ -245,15 +269,15 @@ func processWithAdapters(
 
 	if result.RetryableError && currentRetryCount < maxRetries {
 		// Publish to notification.retry with backoff
-		publishToRetry(retryWriter, payload, currentRetryCount, errorMsg)
-		updateAuditLog(payload.NotificationID, db, "RETRYING")
+		publishToRetry(retryWriter, resolvedPayload, currentRetryCount, errorMsg)
+		updateAuditLog(resolvedPayload.NotificationID, resolvedPayload.TenantID, db, "RETRYING")
 	} else {
 		// Permanent failure or max retries exceeded → DLQ
 		if currentRetryCount >= maxRetries {
 			errorMsg = fmt.Sprintf("Max retries (%d) exceeded. Last error: %s", maxRetries, errorMsg)
 		}
-		publishToDLQ(dlqWriter, payload, currentRetryCount, errorMsg)
-		updateAuditLog(payload.NotificationID, db, "FAILED")
+		publishToDLQ(dlqWriter, resolvedPayload, currentRetryCount, errorMsg)
+		updateAuditLog(resolvedPayload.NotificationID, resolvedPayload.TenantID, db, "FAILED")
 	}
 }
 
@@ -277,7 +301,7 @@ func publishToRetry(writer *kafka.Writer, payload types.NotificationPayload, cur
 	msgBytes, _ := json.Marshal(retryMsg)
 
 	err := writer.WriteMessages(context.Background(), kafka.Message{
-		Key:   []byte(payload.NotificationID),
+		Key:   []byte(composeKafkaKey(payload)),
 		Value: msgBytes,
 	})
 
@@ -298,13 +322,15 @@ func publishToDLQ(writer *kafka.Writer, payload types.NotificationPayload, retry
 		LastError:       lastError,
 		NotificationID:  payload.NotificationID,
 		TenantID:        payload.TenantID,
+		EventID:         payload.EventID,
+		TraceID:         payload.TraceID,
 		Channel:         payload.ActionType,
 	}
 
 	msgBytes, _ := json.Marshal(dlqMsg)
 
 	err := writer.WriteMessages(context.Background(), kafka.Message{
-		Key:   []byte(payload.NotificationID),
+		Key:   []byte(composeKafkaKey(payload)),
 		Value: msgBytes,
 	})
 
@@ -317,14 +343,17 @@ func publishToDLQ(writer *kafka.Writer, payload types.NotificationPayload, retry
 }
 
 // updateAuditLog updates the notification_logs table with the dispatch status.
-func updateAuditLog(notificationID string, db *sql.DB, status string) {
+func updateAuditLog(notificationID, tenantID string, db *sql.DB, status string) {
 	if notificationID != "" {
 		providerRef := "sim_" + fmt.Sprintf("%d", time.Now().Unix())
-		_, err := db.Exec(`
-			UPDATE notification_logs 
-			SET status = $1, sent_at = NOW(), provider_ref = $2 
-			WHERE notification_id = $3`,
-			status, providerRef, notificationID)
+		err := withTenantTx(db, tenantID, func(tx *sql.Tx) error {
+			_, execErr := tx.Exec(`
+				UPDATE notification_logs 
+				SET status = $1, sent_at = NOW(), provider_ref = $2 
+				WHERE notification_id = $3 AND tenant_id = $4`,
+				status, providerRef, notificationID, tenantID)
+			return execErr
+		})
 
 		if err != nil {
 			log.Printf("Failed to update audit log for %s: %v\n", notificationID, err)
@@ -335,13 +364,16 @@ func updateAuditLog(notificationID string, db *sql.DB, status string) {
 }
 
 // updateAuditLogWithRef updates the audit log with a real provider reference ID.
-func updateAuditLogWithRef(notificationID string, db *sql.DB, status string, providerRef string) {
+func updateAuditLogWithRef(notificationID, tenantID string, db *sql.DB, status string, providerRef string) {
 	if notificationID != "" {
-		_, err := db.Exec(`
-			UPDATE notification_logs 
-			SET status = $1, sent_at = NOW(), provider_ref = $2 
-			WHERE notification_id = $3`,
-			status, providerRef, notificationID)
+		err := withTenantTx(db, tenantID, func(tx *sql.Tx) error {
+			_, execErr := tx.Exec(`
+				UPDATE notification_logs 
+				SET status = $1, sent_at = NOW(), provider_ref = $2 
+				WHERE notification_id = $3 AND tenant_id = $4`,
+				status, providerRef, notificationID, tenantID)
+			return execErr
+		})
 
 		if err != nil {
 			log.Printf("Failed to update audit log for %s: %v\n", notificationID, err)
@@ -349,4 +381,167 @@ func updateAuditLogWithRef(notificationID string, db *sql.DB, status string, pro
 			fmt.Printf("Audit log updated to %s for %s\n", status, notificationID)
 		}
 	}
+}
+
+func composeKafkaKey(payload types.NotificationPayload) string {
+	if payload.TenantID != "" && payload.EventID != "" {
+		return fmt.Sprintf("%s:%s", payload.TenantID, payload.EventID)
+	}
+	return payload.NotificationID
+}
+
+func validatePayload(payload types.NotificationPayload) error {
+	if payload.TenantID == "" {
+		return errors.New("tenantId is required")
+	}
+	if payload.EventID == "" {
+		return errors.New("eventId is required")
+	}
+	if payload.TraceID == "" {
+		return errors.New("traceId is required")
+	}
+	if payload.NotificationID == "" {
+		return errors.New("notificationId is required")
+	}
+	if payload.ActionType == "" {
+		return errors.New("actionType is required")
+	}
+	return nil
+}
+
+func hydrateProviderConfig(db *sql.DB, payload types.NotificationPayload) (types.NotificationPayload, error) {
+	if payload.ProviderConfigID == "" || strings.EqualFold(payload.ActionType, "REALTIME") {
+		return payload, nil
+	}
+
+	type providerConfigRecord struct {
+		provider      string
+		ciphertext    string
+		senderEmail   sql.NullString
+		senderName    sql.NullString
+	}
+
+	var record providerConfigRecord
+	err := withTenantTx(db, payload.TenantID, func(tx *sql.Tx) error {
+		return tx.QueryRow(`
+			SELECT provider, api_key_ciphertext, sender_email, sender_name
+			FROM provider_configs
+			WHERE id = $1 AND tenant_id = $2
+		`, payload.ProviderConfigID, payload.TenantID).Scan(
+			&record.provider,
+			&record.ciphertext,
+			&record.senderEmail,
+			&record.senderName,
+		)
+	})
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return payload, fmt.Errorf("provider config %s not found for tenant %s", payload.ProviderConfigID, payload.TenantID)
+		}
+		return payload, err
+	}
+
+	decryptedAPIKey, err := decryptProviderSecret(record.ciphertext)
+	if err != nil {
+		return payload, err
+	}
+
+	hydrated := payload
+	hydrated.Provider = record.provider
+	hydrated.ResolvedAPIKey = decryptedAPIKey
+	if record.senderEmail.Valid {
+		hydrated.SenderEmail = record.senderEmail.String
+	}
+	if record.senderName.Valid {
+		hydrated.SenderName = record.senderName.String
+	}
+
+	return hydrated, nil
+}
+
+func withTenantTx(db *sql.DB, tenantID string, callback func(tx *sql.Tx) error) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if _, err = tx.Exec(`
+		SELECT
+			set_config('app.current_actor_type', 'system', true),
+			set_config('app.current_actor_id', 'go-gateway', true),
+			set_config('app.current_tenant_id', $1, true)
+	`, tenantID); err != nil {
+		return err
+	}
+
+	if err = callback(tx); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	tx = nil
+	return nil
+}
+
+func decryptProviderSecret(ciphertext string) (string, error) {
+	parts := strings.Split(ciphertext, ".")
+	if len(parts) != 3 {
+		return "", errors.New("malformed provider ciphertext")
+	}
+
+	iv, err := decodeBase64(parts[0])
+	if err != nil {
+		return "", err
+	}
+	authTag, err := decodeBase64(parts[1])
+	if err != nil {
+		return "", err
+	}
+	encrypted, err := decodeBase64(parts[2])
+	if err != nil {
+		return "", err
+	}
+
+	block, err := aes.NewCipher(resolveEncryptionKey())
+	if err != nil {
+		return "", err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	plaintext, err := gcm.Open(nil, iv, append(encrypted, authTag...), nil)
+	if err != nil {
+		return "", err
+	}
+
+	return string(plaintext), nil
+}
+
+func decodeBase64(value string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(value)
+}
+
+func resolveEncryptionKey() []byte {
+	baseSecret := os.Getenv("CONFIG_ENCRYPTION_KEY")
+	if baseSecret == "" {
+		baseSecret = os.Getenv("ADMIN_JWT_SECRET")
+	}
+	if baseSecret == "" {
+		baseSecret = "notifications-default-encryption-key"
+	}
+	sum := sha256.Sum256([]byte(baseSecret))
+	return sum[:]
 }

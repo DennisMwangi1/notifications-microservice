@@ -391,7 +391,9 @@ export const ModelName = {
   tenants: 'tenants',
   processed_events: 'processed_events',
   failed_notifications: 'failed_notifications',
-  provider_configs: 'provider_configs'
+  provider_configs: 'provider_configs',
+  audit_logs: 'audit_logs',
+  tenant_admins: 'tenant_admins'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -407,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "notification_logs" | "templates" | "template_library" | "in_app_notifications" | "tenants" | "processed_events" | "failed_notifications" | "provider_configs"
+    modelProps: "notification_logs" | "templates" | "template_library" | "in_app_notifications" | "tenants" | "processed_events" | "failed_notifications" | "provider_configs" | "audit_logs" | "tenant_admins"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1003,6 +1005,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    audit_logs: {
+      payload: Prisma.$audit_logsPayload<ExtArgs>
+      fields: Prisma.audit_logsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.audit_logsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.audit_logsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        findFirst: {
+          args: Prisma.audit_logsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.audit_logsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        findMany: {
+          args: Prisma.audit_logsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>[]
+        }
+        create: {
+          args: Prisma.audit_logsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        createMany: {
+          args: Prisma.audit_logsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.audit_logsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>[]
+        }
+        delete: {
+          args: Prisma.audit_logsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        update: {
+          args: Prisma.audit_logsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        deleteMany: {
+          args: Prisma.audit_logsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.audit_logsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.audit_logsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>[]
+        }
+        upsert: {
+          args: Prisma.audit_logsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        aggregate: {
+          args: Prisma.Audit_logsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAudit_logs>
+        }
+        groupBy: {
+          args: Prisma.audit_logsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Audit_logsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.audit_logsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Audit_logsCountAggregateOutputType> | number
+        }
+      }
+    }
+    tenant_admins: {
+      payload: Prisma.$tenant_adminsPayload<ExtArgs>
+      fields: Prisma.tenant_adminsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.tenant_adminsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.tenant_adminsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>
+        }
+        findFirst: {
+          args: Prisma.tenant_adminsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.tenant_adminsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>
+        }
+        findMany: {
+          args: Prisma.tenant_adminsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>[]
+        }
+        create: {
+          args: Prisma.tenant_adminsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>
+        }
+        createMany: {
+          args: Prisma.tenant_adminsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.tenant_adminsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>[]
+        }
+        delete: {
+          args: Prisma.tenant_adminsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>
+        }
+        update: {
+          args: Prisma.tenant_adminsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>
+        }
+        deleteMany: {
+          args: Prisma.tenant_adminsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.tenant_adminsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.tenant_adminsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>[]
+        }
+        upsert: {
+          args: Prisma.tenant_adminsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tenant_adminsPayload>
+        }
+        aggregate: {
+          args: Prisma.Tenant_adminsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTenant_admins>
+        }
+        groupBy: {
+          args: Prisma.tenant_adminsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Tenant_adminsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.tenant_adminsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Tenant_adminsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1069,7 +1219,8 @@ export const TemplatesScalarFieldEnum = {
   created_at: 'created_at',
   tenant_id: 'tenant_id',
   event_type: 'event_type',
-  target_ws_channel: 'target_ws_channel'
+  target_ws_channel: 'target_ws_channel',
+  scope: 'scope'
 } as const
 
 export type TemplatesScalarFieldEnum = (typeof TemplatesScalarFieldEnum)[keyof typeof TemplatesScalarFieldEnum]
@@ -1077,6 +1228,7 @@ export type TemplatesScalarFieldEnum = (typeof TemplatesScalarFieldEnum)[keyof t
 
 export const Template_libraryScalarFieldEnum = {
   id: 'id',
+  tenant_id: 'tenant_id',
   name: 'name',
   channel_type: 'channel_type',
   subject_line: 'subject_line',
@@ -1156,15 +1308,49 @@ export type Failed_notificationsScalarFieldEnum = (typeof Failed_notificationsSc
 
 export const Provider_configsScalarFieldEnum = {
   id: 'id',
+  tenant_id: 'tenant_id',
   name: 'name',
   provider: 'provider',
-  api_key: 'api_key',
+  api_key_ciphertext: 'api_key_ciphertext',
+  api_key_last4: 'api_key_last4',
+  key_version: 'key_version',
+  rotated_at: 'rotated_at',
   sender_email: 'sender_email',
   sender_name: 'sender_name',
   created_at: 'created_at'
 } as const
 
 export type Provider_configsScalarFieldEnum = (typeof Provider_configsScalarFieldEnum)[keyof typeof Provider_configsScalarFieldEnum]
+
+
+export const Audit_logsScalarFieldEnum = {
+  id: 'id',
+  actor_type: 'actor_type',
+  actor_id: 'actor_id',
+  tenant_id: 'tenant_id',
+  action: 'action',
+  resource_type: 'resource_type',
+  resource_id: 'resource_id',
+  trace_id: 'trace_id',
+  before_state: 'before_state',
+  after_state: 'after_state',
+  created_at: 'created_at'
+} as const
+
+export type Audit_logsScalarFieldEnum = (typeof Audit_logsScalarFieldEnum)[keyof typeof Audit_logsScalarFieldEnum]
+
+
+export const Tenant_adminsScalarFieldEnum = {
+  id: 'id',
+  tenant_id: 'tenant_id',
+  username: 'username',
+  password_hash: 'password_hash',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Tenant_adminsScalarFieldEnum = (typeof Tenant_adminsScalarFieldEnum)[keyof typeof Tenant_adminsScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1313,6 +1499,20 @@ export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'template_scope_enum'
+ */
+export type Enumtemplate_scope_enumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'template_scope_enum'>
+    
+
+
+/**
+ * Reference to a field of type 'template_scope_enum[]'
+ */
+export type ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'template_scope_enum[]'>
+    
+
+
+/**
  * Reference to a field of type 'in_app_status'
  */
 export type Enumin_app_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'in_app_status'>
@@ -1337,6 +1537,20 @@ export type Enumprovider_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'provider_type[]'
  */
 export type ListEnumprovider_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'provider_type[]'>
+    
+
+
+/**
+ * Reference to a field of type 'actor_type_enum'
+ */
+export type Enumactor_type_enumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'actor_type_enum'>
+    
+
+
+/**
+ * Reference to a field of type 'actor_type_enum[]'
+ */
+export type ListEnumactor_type_enumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'actor_type_enum[]'>
     
 
 
@@ -1456,6 +1670,8 @@ export type GlobalOmitConfig = {
   processed_events?: Prisma.processed_eventsOmit
   failed_notifications?: Prisma.failed_notificationsOmit
   provider_configs?: Prisma.provider_configsOmit
+  audit_logs?: Prisma.audit_logsOmit
+  tenant_admins?: Prisma.tenant_adminsOmit
 }
 
 /* Types for Logging */

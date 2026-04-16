@@ -7,11 +7,9 @@ export interface AdminLoginDto {
   password: string;
 }
 
-export interface AdminTokenPayload {
-  sub: string;
-  role: 'admin';
-  iat?: number;
-  exp?: number;
+export interface TenantAdminLoginDto {
+  username: string;
+  password: string;
 }
 
 export interface TemplatePreviewDto {

@@ -46,8 +46,8 @@ func (a *ResendAdapter) Send(payload types.NotificationPayload) types.DeliveryRe
 
 	// Use tenant-specific API key if provided (BYOP), otherwise use default
 	clientToUse := a.defaultClient
-	if payload.APIKey != "" {
-		clientToUse = resend.NewClient(payload.APIKey)
+	if payload.ResolvedAPIKey != "" {
+		clientToUse = resend.NewClient(payload.ResolvedAPIKey)
 	}
 
 	sent, err := clientToUse.Emails.Send(params)

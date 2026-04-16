@@ -265,6 +265,13 @@ export type BoolNullableFilter<$PrismaModel = never> = {
   not?: Prisma.NestedBoolNullableFilter<$PrismaModel> | boolean | null
 }
 
+export type Enumtemplate_scope_enumFilter<$PrismaModel = never> = {
+  equals?: $Enums.template_scope_enum | Prisma.Enumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  in?: $Enums.template_scope_enum[] | Prisma.ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.template_scope_enum[] | Prisma.ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumtemplate_scope_enumFilter<$PrismaModel> | $Enums.template_scope_enum
+}
+
 export type IntWithAggregatesFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
@@ -287,6 +294,16 @@ export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedBoolNullableFilter<$PrismaModel>
   _max?: Prisma.NestedBoolNullableFilter<$PrismaModel>
+}
+
+export type Enumtemplate_scope_enumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.template_scope_enum | Prisma.Enumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  in?: $Enums.template_scope_enum[] | Prisma.ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.template_scope_enum[] | Prisma.ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumtemplate_scope_enumWithAggregatesFilter<$PrismaModel> | $Enums.template_scope_enum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumtemplate_scope_enumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumtemplate_scope_enumFilter<$PrismaModel>
 }
 
 export type JsonFilter<$PrismaModel = never> =
@@ -410,6 +427,23 @@ export type Enumprovider_typeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumprovider_typeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumprovider_typeFilter<$PrismaModel>
+}
+
+export type Enumactor_type_enumFilter<$PrismaModel = never> = {
+  equals?: $Enums.actor_type_enum | Prisma.Enumactor_type_enumFieldRefInput<$PrismaModel>
+  in?: $Enums.actor_type_enum[] | Prisma.ListEnumactor_type_enumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.actor_type_enum[] | Prisma.ListEnumactor_type_enumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumactor_type_enumFilter<$PrismaModel> | $Enums.actor_type_enum
+}
+
+export type Enumactor_type_enumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.actor_type_enum | Prisma.Enumactor_type_enumFieldRefInput<$PrismaModel>
+  in?: $Enums.actor_type_enum[] | Prisma.ListEnumactor_type_enumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.actor_type_enum[] | Prisma.ListEnumactor_type_enumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumactor_type_enumWithAggregatesFilter<$PrismaModel> | $Enums.actor_type_enum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumactor_type_enumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumactor_type_enumFilter<$PrismaModel>
 }
 
 export type NestedUuidFilter<$PrismaModel = never> = {
@@ -634,6 +668,13 @@ export type NestedBoolNullableFilter<$PrismaModel = never> = {
   not?: Prisma.NestedBoolNullableFilter<$PrismaModel> | boolean | null
 }
 
+export type NestedEnumtemplate_scope_enumFilter<$PrismaModel = never> = {
+  equals?: $Enums.template_scope_enum | Prisma.Enumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  in?: $Enums.template_scope_enum[] | Prisma.ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.template_scope_enum[] | Prisma.ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumtemplate_scope_enumFilter<$PrismaModel> | $Enums.template_scope_enum
+}
+
 export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
@@ -667,6 +708,16 @@ export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedBoolNullableFilter<$PrismaModel>
   _max?: Prisma.NestedBoolNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumtemplate_scope_enumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.template_scope_enum | Prisma.Enumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  in?: $Enums.template_scope_enum[] | Prisma.ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.template_scope_enum[] | Prisma.ListEnumtemplate_scope_enumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumtemplate_scope_enumWithAggregatesFilter<$PrismaModel> | $Enums.template_scope_enum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumtemplate_scope_enumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumtemplate_scope_enumFilter<$PrismaModel>
 }
 
 export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -763,6 +814,23 @@ export type NestedEnumprovider_typeWithAggregatesFilter<$PrismaModel = never> = 
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumprovider_typeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumprovider_typeFilter<$PrismaModel>
+}
+
+export type NestedEnumactor_type_enumFilter<$PrismaModel = never> = {
+  equals?: $Enums.actor_type_enum | Prisma.Enumactor_type_enumFieldRefInput<$PrismaModel>
+  in?: $Enums.actor_type_enum[] | Prisma.ListEnumactor_type_enumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.actor_type_enum[] | Prisma.ListEnumactor_type_enumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumactor_type_enumFilter<$PrismaModel> | $Enums.actor_type_enum
+}
+
+export type NestedEnumactor_type_enumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.actor_type_enum | Prisma.Enumactor_type_enumFieldRefInput<$PrismaModel>
+  in?: $Enums.actor_type_enum[] | Prisma.ListEnumactor_type_enumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.actor_type_enum[] | Prisma.ListEnumactor_type_enumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumactor_type_enumWithAggregatesFilter<$PrismaModel> | $Enums.actor_type_enum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumactor_type_enumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumactor_type_enumFilter<$PrismaModel>
 }
 
 

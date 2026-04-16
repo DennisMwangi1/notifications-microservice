@@ -1,16 +1,28 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  Post,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import prisma from '../config/prisma.config';
 import { GenerateTokenDto } from '../common/dto/auth.dto';
+import { AuthenticatedRequest } from '../common/actor-context';
 
 @Controller('api/v1/auth')
 export class AuthController {
   @Post('realtime-token')
-  async generateToken(@Body() body: GenerateTokenDto) {
-    const { userId, tenantId } = body;
+  async generateToken(
+    @Body() body: GenerateTokenDto,
+    @Headers('x-api-key') apiKey: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const { userId } = body;
 
-    if (!userId || !tenantId) {
-      throw new UnauthorizedException('Missing userId or tenantId');
+    if (!userId) {
+      throw new UnauthorizedException('Missing userId');
     }
 
     const secret = process.env.CENTRIFUGO_SECRET;
@@ -18,14 +30,11 @@ export class AuthController {
       throw new Error('CENTRIFUGO_SECRET is not configured');
     }
 
-    const cleanKey = tenantId.trim();
-    const tenant = await prisma.tenants.findUnique({
-      where: { id: cleanKey },
-    });
+    const tenant = await this.resolveTenant(apiKey, req);
 
     if (!tenant || !tenant.is_active) {
       throw new UnauthorizedException(
-        'Invalid or inactive Property ID / API Key',
+        'Invalid or inactive tenant context',
       );
     }
 
@@ -48,5 +57,27 @@ export class AuthController {
     );
 
     return { token, channels: allowedChannels };
+  }
+
+  private async resolveTenant(
+    apiKey: string | undefined,
+    req: AuthenticatedRequest,
+  ) {
+    if (req.tenantAdminUser?.tenantId) {
+      return prisma.tenants.findUnique({
+        where: { id: req.tenantAdminUser.tenantId },
+      });
+    }
+
+    const cleanKey = apiKey?.trim();
+    if (!cleanKey) {
+      throw new UnauthorizedException(
+        'Provide tenant admin bearer token or x-api-key header',
+      );
+    }
+
+    return prisma.tenants.findFirst({
+      where: { api_key: cleanKey },
+    });
   }
 }

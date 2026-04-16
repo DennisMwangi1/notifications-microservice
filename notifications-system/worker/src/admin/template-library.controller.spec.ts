@@ -14,12 +14,34 @@ jest.mock('../config/prisma.config', () => ({
 import { BadRequestException } from '@nestjs/common';
 import prisma from '../config/prisma.config';
 import { TemplateLibraryController } from './template-library.controller';
+import { DbContextService } from '../common/db-context.service';
+import { AuditLogService } from '../common/audit-log.service';
 
 describe('TemplateLibraryController', () => {
   let controller: TemplateLibraryController;
+  let dbContext: Pick<DbContextService, 'withActorContext'>;
+  let auditLog: Pick<AuditLogService, 'record'>;
+  const mockReq = {
+    actorContext: {
+      actorType: 'platform_operator' as const,
+      actorId: 'platform-user',
+      tenantId: null,
+    },
+  };
 
   beforeEach(() => {
-    controller = new TemplateLibraryController();
+    dbContext = {
+      withActorContext: jest.fn(async (_actor, callback) =>
+        callback(prisma as never),
+      ),
+    };
+    auditLog = {
+      record: jest.fn().mockResolvedValue(undefined),
+    };
+    controller = new TemplateLibraryController(
+      dbContext as DbContextService,
+      auditLog as AuditLogService,
+    );
     jest.clearAllMocks();
   });
 
@@ -54,15 +76,17 @@ describe('TemplateLibraryController', () => {
       .mockResolvedValue(createdEntry as never);
 
     const result = await controller.createTemplateLibraryEntry({
+      tenant_id: 'tenant-1',
       name: 'Order confirmation',
       channel_type: 'EMAIL',
       subject_line: 'Order {{orderId}}',
       content_body: '<mjml><mj-text>{{user.firstName}}</mj-text></mjml>',
       sample_data: sampleData,
-    });
+    }, mockReq as never);
 
     expect(prisma.template_library.create).toHaveBeenCalledWith({
       data: {
+        tenant_id: 'tenant-1',
         name: 'Order confirmation',
         channel_type: 'EMAIL',
         subject_line: 'Order {{orderId}}',
@@ -70,7 +94,9 @@ describe('TemplateLibraryController', () => {
         sample_data: prunedSampleData,
       },
     });
-    expect(result.data.sample_data).toEqual(prunedSampleData);
+    expect((result.data as { sample_data: unknown }).sample_data).toEqual(
+      prunedSampleData,
+    );
   });
 
   it('preserves the full sample_data when template syntax cannot be analyzed safely', async () => {
@@ -94,15 +120,17 @@ describe('TemplateLibraryController', () => {
       .mockResolvedValue(createdEntry as never);
 
     await controller.createTemplateLibraryEntry({
+      tenant_id: 'tenant-1',
       name: 'Broken template',
       channel_type: 'EMAIL',
       subject_line: 'Order {{orderId}}',
       content_body: '<mjml>{{#if orderId}}</mjml>',
       sample_data: sampleData,
-    });
+    }, mockReq as never);
 
     expect(prisma.template_library.create).toHaveBeenCalledWith({
       data: {
+        tenant_id: 'tenant-1',
         name: 'Broken template',
         channel_type: 'EMAIL',
         subject_line: 'Order {{orderId}}',
@@ -130,24 +158,29 @@ describe('TemplateLibraryController', () => {
       .mocked(prisma.template_library.findMany)
       .mockResolvedValue(entries as never);
 
-    const result = await controller.getTemplateLibrary('SMS');
+    const listResult = await controller.getTemplateLibrary(
+      'SMS',
+      undefined,
+      mockReq as never,
+    );
 
     expect(prisma.template_library.findMany).toHaveBeenCalledWith({
       where: { channel_type: 'SMS' },
       orderBy: [{ created_at: 'desc' }, { name: 'asc' }],
     });
-    expect(result.data).toEqual(entries);
+    expect(listResult.data).toEqual(entries);
   });
 
   it('rejects non-object sample_data payloads', async () => {
     await expect(
       controller.createTemplateLibraryEntry({
+        tenant_id: 'tenant-1',
         name: 'Broken',
         channel_type: 'EMAIL',
         subject_line: 'Broken',
         content_body: '<mjml />',
         sample_data: [] as unknown as Record<string, unknown>,
-      }),
+      }, mockReq as never),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

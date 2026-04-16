@@ -4,6 +4,7 @@
 
 export interface TriggerEventDto {
   eventType: string;
+  eventId?: string;
   payload: EventPayload;
 }
 
@@ -21,6 +22,8 @@ export interface EventPayload {
 export interface EnrichedKafkaPayload {
   userId: string;
   eventType: string;
+  eventId: string;
+  traceId: string;
   tenant: TenantIdentity;
   recipientEmail?: string;
   recipientPhone?: string;

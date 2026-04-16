@@ -26,6 +26,7 @@ export type AggregateTemplate_library = {
 
 export type Template_libraryMinAggregateOutputType = {
   id: string | null
+  tenant_id: string | null
   name: string | null
   channel_type: $Enums.channel_enum | null
   subject_line: string | null
@@ -36,6 +37,7 @@ export type Template_libraryMinAggregateOutputType = {
 
 export type Template_libraryMaxAggregateOutputType = {
   id: string | null
+  tenant_id: string | null
   name: string | null
   channel_type: $Enums.channel_enum | null
   subject_line: string | null
@@ -46,6 +48,7 @@ export type Template_libraryMaxAggregateOutputType = {
 
 export type Template_libraryCountAggregateOutputType = {
   id: number
+  tenant_id: number
   name: number
   channel_type: number
   subject_line: number
@@ -59,6 +62,7 @@ export type Template_libraryCountAggregateOutputType = {
 
 export type Template_libraryMinAggregateInputType = {
   id?: true
+  tenant_id?: true
   name?: true
   channel_type?: true
   subject_line?: true
@@ -69,6 +73,7 @@ export type Template_libraryMinAggregateInputType = {
 
 export type Template_libraryMaxAggregateInputType = {
   id?: true
+  tenant_id?: true
   name?: true
   channel_type?: true
   subject_line?: true
@@ -79,6 +84,7 @@ export type Template_libraryMaxAggregateInputType = {
 
 export type Template_libraryCountAggregateInputType = {
   id?: true
+  tenant_id?: true
   name?: true
   channel_type?: true
   subject_line?: true
@@ -163,6 +169,7 @@ export type template_libraryGroupByArgs<ExtArgs extends runtime.Types.Extensions
 
 export type Template_libraryGroupByOutputType = {
   id: string
+  tenant_id: string
   name: string
   channel_type: $Enums.channel_enum
   subject_line: string | null
@@ -195,6 +202,7 @@ export type template_libraryWhereInput = {
   OR?: Prisma.template_libraryWhereInput[]
   NOT?: Prisma.template_libraryWhereInput | Prisma.template_libraryWhereInput[]
   id?: Prisma.UuidFilter<"template_library"> | string
+  tenant_id?: Prisma.UuidFilter<"template_library"> | string
   name?: Prisma.StringFilter<"template_library"> | string
   channel_type?: Prisma.Enumchannel_enumFilter<"template_library"> | $Enums.channel_enum
   subject_line?: Prisma.StringNullableFilter<"template_library"> | string | null
@@ -202,10 +210,12 @@ export type template_libraryWhereInput = {
   sample_data?: Prisma.JsonFilter<"template_library">
   created_at?: Prisma.DateTimeFilter<"template_library"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"template_library"> | Date | string
+  tenant?: Prisma.XOR<Prisma.TenantsScalarRelationFilter, Prisma.tenantsWhereInput>
 }
 
 export type template_libraryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   channel_type?: Prisma.SortOrder
   subject_line?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -213,6 +223,7 @@ export type template_libraryOrderByWithRelationInput = {
   sample_data?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  tenant?: Prisma.tenantsOrderByWithRelationInput
 }
 
 export type template_libraryWhereUniqueInput = Prisma.AtLeast<{
@@ -220,6 +231,7 @@ export type template_libraryWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.template_libraryWhereInput | Prisma.template_libraryWhereInput[]
   OR?: Prisma.template_libraryWhereInput[]
   NOT?: Prisma.template_libraryWhereInput | Prisma.template_libraryWhereInput[]
+  tenant_id?: Prisma.UuidFilter<"template_library"> | string
   name?: Prisma.StringFilter<"template_library"> | string
   channel_type?: Prisma.Enumchannel_enumFilter<"template_library"> | $Enums.channel_enum
   subject_line?: Prisma.StringNullableFilter<"template_library"> | string | null
@@ -227,10 +239,12 @@ export type template_libraryWhereUniqueInput = Prisma.AtLeast<{
   sample_data?: Prisma.JsonFilter<"template_library">
   created_at?: Prisma.DateTimeFilter<"template_library"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"template_library"> | Date | string
+  tenant?: Prisma.XOR<Prisma.TenantsScalarRelationFilter, Prisma.tenantsWhereInput>
 }, "id">
 
 export type template_libraryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   channel_type?: Prisma.SortOrder
   subject_line?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -248,6 +262,7 @@ export type template_libraryScalarWhereWithAggregatesInput = {
   OR?: Prisma.template_libraryScalarWhereWithAggregatesInput[]
   NOT?: Prisma.template_libraryScalarWhereWithAggregatesInput | Prisma.template_libraryScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"template_library"> | string
+  tenant_id?: Prisma.UuidWithAggregatesFilter<"template_library"> | string
   name?: Prisma.StringWithAggregatesFilter<"template_library"> | string
   channel_type?: Prisma.Enumchannel_enumWithAggregatesFilter<"template_library"> | $Enums.channel_enum
   subject_line?: Prisma.StringNullableWithAggregatesFilter<"template_library"> | string | null
@@ -266,10 +281,12 @@ export type template_libraryCreateInput = {
   sample_data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   created_at?: Date | string
   updated_at?: Date | string
+  tenant: Prisma.tenantsCreateNestedOneWithoutTemplate_library_entriesInput
 }
 
 export type template_libraryUncheckedCreateInput = {
   id?: string
+  tenant_id: string
   name: string
   channel_type: $Enums.channel_enum
   subject_line?: string | null
@@ -288,10 +305,12 @@ export type template_libraryUpdateInput = {
   sample_data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.tenantsUpdateOneRequiredWithoutTemplate_library_entriesNestedInput
 }
 
 export type template_libraryUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   channel_type?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
   subject_line?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -303,6 +322,7 @@ export type template_libraryUncheckedUpdateInput = {
 
 export type template_libraryCreateManyInput = {
   id?: string
+  tenant_id: string
   name: string
   channel_type: $Enums.channel_enum
   subject_line?: string | null
@@ -325,6 +345,7 @@ export type template_libraryUpdateManyMutationInput = {
 
 export type template_libraryUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   channel_type?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
   subject_line?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -336,6 +357,7 @@ export type template_libraryUncheckedUpdateManyInput = {
 
 export type template_libraryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   channel_type?: Prisma.SortOrder
   subject_line?: Prisma.SortOrder
@@ -347,6 +369,7 @@ export type template_libraryCountOrderByAggregateInput = {
 
 export type template_libraryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   channel_type?: Prisma.SortOrder
   subject_line?: Prisma.SortOrder
@@ -357,6 +380,7 @@ export type template_libraryMaxOrderByAggregateInput = {
 
 export type template_libraryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   channel_type?: Prisma.SortOrder
   subject_line?: Prisma.SortOrder
@@ -365,14 +389,174 @@ export type template_libraryMinOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
 }
 
+export type Template_libraryListRelationFilter = {
+  every?: Prisma.template_libraryWhereInput
+  some?: Prisma.template_libraryWhereInput
+  none?: Prisma.template_libraryWhereInput
+}
+
+export type template_libraryOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type template_libraryCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.template_libraryCreateWithoutTenantInput, Prisma.template_libraryUncheckedCreateWithoutTenantInput> | Prisma.template_libraryCreateWithoutTenantInput[] | Prisma.template_libraryUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.template_libraryCreateOrConnectWithoutTenantInput | Prisma.template_libraryCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.template_libraryCreateManyTenantInputEnvelope
+  connect?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+}
+
+export type template_libraryUncheckedCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.template_libraryCreateWithoutTenantInput, Prisma.template_libraryUncheckedCreateWithoutTenantInput> | Prisma.template_libraryCreateWithoutTenantInput[] | Prisma.template_libraryUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.template_libraryCreateOrConnectWithoutTenantInput | Prisma.template_libraryCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.template_libraryCreateManyTenantInputEnvelope
+  connect?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+}
+
+export type template_libraryUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.template_libraryCreateWithoutTenantInput, Prisma.template_libraryUncheckedCreateWithoutTenantInput> | Prisma.template_libraryCreateWithoutTenantInput[] | Prisma.template_libraryUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.template_libraryCreateOrConnectWithoutTenantInput | Prisma.template_libraryCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.template_libraryUpsertWithWhereUniqueWithoutTenantInput | Prisma.template_libraryUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.template_libraryCreateManyTenantInputEnvelope
+  set?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+  disconnect?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+  delete?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+  connect?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+  update?: Prisma.template_libraryUpdateWithWhereUniqueWithoutTenantInput | Prisma.template_libraryUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.template_libraryUpdateManyWithWhereWithoutTenantInput | Prisma.template_libraryUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.template_libraryScalarWhereInput | Prisma.template_libraryScalarWhereInput[]
+}
+
+export type template_libraryUncheckedUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.template_libraryCreateWithoutTenantInput, Prisma.template_libraryUncheckedCreateWithoutTenantInput> | Prisma.template_libraryCreateWithoutTenantInput[] | Prisma.template_libraryUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.template_libraryCreateOrConnectWithoutTenantInput | Prisma.template_libraryCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.template_libraryUpsertWithWhereUniqueWithoutTenantInput | Prisma.template_libraryUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.template_libraryCreateManyTenantInputEnvelope
+  set?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+  disconnect?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+  delete?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+  connect?: Prisma.template_libraryWhereUniqueInput | Prisma.template_libraryWhereUniqueInput[]
+  update?: Prisma.template_libraryUpdateWithWhereUniqueWithoutTenantInput | Prisma.template_libraryUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.template_libraryUpdateManyWithWhereWithoutTenantInput | Prisma.template_libraryUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.template_libraryScalarWhereInput | Prisma.template_libraryScalarWhereInput[]
+}
+
+export type template_libraryCreateWithoutTenantInput = {
+  id?: string
+  name: string
+  channel_type: $Enums.channel_enum
+  subject_line?: string | null
+  content_body: string
+  sample_data: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  created_at?: Date | string
+  updated_at?: Date | string
+}
+
+export type template_libraryUncheckedCreateWithoutTenantInput = {
+  id?: string
+  name: string
+  channel_type: $Enums.channel_enum
+  subject_line?: string | null
+  content_body: string
+  sample_data: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  created_at?: Date | string
+  updated_at?: Date | string
+}
+
+export type template_libraryCreateOrConnectWithoutTenantInput = {
+  where: Prisma.template_libraryWhereUniqueInput
+  create: Prisma.XOR<Prisma.template_libraryCreateWithoutTenantInput, Prisma.template_libraryUncheckedCreateWithoutTenantInput>
+}
+
+export type template_libraryCreateManyTenantInputEnvelope = {
+  data: Prisma.template_libraryCreateManyTenantInput | Prisma.template_libraryCreateManyTenantInput[]
+  skipDuplicates?: boolean
+}
+
+export type template_libraryUpsertWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.template_libraryWhereUniqueInput
+  update: Prisma.XOR<Prisma.template_libraryUpdateWithoutTenantInput, Prisma.template_libraryUncheckedUpdateWithoutTenantInput>
+  create: Prisma.XOR<Prisma.template_libraryCreateWithoutTenantInput, Prisma.template_libraryUncheckedCreateWithoutTenantInput>
+}
+
+export type template_libraryUpdateWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.template_libraryWhereUniqueInput
+  data: Prisma.XOR<Prisma.template_libraryUpdateWithoutTenantInput, Prisma.template_libraryUncheckedUpdateWithoutTenantInput>
+}
+
+export type template_libraryUpdateManyWithWhereWithoutTenantInput = {
+  where: Prisma.template_libraryScalarWhereInput
+  data: Prisma.XOR<Prisma.template_libraryUpdateManyMutationInput, Prisma.template_libraryUncheckedUpdateManyWithoutTenantInput>
+}
+
+export type template_libraryScalarWhereInput = {
+  AND?: Prisma.template_libraryScalarWhereInput | Prisma.template_libraryScalarWhereInput[]
+  OR?: Prisma.template_libraryScalarWhereInput[]
+  NOT?: Prisma.template_libraryScalarWhereInput | Prisma.template_libraryScalarWhereInput[]
+  id?: Prisma.UuidFilter<"template_library"> | string
+  tenant_id?: Prisma.UuidFilter<"template_library"> | string
+  name?: Prisma.StringFilter<"template_library"> | string
+  channel_type?: Prisma.Enumchannel_enumFilter<"template_library"> | $Enums.channel_enum
+  subject_line?: Prisma.StringNullableFilter<"template_library"> | string | null
+  content_body?: Prisma.StringFilter<"template_library"> | string
+  sample_data?: Prisma.JsonFilter<"template_library">
+  created_at?: Prisma.DateTimeFilter<"template_library"> | Date | string
+  updated_at?: Prisma.DateTimeFilter<"template_library"> | Date | string
+}
+
+export type template_libraryCreateManyTenantInput = {
+  id?: string
+  name: string
+  channel_type: $Enums.channel_enum
+  subject_line?: string | null
+  content_body: string
+  sample_data: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  created_at?: Date | string
+  updated_at?: Date | string
+}
+
+export type template_libraryUpdateWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  channel_type?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
+  subject_line?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  content_body?: Prisma.StringFieldUpdateOperationsInput | string
+  sample_data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type template_libraryUncheckedUpdateWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  channel_type?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
+  subject_line?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  content_body?: Prisma.StringFieldUpdateOperationsInput | string
+  sample_data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type template_libraryUncheckedUpdateManyWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  channel_type?: Prisma.Enumchannel_enumFieldUpdateOperationsInput | $Enums.channel_enum
+  subject_line?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  content_body?: Prisma.StringFieldUpdateOperationsInput | string
+  sample_data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
 
 export type template_librarySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenant_id?: boolean
   name?: boolean
   channel_type?: boolean
   subject_line?: boolean
@@ -380,10 +564,12 @@ export type template_librarySelect<ExtArgs extends runtime.Types.Extensions.Inte
   sample_data?: boolean
   created_at?: boolean
   updated_at?: boolean
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["template_library"]>
 
 export type template_librarySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenant_id?: boolean
   name?: boolean
   channel_type?: boolean
   subject_line?: boolean
@@ -391,10 +577,12 @@ export type template_librarySelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   sample_data?: boolean
   created_at?: boolean
   updated_at?: boolean
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["template_library"]>
 
 export type template_librarySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenant_id?: boolean
   name?: boolean
   channel_type?: boolean
   subject_line?: boolean
@@ -402,10 +590,12 @@ export type template_librarySelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   sample_data?: boolean
   created_at?: boolean
   updated_at?: boolean
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["template_library"]>
 
 export type template_librarySelectScalar = {
   id?: boolean
+  tenant_id?: boolean
   name?: boolean
   channel_type?: boolean
   subject_line?: boolean
@@ -415,13 +605,25 @@ export type template_librarySelectScalar = {
   updated_at?: boolean
 }
 
-export type template_libraryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "channel_type" | "subject_line" | "content_body" | "sample_data" | "created_at" | "updated_at", ExtArgs["result"]["template_library"]>
+export type template_libraryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenant_id" | "name" | "channel_type" | "subject_line" | "content_body" | "sample_data" | "created_at" | "updated_at", ExtArgs["result"]["template_library"]>
+export type template_libraryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
+}
+export type template_libraryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
+}
+export type template_libraryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
+}
 
 export type $template_libraryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "template_library"
-  objects: {}
+  objects: {
+    tenant: Prisma.$tenantsPayload<ExtArgs>
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    tenant_id: string
     name: string
     channel_type: $Enums.channel_enum
     subject_line: string | null
@@ -823,6 +1025,7 @@ readonly fields: template_libraryFieldRefs;
  */
 export interface Prisma__template_libraryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  tenant<T extends Prisma.tenantsDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tenantsDefaultArgs<ExtArgs>>): Prisma.Prisma__tenantsClient<runtime.Types.Result.GetResult<Prisma.$tenantsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -853,6 +1056,7 @@ export interface Prisma__template_libraryClient<T, Null = never, ExtArgs extends
  */
 export interface template_libraryFieldRefs {
   readonly id: Prisma.FieldRef<"template_library", 'String'>
+  readonly tenant_id: Prisma.FieldRef<"template_library", 'String'>
   readonly name: Prisma.FieldRef<"template_library", 'String'>
   readonly channel_type: Prisma.FieldRef<"template_library", 'channel_enum'>
   readonly subject_line: Prisma.FieldRef<"template_library", 'String'>
@@ -877,6 +1081,10 @@ export type template_libraryFindUniqueArgs<ExtArgs extends runtime.Types.Extensi
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
+  /**
    * Filter, which template_library to fetch.
    */
   where: Prisma.template_libraryWhereUniqueInput
@@ -895,6 +1103,10 @@ export type template_libraryFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
+  /**
    * Filter, which template_library to fetch.
    */
   where: Prisma.template_libraryWhereUniqueInput
@@ -912,6 +1124,10 @@ export type template_libraryFindFirstArgs<ExtArgs extends runtime.Types.Extensio
    * Omit specific fields from the template_library
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
   /**
    * Filter, which template_library to fetch.
    */
@@ -961,6 +1177,10 @@ export type template_libraryFindFirstOrThrowArgs<ExtArgs extends runtime.Types.E
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
+  /**
    * Filter, which template_library to fetch.
    */
   where?: Prisma.template_libraryWhereInput
@@ -1009,6 +1229,10 @@ export type template_libraryFindManyArgs<ExtArgs extends runtime.Types.Extension
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
+  /**
    * Filter, which template_libraries to fetch.
    */
   where?: Prisma.template_libraryWhereInput
@@ -1052,6 +1276,10 @@ export type template_libraryCreateArgs<ExtArgs extends runtime.Types.Extensions.
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
+  /**
    * The data needed to create a template_library.
    */
   data: Prisma.XOR<Prisma.template_libraryCreateInput, Prisma.template_libraryUncheckedCreateInput>
@@ -1085,6 +1313,10 @@ export type template_libraryCreateManyAndReturnArgs<ExtArgs extends runtime.Type
    */
   data: Prisma.template_libraryCreateManyInput | Prisma.template_libraryCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1099,6 +1331,10 @@ export type template_libraryUpdateArgs<ExtArgs extends runtime.Types.Extensions.
    * Omit specific fields from the template_library
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
   /**
    * The data needed to update a template_library.
    */
@@ -1151,6 +1387,10 @@ export type template_libraryUpdateManyAndReturnArgs<ExtArgs extends runtime.Type
    * Limit how many template_libraries to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1165,6 +1405,10 @@ export type template_libraryUpsertArgs<ExtArgs extends runtime.Types.Extensions.
    * Omit specific fields from the template_library
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
   /**
    * The filter to search for the template_library to update in case it exists.
    */
@@ -1191,6 +1435,10 @@ export type template_libraryDeleteArgs<ExtArgs extends runtime.Types.Extensions.
    * Omit specific fields from the template_library
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
   /**
    * Filter which template_library to delete.
    */
@@ -1223,4 +1471,8 @@ export type template_libraryDefaultArgs<ExtArgs extends runtime.Types.Extensions
    * Omit specific fields from the template_library
    */
   omit?: Prisma.template_libraryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.template_libraryInclude<ExtArgs> | null
 }

@@ -58,7 +58,9 @@ export const ModelName = {
   tenants: 'tenants',
   processed_events: 'processed_events',
   failed_notifications: 'failed_notifications',
-  provider_configs: 'provider_configs'
+  provider_configs: 'provider_configs',
+  audit_logs: 'audit_logs',
+  tenant_admins: 'tenant_admins'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -104,7 +106,8 @@ export const TemplatesScalarFieldEnum = {
   created_at: 'created_at',
   tenant_id: 'tenant_id',
   event_type: 'event_type',
-  target_ws_channel: 'target_ws_channel'
+  target_ws_channel: 'target_ws_channel',
+  scope: 'scope'
 } as const
 
 export type TemplatesScalarFieldEnum = (typeof TemplatesScalarFieldEnum)[keyof typeof TemplatesScalarFieldEnum]
@@ -112,6 +115,7 @@ export type TemplatesScalarFieldEnum = (typeof TemplatesScalarFieldEnum)[keyof t
 
 export const Template_libraryScalarFieldEnum = {
   id: 'id',
+  tenant_id: 'tenant_id',
   name: 'name',
   channel_type: 'channel_type',
   subject_line: 'subject_line',
@@ -191,15 +195,49 @@ export type Failed_notificationsScalarFieldEnum = (typeof Failed_notificationsSc
 
 export const Provider_configsScalarFieldEnum = {
   id: 'id',
+  tenant_id: 'tenant_id',
   name: 'name',
   provider: 'provider',
-  api_key: 'api_key',
+  api_key_ciphertext: 'api_key_ciphertext',
+  api_key_last4: 'api_key_last4',
+  key_version: 'key_version',
+  rotated_at: 'rotated_at',
   sender_email: 'sender_email',
   sender_name: 'sender_name',
   created_at: 'created_at'
 } as const
 
 export type Provider_configsScalarFieldEnum = (typeof Provider_configsScalarFieldEnum)[keyof typeof Provider_configsScalarFieldEnum]
+
+
+export const Audit_logsScalarFieldEnum = {
+  id: 'id',
+  actor_type: 'actor_type',
+  actor_id: 'actor_id',
+  tenant_id: 'tenant_id',
+  action: 'action',
+  resource_type: 'resource_type',
+  resource_id: 'resource_id',
+  trace_id: 'trace_id',
+  before_state: 'before_state',
+  after_state: 'after_state',
+  created_at: 'created_at'
+} as const
+
+export type Audit_logsScalarFieldEnum = (typeof Audit_logsScalarFieldEnum)[keyof typeof Audit_logsScalarFieldEnum]
+
+
+export const Tenant_adminsScalarFieldEnum = {
+  id: 'id',
+  tenant_id: 'tenant_id',
+  username: 'username',
+  password_hash: 'password_hash',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Tenant_adminsScalarFieldEnum = (typeof Tenant_adminsScalarFieldEnum)[keyof typeof Tenant_adminsScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -11,6 +11,7 @@ import { createHash } from 'crypto';
 import * as jwt from 'jsonwebtoken';
 import { AdminLoginDto } from '../common/dto/admin-auth.dto';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
+import { AuthenticatedRequest } from '../common/actor-context';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -70,7 +71,7 @@ export class AdminAuthController {
     const token = jwt.sign(
       {
         sub: username,
-        role: 'admin',
+        role: 'platform_operator',
       },
       secret,
       { expiresIn: '8h' },
@@ -81,26 +82,26 @@ export class AdminAuthController {
       data: {
         token,
         expiresIn: '8h',
-        user: { username, role: 'admin' },
+        user: { username, role: 'platform_operator' },
       },
     };
   }
 
   @UseGuards(AdminAuthGuard)
   @Get('me')
-  async getProfile(@Req() req: any) {
+  async getProfile(@Req() req: AuthenticatedRequest) {
     return {
       success: true,
       data: {
         username: req.adminUser.sub,
-        role: req.adminUser.role,
+        role: 'platform_operator',
       },
     };
   }
 
   @UseGuards(AdminAuthGuard)
   @Post('refresh')
-  async refreshToken(@Req() req: any) {
+  async refreshToken(@Req() req: AuthenticatedRequest) {
     const secret = process.env.ADMIN_JWT_SECRET;
     if (!secret) {
       throw new UnauthorizedException(
@@ -111,7 +112,7 @@ export class AdminAuthController {
     const token = jwt.sign(
       {
         sub: req.adminUser.sub,
-        role: 'admin',
+        role: 'platform_operator',
       },
       secret,
       { expiresIn: '8h' },

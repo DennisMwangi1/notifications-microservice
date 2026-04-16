@@ -23,6 +23,8 @@ model notification_logs {
   provider_ref    String?      @db.VarChar(255)
   sent_at         DateTime?    @db.Timestamp(6)
   error_details   String?
+
+  @@index([tenant_id, sent_at])
 }
 
 model templates {
@@ -37,12 +39,16 @@ model templates {
   tenant_id         String?      @db.Uuid
   event_type        String?      @db.VarChar(100)
   target_ws_channel String?      @db.VarChar(100)
+  scope             template_scope_enum @default(TENANT_CUSTOM)
 
   @@id([template_id, version])
+  @@index([tenant_id, event_type, channel_type, scope, is_active])
+  @@index([scope, event_type, channel_type, is_active])
 }
 
 model template_library {
   id           String       @id @default(uuid()) @db.Uuid
+  tenant_id    String       @db.Uuid
   name         String       @db.VarChar(255)
   channel_type channel_enum
   subject_line String?      @db.VarChar(255)
@@ -50,8 +56,9 @@ model template_library {
   sample_data  Json
   created_at   DateTime     @default(now()) @db.Timestamp(6)
   updated_at   DateTime     @updatedAt @db.Timestamp(6)
+  tenant       tenants      @relation(fields: [tenant_id], references: [id])
 
-  @@index([channel_type])
+  @@index([tenant_id, channel_type])
 }
 
 enum channel_enum {
@@ -93,12 +100,15 @@ model tenants {
   sender_email           String?           @db.VarChar(255)
   sender_name            String?           @db.VarChar(255)
   provider_config_id     String?           @db.Uuid
-  provider_config        provider_configs? @relation(fields: [provider_config_id], references: [id])
+  provider_config        provider_configs? @relation("TenantDefaultProviderConfig", fields: [provider_config_id], references: [id])
   created_at             DateTime          @default(now()) @db.Timestamp(6)
   is_active              Boolean           @default(true)
   rate_limit_per_minute  Int               @default(100)
   daily_notification_cap Int               @default(10000)
   max_template_count     Int               @default(50)
+  owned_provider_configs provider_configs[] @relation("TenantOwnedProviderConfigs")
+  template_library_entries template_library[]
+  tenant_admins          tenant_admins[]
 }
 
 // ─── Idempotency ────────────────────────────────
@@ -144,13 +154,62 @@ enum provider_type {
 }
 
 model provider_configs {
-  id           String        @id @default(uuid()) @db.Uuid
-  name         String        @db.VarChar(255)
-  provider     provider_type
-  api_key      String        @db.VarChar(255)
-  sender_email String?       @db.VarChar(255)
-  sender_name  String?       @db.VarChar(255)
-  created_at   DateTime      @default(now()) @db.Timestamp(6)
+  id                String        @id @default(uuid()) @db.Uuid
+  tenant_id         String        @db.Uuid
+  name              String        @db.VarChar(255)
+  provider          provider_type
+  api_key_ciphertext String       @db.Text
+  api_key_last4     String?       @db.VarChar(8)
+  key_version       Int           @default(1)
+  rotated_at        DateTime?     @db.Timestamp(6)
+  sender_email      String?       @db.VarChar(255)
+  sender_name       String?       @db.VarChar(255)
+  created_at        DateTime      @default(now()) @db.Timestamp(6)
+  tenant            tenants       @relation("TenantOwnedProviderConfigs", fields: [tenant_id], references: [id])
+  default_for_tenants tenants[]   @relation("TenantDefaultProviderConfig")
 
-  tenants tenants[]
+  @@index([tenant_id, provider])
+}
+
+model audit_logs {
+  id            String          @id @default(uuid()) @db.Uuid
+  actor_type    actor_type_enum
+  actor_id      String          @db.VarChar(255)
+  tenant_id     String?         @db.Uuid
+  action        String          @db.VarChar(120)
+  resource_type String          @db.VarChar(120)
+  resource_id   String?         @db.VarChar(255)
+  trace_id      String?         @db.VarChar(255)
+  before_state  Json?
+  after_state   Json?
+  created_at    DateTime        @default(now()) @db.Timestamp(6)
+
+  @@index([tenant_id, created_at])
+  @@index([resource_type, resource_id])
+}
+
+model tenant_admins {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenant_id     String      @db.Uuid
+  username      String      @db.VarChar(150)
+  password_hash String      @db.VarChar(255)
+  is_active     Boolean     @default(true)
+  created_at    DateTime    @default(now()) @db.Timestamp(6)
+  updated_at    DateTime    @updatedAt @db.Timestamp(6)
+  tenant        tenants     @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, username])
+  @@index([tenant_id, is_active])
+}
+
+enum template_scope_enum {
+  PLATFORM_DEFAULT
+  TENANT_OVERRIDE
+  TENANT_CUSTOM
+}
+
+enum actor_type_enum {
+  PLATFORM_OPERATOR
+  TENANT_ADMIN
+  SYSTEM
 }

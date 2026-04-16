@@ -29,6 +29,8 @@ import {
   markIdempotencyCompleted,
   reserveIdempotencyEntry,
 } from '../common/ingress-cache';
+import { DbContextService } from '../common/db-context.service';
+import { AuthenticatedRequest } from '../common/actor-context';
 
 interface IdempotencyCheckResult {
   duplicate: boolean;
@@ -47,6 +49,7 @@ export class EventsController {
     private readonly securityService: SecurityService,
     private readonly rateLimiterService: RateLimiterService,
     private readonly logger: AppLoggerService,
+    private readonly dbContext: DbContextService,
   ) {}
 
   /**
@@ -73,7 +76,7 @@ export class EventsController {
     @Headers('x-nucleus-signature') signature: string,
     @Headers('x-idempotency-key') idempotencyHeader: string,
     @Headers('x-api-key') headerApiKey: string,
-    @Req() req: Request & { rawBody: Buffer },
+    @Req() req: Request & { rawBody: Buffer; traceId?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
     const { eventType, payload } = body;
@@ -139,9 +142,14 @@ export class EventsController {
     }
 
     const payloadHash = this.hashPayload(payload);
+    const traceId =
+      req.traceId ||
+      req.headers['x-trace-id']?.toString() ||
+      this.generateOpaqueId('trace');
+    const eventId = body.eventId || this.generatePayloadHash(tenant.id, eventType, payload);
     const idempotencyKey =
       idempotencyHeader ||
-      this.generatePayloadHash(tenant.id, eventType, payload);
+      eventId;
     const idempotencyState = await this.checkIdempotency(
       tenant.id,
       idempotencyKey,
@@ -172,6 +180,8 @@ export class EventsController {
         provider_config_id: tenant.provider_config_id,
       },
       eventType,
+      eventId,
+      traceId,
     };
 
     try {
@@ -462,20 +472,29 @@ export class EventsController {
     tenantId: string,
     idempotencyKey: string,
   ) {
-    await prisma.processed_events
-      .deleteMany({
-        where: { expires_at: { lt: new Date() } },
-      })
-      .catch(() => undefined);
-
-    return prisma.processed_events.findUnique({
-      where: {
-        tenant_id_idempotency_key: {
-          tenant_id: tenantId,
-          idempotency_key: idempotencyKey,
-        },
+    return this.dbContext.withActorContext(
+      {
+        actorType: 'system',
+        actorId: 'events-controller',
+        tenantId,
       },
-    });
+      async (tx) => {
+        await tx.processed_events
+          .deleteMany({
+            where: { expires_at: { lt: new Date() } },
+          })
+          .catch(() => undefined);
+
+        return tx.processed_events.findUnique({
+          where: {
+            tenant_id_idempotency_key: {
+              tenant_id: tenantId,
+              idempotency_key: idempotencyKey,
+            },
+          },
+        });
+      },
+    );
   }
 
   /**
@@ -500,21 +519,35 @@ export class EventsController {
     const payloadHash = this.hashPayload(payload);
 
     try {
-      await prisma.processed_events.create({
-        data: {
-          tenant_id: tenantId,
-          idempotency_key: idempotencyKey,
-          event_type: eventType,
-          payload_hash: payloadHash,
-          response: response as object,
-          expires_at: expiresAt,
+      await this.dbContext.withActorContext(
+        {
+          actorType: 'system',
+          actorId: 'events-controller',
+          tenantId,
         },
-      });
+        (tx) =>
+          tx.processed_events.create({
+            data: {
+              tenant_id: tenantId,
+              idempotency_key: idempotencyKey,
+              event_type: eventType,
+              payload_hash: payloadHash,
+              response: response as object,
+              expires_at: expiresAt,
+            },
+          }),
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!msg.includes('Unique constraint')) {
         throw err;
       }
     }
+  }
+
+  private generateOpaqueId(prefix: string): string {
+    return `${prefix}_${createHash('sha256')
+      .update(`${prefix}:${Date.now()}:${Math.random()}`)
+      .digest('hex')}`;
   }
 }

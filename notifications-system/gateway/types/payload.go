@@ -5,6 +5,8 @@ type NotificationPayload struct {
 	ActionType     string `json:"actionType"`
 	NotificationID string `json:"notificationId"`
 	TenantID       string `json:"tenantId"`
+	EventID        string `json:"eventId"`
+	TraceID        string `json:"traceId"`
 	UserID         string `json:"userId"`
 	Recipient      string `json:"recipient"`
 	SenderEmail    string `json:"senderEmail"`
@@ -12,10 +14,12 @@ type NotificationPayload struct {
 	Subject        string `json:"subject"`
 	Body           string `json:"body"`
 	Provider       string `json:"provider"`
+	ProviderConfigID string `json:"providerConfigId"`
 	WsChannel      string `json:"wsChannel"`
 	Category       string `json:"category"`
 	EventType      string `json:"eventType"`
-	APIKey         string `json:"apiKey"`
+
+	ResolvedAPIKey string `json:"-"`
 }
 
 // DeliveryResult is the standardized response from any channel adapter.
@@ -43,5 +47,7 @@ type DLQMessage struct {
 	LastError       string              `json:"lastError"`
 	NotificationID  string              `json:"notificationId"`
 	TenantID        string              `json:"tenantId"`
+	EventID         string              `json:"eventId"`
+	TraceID         string              `json:"traceId"`
 	Channel         string              `json:"channel"`
 }

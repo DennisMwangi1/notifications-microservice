@@ -27,6 +27,11 @@ export interface UpdateTenantDto {
   daily_notification_cap?: number;
 }
 
+export interface CreateTenantAdminDto {
+  username: string;
+  password: string;
+}
+
 // ─── Provider Configs ──────────────────────
 
 export interface CreateProviderConfigDto {
@@ -35,6 +40,7 @@ export interface CreateProviderConfigDto {
   api_key: string;
   sender_email?: string;
   sender_name?: string;
+  tenant_id?: string;
 }
 
 export interface UpdateProviderConfigDto {
@@ -54,9 +60,11 @@ export interface CreateTemplateDto {
   subject_line?: string | null;
   content_body: string;
   target_ws_channel?: string | null;
+  scope?: 'PLATFORM_DEFAULT' | 'TENANT_OVERRIDE' | 'TENANT_CUSTOM';
 }
 
 export interface CreateTemplateLibraryDto {
+  tenant_id?: string;
   name: string;
   channel_type: 'EMAIL' | 'SMS' | 'PUSH';
   subject_line?: string | null;
@@ -76,6 +84,8 @@ export interface EmailDispatchPayload {
   actionType: 'EMAIL';
   notificationId: string;
   tenantId: string;
+  eventId: string;
+  traceId: string;
   userId: string;
   recipient: string;
   senderEmail?: string | null;
@@ -83,25 +93,29 @@ export interface EmailDispatchPayload {
   subject: string;
   body: string;
   provider: string;
-  apiKey?: string;
+  providerConfigId?: string | null;
 }
 
 export interface SmsDispatchPayload {
   actionType: 'SMS';
   notificationId: string;
   tenantId: string;
+  eventId: string;
+  traceId: string;
   userId: string;
   recipient: string;
   subject: string;
   body: string;
   provider: string;
-  apiKey?: string;
+  providerConfigId?: string | null;
 }
 
 export interface RealtimeDispatchPayload {
   actionType: 'REALTIME';
   notificationId: string;
   tenantId: string;
+  eventId: string;
+  traceId: string;
   userId: string;
   subject: string;
   body: string;

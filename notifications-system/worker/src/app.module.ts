@@ -3,15 +3,31 @@ import { AuthModule } from './auth/auth.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { EventsModule } from './events/events.module';
 import { AdminModule } from './admin/admin.module';
+import { TenantModule } from './tenant/tenant.module';
 import { AppLoggerService } from './common/app-logger.service';
 import { RequestContextService } from './common/request-context.service';
 import { LoggerMiddleware } from './common/logger.middleware';
+import { DbContextService } from './common/db-context.service';
+import { AuditLogService } from './common/audit-log.service';
+import { ProviderCryptoService } from './common/provider-crypto.service';
 
 @Global()
 @Module({
-  imports: [AuthModule, NotificationsModule, EventsModule, AdminModule],
-  providers: [AppLoggerService, RequestContextService],
-  exports: [AppLoggerService, RequestContextService],
+  imports: [AuthModule, NotificationsModule, EventsModule, AdminModule, TenantModule],
+  providers: [
+    AppLoggerService,
+    RequestContextService,
+    DbContextService,
+    AuditLogService,
+    ProviderCryptoService,
+  ],
+  exports: [
+    AppLoggerService,
+    RequestContextService,
+    DbContextService,
+    AuditLogService,
+    ProviderCryptoService,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

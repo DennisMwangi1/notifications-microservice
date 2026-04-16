@@ -46,6 +46,7 @@ export type TemplatesMinAggregateOutputType = {
   tenant_id: string | null
   event_type: string | null
   target_ws_channel: string | null
+  scope: $Enums.template_scope_enum | null
 }
 
 export type TemplatesMaxAggregateOutputType = {
@@ -60,6 +61,7 @@ export type TemplatesMaxAggregateOutputType = {
   tenant_id: string | null
   event_type: string | null
   target_ws_channel: string | null
+  scope: $Enums.template_scope_enum | null
 }
 
 export type TemplatesCountAggregateOutputType = {
@@ -74,6 +76,7 @@ export type TemplatesCountAggregateOutputType = {
   tenant_id: number
   event_type: number
   target_ws_channel: number
+  scope: number
   _all: number
 }
 
@@ -98,6 +101,7 @@ export type TemplatesMinAggregateInputType = {
   tenant_id?: true
   event_type?: true
   target_ws_channel?: true
+  scope?: true
 }
 
 export type TemplatesMaxAggregateInputType = {
@@ -112,6 +116,7 @@ export type TemplatesMaxAggregateInputType = {
   tenant_id?: true
   event_type?: true
   target_ws_channel?: true
+  scope?: true
 }
 
 export type TemplatesCountAggregateInputType = {
@@ -126,6 +131,7 @@ export type TemplatesCountAggregateInputType = {
   tenant_id?: true
   event_type?: true
   target_ws_channel?: true
+  scope?: true
   _all?: true
 }
 
@@ -227,6 +233,7 @@ export type TemplatesGroupByOutputType = {
   tenant_id: string | null
   event_type: string | null
   target_ws_channel: string | null
+  scope: $Enums.template_scope_enum
   _count: TemplatesCountAggregateOutputType | null
   _avg: TemplatesAvgAggregateOutputType | null
   _sum: TemplatesSumAggregateOutputType | null
@@ -264,6 +271,7 @@ export type templatesWhereInput = {
   tenant_id?: Prisma.UuidNullableFilter<"templates"> | string | null
   event_type?: Prisma.StringNullableFilter<"templates"> | string | null
   target_ws_channel?: Prisma.StringNullableFilter<"templates"> | string | null
+  scope?: Prisma.Enumtemplate_scope_enumFilter<"templates"> | $Enums.template_scope_enum
 }
 
 export type templatesOrderByWithRelationInput = {
@@ -278,6 +286,7 @@ export type templatesOrderByWithRelationInput = {
   tenant_id?: Prisma.SortOrderInput | Prisma.SortOrder
   event_type?: Prisma.SortOrderInput | Prisma.SortOrder
   target_ws_channel?: Prisma.SortOrderInput | Prisma.SortOrder
+  scope?: Prisma.SortOrder
 }
 
 export type templatesWhereUniqueInput = Prisma.AtLeast<{
@@ -296,6 +305,7 @@ export type templatesWhereUniqueInput = Prisma.AtLeast<{
   tenant_id?: Prisma.UuidNullableFilter<"templates"> | string | null
   event_type?: Prisma.StringNullableFilter<"templates"> | string | null
   target_ws_channel?: Prisma.StringNullableFilter<"templates"> | string | null
+  scope?: Prisma.Enumtemplate_scope_enumFilter<"templates"> | $Enums.template_scope_enum
 }, "template_id_version">
 
 export type templatesOrderByWithAggregationInput = {
@@ -310,6 +320,7 @@ export type templatesOrderByWithAggregationInput = {
   tenant_id?: Prisma.SortOrderInput | Prisma.SortOrder
   event_type?: Prisma.SortOrderInput | Prisma.SortOrder
   target_ws_channel?: Prisma.SortOrderInput | Prisma.SortOrder
+  scope?: Prisma.SortOrder
   _count?: Prisma.templatesCountOrderByAggregateInput
   _avg?: Prisma.templatesAvgOrderByAggregateInput
   _max?: Prisma.templatesMaxOrderByAggregateInput
@@ -332,6 +343,7 @@ export type templatesScalarWhereWithAggregatesInput = {
   tenant_id?: Prisma.UuidNullableWithAggregatesFilter<"templates"> | string | null
   event_type?: Prisma.StringNullableWithAggregatesFilter<"templates"> | string | null
   target_ws_channel?: Prisma.StringNullableWithAggregatesFilter<"templates"> | string | null
+  scope?: Prisma.Enumtemplate_scope_enumWithAggregatesFilter<"templates"> | $Enums.template_scope_enum
 }
 
 export type templatesCreateInput = {
@@ -346,6 +358,7 @@ export type templatesCreateInput = {
   tenant_id?: string | null
   event_type?: string | null
   target_ws_channel?: string | null
+  scope?: $Enums.template_scope_enum
 }
 
 export type templatesUncheckedCreateInput = {
@@ -360,6 +373,7 @@ export type templatesUncheckedCreateInput = {
   tenant_id?: string | null
   event_type?: string | null
   target_ws_channel?: string | null
+  scope?: $Enums.template_scope_enum
 }
 
 export type templatesUpdateInput = {
@@ -374,6 +388,7 @@ export type templatesUpdateInput = {
   tenant_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   target_ws_channel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scope?: Prisma.Enumtemplate_scope_enumFieldUpdateOperationsInput | $Enums.template_scope_enum
 }
 
 export type templatesUncheckedUpdateInput = {
@@ -388,6 +403,7 @@ export type templatesUncheckedUpdateInput = {
   tenant_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   target_ws_channel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scope?: Prisma.Enumtemplate_scope_enumFieldUpdateOperationsInput | $Enums.template_scope_enum
 }
 
 export type templatesCreateManyInput = {
@@ -402,6 +418,7 @@ export type templatesCreateManyInput = {
   tenant_id?: string | null
   event_type?: string | null
   target_ws_channel?: string | null
+  scope?: $Enums.template_scope_enum
 }
 
 export type templatesUpdateManyMutationInput = {
@@ -416,6 +433,7 @@ export type templatesUpdateManyMutationInput = {
   tenant_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   target_ws_channel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scope?: Prisma.Enumtemplate_scope_enumFieldUpdateOperationsInput | $Enums.template_scope_enum
 }
 
 export type templatesUncheckedUpdateManyInput = {
@@ -430,6 +448,7 @@ export type templatesUncheckedUpdateManyInput = {
   tenant_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   target_ws_channel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scope?: Prisma.Enumtemplate_scope_enumFieldUpdateOperationsInput | $Enums.template_scope_enum
 }
 
 export type templatesTemplate_idVersionCompoundUniqueInput = {
@@ -449,6 +468,7 @@ export type templatesCountOrderByAggregateInput = {
   tenant_id?: Prisma.SortOrder
   event_type?: Prisma.SortOrder
   target_ws_channel?: Prisma.SortOrder
+  scope?: Prisma.SortOrder
 }
 
 export type templatesAvgOrderByAggregateInput = {
@@ -467,6 +487,7 @@ export type templatesMaxOrderByAggregateInput = {
   tenant_id?: Prisma.SortOrder
   event_type?: Prisma.SortOrder
   target_ws_channel?: Prisma.SortOrder
+  scope?: Prisma.SortOrder
 }
 
 export type templatesMinOrderByAggregateInput = {
@@ -481,6 +502,7 @@ export type templatesMinOrderByAggregateInput = {
   tenant_id?: Prisma.SortOrder
   event_type?: Prisma.SortOrder
   target_ws_channel?: Prisma.SortOrder
+  scope?: Prisma.SortOrder
 }
 
 export type templatesSumOrderByAggregateInput = {
@@ -499,6 +521,10 @@ export type NullableBoolFieldUpdateOperationsInput = {
   set?: boolean | null
 }
 
+export type Enumtemplate_scope_enumFieldUpdateOperationsInput = {
+  set?: $Enums.template_scope_enum
+}
+
 
 
 export type templatesSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -513,6 +539,7 @@ export type templatesSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   tenant_id?: boolean
   event_type?: boolean
   target_ws_channel?: boolean
+  scope?: boolean
 }, ExtArgs["result"]["templates"]>
 
 export type templatesSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -527,6 +554,7 @@ export type templatesSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   tenant_id?: boolean
   event_type?: boolean
   target_ws_channel?: boolean
+  scope?: boolean
 }, ExtArgs["result"]["templates"]>
 
 export type templatesSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -541,6 +569,7 @@ export type templatesSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   tenant_id?: boolean
   event_type?: boolean
   target_ws_channel?: boolean
+  scope?: boolean
 }, ExtArgs["result"]["templates"]>
 
 export type templatesSelectScalar = {
@@ -555,9 +584,10 @@ export type templatesSelectScalar = {
   tenant_id?: boolean
   event_type?: boolean
   target_ws_channel?: boolean
+  scope?: boolean
 }
 
-export type templatesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"template_id" | "version" | "channel_type" | "subject_line" | "content_body" | "locale" | "is_active" | "created_at" | "tenant_id" | "event_type" | "target_ws_channel", ExtArgs["result"]["templates"]>
+export type templatesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"template_id" | "version" | "channel_type" | "subject_line" | "content_body" | "locale" | "is_active" | "created_at" | "tenant_id" | "event_type" | "target_ws_channel" | "scope", ExtArgs["result"]["templates"]>
 
 export type $templatesPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "templates"
@@ -574,6 +604,7 @@ export type $templatesPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     tenant_id: string | null
     event_type: string | null
     target_ws_channel: string | null
+    scope: $Enums.template_scope_enum
   }, ExtArgs["result"]["templates"]>
   composites: {}
 }
@@ -1008,6 +1039,7 @@ export interface templatesFieldRefs {
   readonly tenant_id: Prisma.FieldRef<"templates", 'String'>
   readonly event_type: Prisma.FieldRef<"templates", 'String'>
   readonly target_ws_channel: Prisma.FieldRef<"templates", 'String'>
+  readonly scope: Prisma.FieldRef<"templates", 'template_scope_enum'>
 }
     
 

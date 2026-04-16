@@ -2,24 +2,18 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  UnauthorizedException,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import {
   AuthenticatedRequest,
-  PlatformOperatorTokenPayload,
+  TenantAdminTokenPayload,
 } from '../actor-context';
 
-/**
- * JWT-based guard that protects all admin API routes.
- * Expects: Authorization: Bearer <token>
- *
- * The JWT is signed with ADMIN_JWT_SECRET from environment.
- */
 @Injectable()
-export class AdminAuthGuard implements CanActivate {
-  private readonly logger = new Logger(AdminAuthGuard.name);
+export class TenantAuthGuard implements CanActivate {
+  private readonly logger = new Logger(TenantAuthGuard.name);
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -32,31 +26,29 @@ export class AdminAuthGuard implements CanActivate {
     }
 
     const token = authHeader.split(' ')[1];
-    const secret = process.env.ADMIN_JWT_SECRET;
+    const secret = process.env.TENANT_ADMIN_JWT_SECRET || process.env.ADMIN_JWT_SECRET;
 
     if (!secret) {
-      this.logger.error('ADMIN_JWT_SECRET is not configured');
+      this.logger.error(
+        'TENANT_ADMIN_JWT_SECRET or ADMIN_JWT_SECRET is not configured',
+      );
       throw new UnauthorizedException(
         'Authentication system is not configured',
       );
     }
 
     try {
-      const payload = jwt.verify(token, secret) as PlatformOperatorTokenPayload;
+      const payload = jwt.verify(token, secret) as TenantAdminTokenPayload;
 
-      if (
-        payload.role !== 'platform_operator' &&
-        payload.role !== 'admin'
-      ) {
+      if (payload.role !== 'tenant_admin' || !payload.tenantId) {
         throw new UnauthorizedException('Insufficient permissions');
       }
 
-      // Attach admin info to request for downstream use
-      request.adminUser = payload;
+      request.tenantAdminUser = payload;
       request.actorContext = {
-        actorType: 'platform_operator',
+        actorType: 'tenant_admin',
         actorId: payload.sub,
-        tenantId: null,
+        tenantId: payload.tenantId,
       };
       return true;
     } catch (err) {

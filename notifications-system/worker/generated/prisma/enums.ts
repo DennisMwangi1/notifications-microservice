@@ -46,3 +46,21 @@ export const provider_type = {
 } as const
 
 export type provider_type = (typeof provider_type)[keyof typeof provider_type]
+
+
+export const template_scope_enum = {
+  PLATFORM_DEFAULT: 'PLATFORM_DEFAULT',
+  TENANT_OVERRIDE: 'TENANT_OVERRIDE',
+  TENANT_CUSTOM: 'TENANT_CUSTOM'
+} as const
+
+export type template_scope_enum = (typeof template_scope_enum)[keyof typeof template_scope_enum]
+
+
+export const actor_type_enum = {
+  PLATFORM_OPERATOR: 'PLATFORM_OPERATOR',
+  TENANT_ADMIN: 'TENANT_ADMIN',
+  SYSTEM: 'SYSTEM'
+} as const
+
+export type actor_type_enum = (typeof actor_type_enum)[keyof typeof actor_type_enum]

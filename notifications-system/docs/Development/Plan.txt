@@ -1,0 +1,213 @@
+Level 2 Multitenancy Migration Plan
+Summary
+Move the system from "tenant-aware" to "tenant-enforced" with a backend-first rollout. The first milestone should harden data, auth, Kafka, Redis, and worker/gateway behavior so cross-tenant access is blocked even when application code is wrong; the existing admin-ui remains the platform-operator console for now, and tenant-facing UI can follow on top of the new backend contracts.
+
+Current repo findings that drive this plan:
+
+Tenant context already exists in ingress and most dispatch payloads, but isolation is still mostly enforced by query discipline.
+Platform admin APIs are globally scoped behind a single role: 'admin' guard.
+Provider secrets are currently stored in Postgres as plaintext and forwarded through Kafka payloads.
+init-db/init.sql is behind the Prisma schema and would bootstrap a less-isolated data model if kept as-is.
+Key Changes
+1. Define the tenant boundary and make it the source of truth
+Create a resource boundary matrix covering tenants, templates, template_library, provider_configs, notification_logs, in_app_notifications, processed_events, failed_notifications, API keys, and audit records.
+Classify resources as:
+Platform-owned: platform operators, tenant registry, platform default templates, template library.
+Tenant-owned: provider configs, notification logs, in-app notifications, idempotency records, failed notifications, tenant admin actions.
+Hybrid: templates, where platform defaults can be overridden by tenant-specific variants.
+Treat the matrix as the required input to every schema, API, and RLS change.
+2. Harden the data model
+Make Prisma migrations the only schema source; align or retire init-db/init.sql.
+Ensure every tenant-owned table has tenant_id NOT NULL and tenant-safe indexes/uniques.
+Add or enforce tenant-safe constraints:
+templates: unique active key by (tenant_id, event_type, channel_type, scope, version) as appropriate.
+processed_events: keep unique (tenant_id, idempotency_key).
+failed_notifications, notification_logs, in_app_notifications: index by tenant_id.
+provider_configs: add tenant_id, keep tenants.provider_config_id as the tenant’s default provider pointer for v1.
+Replace implicit global-vs-tenant template behavior (tenant_id = null) with an explicit scope enum:
+PLATFORM_DEFAULT
+TENANT_OVERRIDE
+TENANT_CUSTOM
+Add a dedicated audit_logs table for sensitive actions with actor_type, actor_id, tenant_id, action, resource_type, resource_id, trace_id, and before/after metadata.
+Replace provider_configs.api_key plaintext storage with encrypted-at-rest fields plus masked metadata such as api_key_last4, key_version, and rotation timestamps.
+3. Split actor models and API surfaces
+Keep /api/v1/admin/* as platform-operator-only APIs.
+Introduce a tenant-admin API namespace, e.g. /api/v1/tenant/*, for tenant-scoped templates, providers, logs, and DLQ actions.
+Replace the single admin token contract with two actor types:
+platform_operator: may access cross-tenant ops APIs.
+tenant_admin: must carry exactly one tenantId; cannot switch tenants.
+Derive tenant scope from auth claims, never from a tenant selector in tenant-admin routes.
+Keep tenant API keys only for machine-to-machine ingress; do not reuse them for tenant human admin access.
+Change realtime token generation so tenant context is authenticated, not caller-supplied:
+remove free-form tenantId from the request body
+derive tenant from the authenticated caller or tenant API key
+only mint channels for that tenant
+4. Add database-enforced isolation with RLS
+Enable PostgreSQL RLS on all tenant-owned and hybrid tables: templates, provider_configs, notification_logs, in_app_notifications, processed_events, failed_notifications, audit_logs.
+Standardize session variables:
+app.current_actor_type
+app.current_actor_id
+app.current_tenant_id
+Use a tenant-aware DB helper so every HTTP request, Kafka handler, and DLQ retry runs queries inside a transaction/connection where those settings are applied before any Prisma access.
+RLS rules should allow:
+tenant admins: only rows matching current_tenant_id
+platform operators: explicit bypass for approved ops paths
+platform defaults in hybrid tables: readable by runtime, writable only by platform operators
+Update repository/controller code so queries still include tenant filters for clarity, but RLS remains the final guardrail.
+5. Fix runtime contracts across Kafka, Redis, worker, and gateway
+Make tenant context mandatory on every message; reject malformed/unscoped events at consumer boundaries.
+Standardize message contracts:
+tenant.event.received: tenantId, eventId, traceId, eventType, tenant-safe payload
+notification.dispatch: tenantId, notificationId, eventId, traceId, channel, providerConfigId if needed
+notification.retry / notification.dlq: same context retained end-to-end
+Remove raw provider secrets from Kafka payloads; the gateway must resolve tenant-scoped provider credentials from Postgres at dispatch time.
+Partition Kafka keys by tenant context, preferably tenantId:eventId.
+Namespace Redis keys for tenant-scoped runtime state:
+tenant:{tenantId}:idem:{key}
+tenant:{tenantId}:rate_limit:minute:{bucket}
+tenant:{tenantId}:rate_limit:daily:{date}
+tenant:{tenantId}:burst
+tenant:{tenantId}:template_cache:{templateKey}
+Allow one explicit platform cache exception for API-key lookup, since tenant is unknown pre-auth; store it as a hashed lookup, not raw key text.
+Ensure gateway audit updates and worker writes always include tenant scope, even when notification_id is globally unique.
+6. Make template and provider resolution deterministic
+Update template resolution order to:
+active TENANT_OVERRIDE
+active TENANT_CUSTOM
+active PLATFORM_DEFAULT
+Ensure tenant-facing template reads only return rows for the authenticated tenant.
+Restrict provider config reads/writes/test actions to the owning tenant or platform operators.
+Audit provider config create/update/rotate/test-send actions.
+Keep the current "one default provider config per tenant" model for v1; do not introduce a separate routing-rules subsystem in this milestone.
+7. Defer, but prepare for, the UI split
+Keep the current admin-ui as the platform console in the first milestone.
+Do not add tenant switching to tenant-facing APIs or future UI.
+Build the backend contracts now so a later tenant console can call /api/v1/tenant/* without reopening isolation decisions.
+Public API / Interface Changes
+Admin JWT payload changes from a single role: 'admin' shape to actor-aware claims with optional mandatory tenantId for tenant admins.
+Tenant ingress and dispatch DTOs gain mandatory eventId and traceId.
+Dispatch DTOs drop apiKey and any raw provider secret fields.
+Template records gain explicit scope; provider config responses stop returning raw secrets after creation/update.
+Realtime token endpoint stops accepting arbitrary tenantId input from the caller.
+Test Plan
+Migration tests proving every tenant-owned table has tenant_id, required indexes, and expected uniqueness.
+RLS integration tests where a tenant-scoped session cannot read or mutate another tenant’s rows, even with intentionally broad queries.
+API auth tests proving:
+platform operators can use /api/v1/admin/*
+tenant admins cannot access platform routes
+tenant admins cannot act on another tenant by path or query manipulation
+Kafka contract tests proving consumers reject messages missing tenantId, eventId, or traceId.
+Runtime tests proving no Kafka payload contains provider secrets.
+Cross-tenant e2e tests with two tenants sharing the same eventType but receiving isolated template selection, provider resolution, logs, retries, and DLQ entries.
+Redis key tests proving idempotency and rate-limit counters are tenant-separated.
+Audit tests proving provider/template/admin mutations generate traceable audit records.
+Assumptions and Defaults
+Rollout preference: backend-first hardening comes before tenant-facing UI work.
+Secret storage choice: keep provider credentials in Postgres, but encrypted at rest with masking and auditability.
+Existing platform admin login can remain temporarily for platform operators during migration, but tenant-admin auth must use a separate contract and namespace.
+No new routing-rules subsystem is introduced in this milestone; current template-driven routing is hardened first.
+The goal of this plan is Level 2 logical isolation on shared infrastructure, not per-tenant physical infrastructure.
+
+Multitenancy Plan Aligned to Platform-Ops Ownership
+Summary
+Reshape the system so the platform owns operations, tenant registry, and cross-tenant analytics, while tenants own their notification content and delivery configuration. Platform-provided templates should exist only as minimal bootstrap defaults, not as a rich authoring surface. The first milestone remains backend-first: enforce tenant isolation in data, auth, Kafka, Redis, and runtime processing, then trim the platform UI/API so it reflects an operations-only model.
+
+Key Changes
+1. Narrow the platform-owned domain
+Treat these as platform-owned:
+tenant registry and lifecycle
+platform operators and auth
+operational analytics and system health
+minimal platform default templates used only as bootstrap fallbacks
+Treat these as tenant-owned:
+templates and template versions
+provider configs and credentials
+notification logs and in-app notifications
+DLQ items and retry history
+idempotency records and tenant audit records
+Remove the idea of a platform-managed reusable template library as a product feature.
+Remove the idea of a full platform-owned template playground; if a preview tool remains, it should only support operator troubleshooting, not content authoring.
+2. Reframe template ownership and behavior
+Make tenant template management the primary model.
+Keep only a minimal PLATFORM_DEFAULT template scope for system bootstrap and fallback cases.
+Define template scopes as:
+PLATFORM_DEFAULT
+TENANT_CUSTOM
+TENANT_OVERRIDE
+Set deterministic resolution order:
+TENANT_OVERRIDE
+TENANT_CUSTOM
+PLATFORM_DEFAULT
+Limit platform defaults to a small set of baseline templates needed to onboard a tenant or guarantee critical notification flows.
+Do not build or keep a broad platform template catalog, shared tenant library, or cross-tenant template browsing surface.
+3. Redesign the backend API boundaries around that ownership model
+Keep /api/v1/admin/* for platform operations only:
+tenant provisioning and lifecycle
+system analytics and health
+cross-tenant operational investigations
+limited management of platform default templates
+Introduce /api/v1/tenant/* for tenant-admin actions:
+create/update/deactivate templates
+manage provider configs
+view tenant logs, DLQ, and delivery status
+Remove platform APIs whose main purpose is tenant content authoring, especially template-library style endpoints.
+Tenant admins must derive scope from auth claims, never by selecting or switching tenants in the UI.
+4. Enforce tenant isolation in the data layer
+Ensure every tenant-owned table has tenant_id NOT NULL and tenant-safe indexes.
+Add tenant_id to provider_configs so credentials are owned directly by the tenant.
+Keep the tenant registry itself platform-owned and outside tenant RLS scope.
+Add a dedicated audit_logs table for tenant-sensitive and operator-sensitive actions with actor_type, actor_id, tenant_id, resource_type, resource_id, action, and trace_id.
+Make Prisma migrations the single schema source and align or retire the older bootstrap SQL so it cannot reintroduce a pre-multitenant model.
+5. Add DB-enforced protections with RLS
+Enable PostgreSQL RLS on all tenant-owned and hybrid tables.
+Standardize DB session context with:
+app.current_actor_type
+app.current_actor_id
+app.current_tenant_id
+Require all HTTP requests, Kafka handlers, retries, and DLQ replays to set session context before touching tenant-owned tables.
+Allow platform operators explicit cross-tenant access only through their privileged actor type.
+Require platform default template rows to be writable only by platform operators and readable by runtime resolution logic.
+6. Fix runtime contracts so tenant context is mandatory everywhere
+Standardize Kafka messages so every topic carries:
+tenantId
+eventId
+traceId
+eventType
+channel-specific payload
+Remove raw provider secrets from Kafka payloads.
+Resolve tenant provider credentials at dispatch time inside the trusted service boundary, not in broker messages.
+Namespace Redis keys by tenant for idempotency, rate limiting, and cached runtime state.
+Keep only one pre-auth exception for API-key lookup, and store it as a hashed lookup rather than a raw key cache.
+Ensure gateway and worker reject malformed or unscoped messages rather than processing them best-effort.
+7. Re-scope the platform UI
+Keep the current platform UI focused on:
+tenant registry
+delivery/log analytics
+system health and DLQ oversight
+limited bootstrap template defaults
+Remove or phase out platform UI sections whose main value is tenant content creation, especially:
+tenant library management
+rich cross-tenant template authoring workflows
+full template playground as a platform feature
+Plan a future tenant console where tenant admins manage their own templates and provider settings within a single-tenant experience.
+Public API / Interface Changes
+Admin auth evolves from a single global role: 'admin' token to actor-aware claims:
+platform_operator
+tenant_admin with mandatory tenantId
+Template DTOs gain explicit scope.
+Provider config DTOs become tenant-scoped and stop exposing raw secrets after write operations.
+Kafka event and dispatch DTOs gain mandatory eventId and traceId.
+Template-library style interfaces should be deprecated and removed from the long-term API surface.
+Test Plan
+Schema tests proving tenant-owned tables all include tenant_id and expected tenant-safe indexes.
+RLS tests proving a tenant-scoped session cannot read or mutate another tenant’s templates, providers, logs, DLQ items, or idempotency records.
+API auth tests proving platform operators can access ops endpoints while tenant admins cannot access cross-tenant routes.
+Template resolution tests proving tenant templates win over minimal platform defaults.
+Runtime contract tests proving Kafka consumers reject messages missing tenantId, eventId, or traceId.
+Security tests proving provider secrets never appear in Kafka payloads or list APIs.
+UI/API contract tests proving platform surfaces no longer expose template-library or broad template-authoring workflows.
+Assumptions and Defaults
+Platform ownership is intentionally narrow: operations, tenant registry, analytics, and minimal bootstrap defaults only.
+Template authoring is a tenant responsibility by default.
+Platform default templates are fallback assets, not a platform product area.
+The first milestone is backend-first, but the plan includes slimming platform-owned template features so the architecture and product model stay aligned.

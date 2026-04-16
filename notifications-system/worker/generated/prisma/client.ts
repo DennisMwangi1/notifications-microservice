@@ -79,3 +79,13 @@ export type failed_notifications = Prisma.failed_notificationsModel
  * 
  */
 export type provider_configs = Prisma.provider_configsModel
+/**
+ * Model audit_logs
+ * 
+ */
+export type audit_logs = Prisma.audit_logsModel
+/**
+ * Model tenant_admins
+ * 
+ */
+export type tenant_admins = Prisma.tenant_adminsModel

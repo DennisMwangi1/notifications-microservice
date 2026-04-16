@@ -20,15 +20,29 @@ export type provider_configsModel = runtime.Types.Result.DefaultSelection<Prisma
 
 export type AggregateProvider_configs = {
   _count: Provider_configsCountAggregateOutputType | null
+  _avg: Provider_configsAvgAggregateOutputType | null
+  _sum: Provider_configsSumAggregateOutputType | null
   _min: Provider_configsMinAggregateOutputType | null
   _max: Provider_configsMaxAggregateOutputType | null
 }
 
+export type Provider_configsAvgAggregateOutputType = {
+  key_version: number | null
+}
+
+export type Provider_configsSumAggregateOutputType = {
+  key_version: number | null
+}
+
 export type Provider_configsMinAggregateOutputType = {
   id: string | null
+  tenant_id: string | null
   name: string | null
   provider: $Enums.provider_type | null
-  api_key: string | null
+  api_key_ciphertext: string | null
+  api_key_last4: string | null
+  key_version: number | null
+  rotated_at: Date | null
   sender_email: string | null
   sender_name: string | null
   created_at: Date | null
@@ -36,9 +50,13 @@ export type Provider_configsMinAggregateOutputType = {
 
 export type Provider_configsMaxAggregateOutputType = {
   id: string | null
+  tenant_id: string | null
   name: string | null
   provider: $Enums.provider_type | null
-  api_key: string | null
+  api_key_ciphertext: string | null
+  api_key_last4: string | null
+  key_version: number | null
+  rotated_at: Date | null
   sender_email: string | null
   sender_name: string | null
   created_at: Date | null
@@ -46,9 +64,13 @@ export type Provider_configsMaxAggregateOutputType = {
 
 export type Provider_configsCountAggregateOutputType = {
   id: number
+  tenant_id: number
   name: number
   provider: number
-  api_key: number
+  api_key_ciphertext: number
+  api_key_last4: number
+  key_version: number
+  rotated_at: number
   sender_email: number
   sender_name: number
   created_at: number
@@ -56,11 +78,23 @@ export type Provider_configsCountAggregateOutputType = {
 }
 
 
+export type Provider_configsAvgAggregateInputType = {
+  key_version?: true
+}
+
+export type Provider_configsSumAggregateInputType = {
+  key_version?: true
+}
+
 export type Provider_configsMinAggregateInputType = {
   id?: true
+  tenant_id?: true
   name?: true
   provider?: true
-  api_key?: true
+  api_key_ciphertext?: true
+  api_key_last4?: true
+  key_version?: true
+  rotated_at?: true
   sender_email?: true
   sender_name?: true
   created_at?: true
@@ -68,9 +102,13 @@ export type Provider_configsMinAggregateInputType = {
 
 export type Provider_configsMaxAggregateInputType = {
   id?: true
+  tenant_id?: true
   name?: true
   provider?: true
-  api_key?: true
+  api_key_ciphertext?: true
+  api_key_last4?: true
+  key_version?: true
+  rotated_at?: true
   sender_email?: true
   sender_name?: true
   created_at?: true
@@ -78,9 +116,13 @@ export type Provider_configsMaxAggregateInputType = {
 
 export type Provider_configsCountAggregateInputType = {
   id?: true
+  tenant_id?: true
   name?: true
   provider?: true
-  api_key?: true
+  api_key_ciphertext?: true
+  api_key_last4?: true
+  key_version?: true
+  rotated_at?: true
   sender_email?: true
   sender_name?: true
   created_at?: true
@@ -125,6 +167,18 @@ export type Provider_configsAggregateArgs<ExtArgs extends runtime.Types.Extensio
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: Provider_configsAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: Provider_configsSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: Provider_configsMinAggregateInputType
@@ -155,19 +209,27 @@ export type provider_configsGroupByArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   _count?: Provider_configsCountAggregateInputType | true
+  _avg?: Provider_configsAvgAggregateInputType
+  _sum?: Provider_configsSumAggregateInputType
   _min?: Provider_configsMinAggregateInputType
   _max?: Provider_configsMaxAggregateInputType
 }
 
 export type Provider_configsGroupByOutputType = {
   id: string
+  tenant_id: string
   name: string
   provider: $Enums.provider_type
-  api_key: string
+  api_key_ciphertext: string
+  api_key_last4: string | null
+  key_version: number
+  rotated_at: Date | null
   sender_email: string | null
   sender_name: string | null
   created_at: Date
   _count: Provider_configsCountAggregateOutputType | null
+  _avg: Provider_configsAvgAggregateOutputType | null
+  _sum: Provider_configsSumAggregateOutputType | null
   _min: Provider_configsMinAggregateOutputType | null
   _max: Provider_configsMaxAggregateOutputType | null
 }
@@ -192,24 +254,34 @@ export type provider_configsWhereInput = {
   OR?: Prisma.provider_configsWhereInput[]
   NOT?: Prisma.provider_configsWhereInput | Prisma.provider_configsWhereInput[]
   id?: Prisma.UuidFilter<"provider_configs"> | string
+  tenant_id?: Prisma.UuidFilter<"provider_configs"> | string
   name?: Prisma.StringFilter<"provider_configs"> | string
   provider?: Prisma.Enumprovider_typeFilter<"provider_configs"> | $Enums.provider_type
-  api_key?: Prisma.StringFilter<"provider_configs"> | string
+  api_key_ciphertext?: Prisma.StringFilter<"provider_configs"> | string
+  api_key_last4?: Prisma.StringNullableFilter<"provider_configs"> | string | null
+  key_version?: Prisma.IntFilter<"provider_configs"> | number
+  rotated_at?: Prisma.DateTimeNullableFilter<"provider_configs"> | Date | string | null
   sender_email?: Prisma.StringNullableFilter<"provider_configs"> | string | null
   sender_name?: Prisma.StringNullableFilter<"provider_configs"> | string | null
   created_at?: Prisma.DateTimeFilter<"provider_configs"> | Date | string
-  tenants?: Prisma.TenantsListRelationFilter
+  tenant?: Prisma.XOR<Prisma.TenantsScalarRelationFilter, Prisma.tenantsWhereInput>
+  default_for_tenants?: Prisma.TenantsListRelationFilter
 }
 
 export type provider_configsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   provider?: Prisma.SortOrder
-  api_key?: Prisma.SortOrder
+  api_key_ciphertext?: Prisma.SortOrder
+  api_key_last4?: Prisma.SortOrderInput | Prisma.SortOrder
+  key_version?: Prisma.SortOrder
+  rotated_at?: Prisma.SortOrderInput | Prisma.SortOrder
   sender_email?: Prisma.SortOrderInput | Prisma.SortOrder
   sender_name?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
-  tenants?: Prisma.tenantsOrderByRelationAggregateInput
+  tenant?: Prisma.tenantsOrderByWithRelationInput
+  default_for_tenants?: Prisma.tenantsOrderByRelationAggregateInput
 }
 
 export type provider_configsWhereUniqueInput = Prisma.AtLeast<{
@@ -217,26 +289,37 @@ export type provider_configsWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.provider_configsWhereInput | Prisma.provider_configsWhereInput[]
   OR?: Prisma.provider_configsWhereInput[]
   NOT?: Prisma.provider_configsWhereInput | Prisma.provider_configsWhereInput[]
+  tenant_id?: Prisma.UuidFilter<"provider_configs"> | string
   name?: Prisma.StringFilter<"provider_configs"> | string
   provider?: Prisma.Enumprovider_typeFilter<"provider_configs"> | $Enums.provider_type
-  api_key?: Prisma.StringFilter<"provider_configs"> | string
+  api_key_ciphertext?: Prisma.StringFilter<"provider_configs"> | string
+  api_key_last4?: Prisma.StringNullableFilter<"provider_configs"> | string | null
+  key_version?: Prisma.IntFilter<"provider_configs"> | number
+  rotated_at?: Prisma.DateTimeNullableFilter<"provider_configs"> | Date | string | null
   sender_email?: Prisma.StringNullableFilter<"provider_configs"> | string | null
   sender_name?: Prisma.StringNullableFilter<"provider_configs"> | string | null
   created_at?: Prisma.DateTimeFilter<"provider_configs"> | Date | string
-  tenants?: Prisma.TenantsListRelationFilter
+  tenant?: Prisma.XOR<Prisma.TenantsScalarRelationFilter, Prisma.tenantsWhereInput>
+  default_for_tenants?: Prisma.TenantsListRelationFilter
 }, "id">
 
 export type provider_configsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   provider?: Prisma.SortOrder
-  api_key?: Prisma.SortOrder
+  api_key_ciphertext?: Prisma.SortOrder
+  api_key_last4?: Prisma.SortOrderInput | Prisma.SortOrder
+  key_version?: Prisma.SortOrder
+  rotated_at?: Prisma.SortOrderInput | Prisma.SortOrder
   sender_email?: Prisma.SortOrderInput | Prisma.SortOrder
   sender_name?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   _count?: Prisma.provider_configsCountOrderByAggregateInput
+  _avg?: Prisma.provider_configsAvgOrderByAggregateInput
   _max?: Prisma.provider_configsMaxOrderByAggregateInput
   _min?: Prisma.provider_configsMinOrderByAggregateInput
+  _sum?: Prisma.provider_configsSumOrderByAggregateInput
 }
 
 export type provider_configsScalarWhereWithAggregatesInput = {
@@ -244,9 +327,13 @@ export type provider_configsScalarWhereWithAggregatesInput = {
   OR?: Prisma.provider_configsScalarWhereWithAggregatesInput[]
   NOT?: Prisma.provider_configsScalarWhereWithAggregatesInput | Prisma.provider_configsScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"provider_configs"> | string
+  tenant_id?: Prisma.UuidWithAggregatesFilter<"provider_configs"> | string
   name?: Prisma.StringWithAggregatesFilter<"provider_configs"> | string
   provider?: Prisma.Enumprovider_typeWithAggregatesFilter<"provider_configs"> | $Enums.provider_type
-  api_key?: Prisma.StringWithAggregatesFilter<"provider_configs"> | string
+  api_key_ciphertext?: Prisma.StringWithAggregatesFilter<"provider_configs"> | string
+  api_key_last4?: Prisma.StringNullableWithAggregatesFilter<"provider_configs"> | string | null
+  key_version?: Prisma.IntWithAggregatesFilter<"provider_configs"> | number
+  rotated_at?: Prisma.DateTimeNullableWithAggregatesFilter<"provider_configs"> | Date | string | null
   sender_email?: Prisma.StringNullableWithAggregatesFilter<"provider_configs"> | string | null
   sender_name?: Prisma.StringNullableWithAggregatesFilter<"provider_configs"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"provider_configs"> | Date | string
@@ -256,51 +343,71 @@ export type provider_configsCreateInput = {
   id?: string
   name: string
   provider: $Enums.provider_type
-  api_key: string
+  api_key_ciphertext: string
+  api_key_last4?: string | null
+  key_version?: number
+  rotated_at?: Date | string | null
   sender_email?: string | null
   sender_name?: string | null
   created_at?: Date | string
-  tenants?: Prisma.tenantsCreateNestedManyWithoutProvider_configInput
+  tenant: Prisma.tenantsCreateNestedOneWithoutOwned_provider_configsInput
+  default_for_tenants?: Prisma.tenantsCreateNestedManyWithoutProvider_configInput
 }
 
 export type provider_configsUncheckedCreateInput = {
   id?: string
+  tenant_id: string
   name: string
   provider: $Enums.provider_type
-  api_key: string
+  api_key_ciphertext: string
+  api_key_last4?: string | null
+  key_version?: number
+  rotated_at?: Date | string | null
   sender_email?: string | null
   sender_name?: string | null
   created_at?: Date | string
-  tenants?: Prisma.tenantsUncheckedCreateNestedManyWithoutProvider_configInput
+  default_for_tenants?: Prisma.tenantsUncheckedCreateNestedManyWithoutProvider_configInput
 }
 
 export type provider_configsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
-  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  tenants?: Prisma.tenantsUpdateManyWithoutProvider_configNestedInput
+  tenant?: Prisma.tenantsUpdateOneRequiredWithoutOwned_provider_configsNestedInput
+  default_for_tenants?: Prisma.tenantsUpdateManyWithoutProvider_configNestedInput
 }
 
 export type provider_configsUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
-  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  tenants?: Prisma.tenantsUncheckedUpdateManyWithoutProvider_configNestedInput
+  default_for_tenants?: Prisma.tenantsUncheckedUpdateManyWithoutProvider_configNestedInput
 }
 
 export type provider_configsCreateManyInput = {
   id?: string
+  tenant_id: string
   name: string
   provider: $Enums.provider_type
-  api_key: string
+  api_key_ciphertext: string
+  api_key_last4?: string | null
+  key_version?: number
+  rotated_at?: Date | string | null
   sender_email?: string | null
   sender_name?: string | null
   created_at?: Date | string
@@ -310,7 +417,10 @@ export type provider_configsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
-  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -318,9 +428,13 @@ export type provider_configsUpdateManyMutationInput = {
 
 export type provider_configsUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
-  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -331,21 +445,43 @@ export type Provider_configsNullableScalarRelationFilter = {
   isNot?: Prisma.provider_configsWhereInput | null
 }
 
+export type Provider_configsListRelationFilter = {
+  every?: Prisma.provider_configsWhereInput
+  some?: Prisma.provider_configsWhereInput
+  none?: Prisma.provider_configsWhereInput
+}
+
+export type provider_configsOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
 export type provider_configsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   provider?: Prisma.SortOrder
-  api_key?: Prisma.SortOrder
+  api_key_ciphertext?: Prisma.SortOrder
+  api_key_last4?: Prisma.SortOrder
+  key_version?: Prisma.SortOrder
+  rotated_at?: Prisma.SortOrder
   sender_email?: Prisma.SortOrder
   sender_name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
 
+export type provider_configsAvgOrderByAggregateInput = {
+  key_version?: Prisma.SortOrder
+}
+
 export type provider_configsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   provider?: Prisma.SortOrder
-  api_key?: Prisma.SortOrder
+  api_key_ciphertext?: Prisma.SortOrder
+  api_key_last4?: Prisma.SortOrder
+  key_version?: Prisma.SortOrder
+  rotated_at?: Prisma.SortOrder
   sender_email?: Prisma.SortOrder
   sender_name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -353,85 +489,276 @@ export type provider_configsMaxOrderByAggregateInput = {
 
 export type provider_configsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  tenant_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   provider?: Prisma.SortOrder
-  api_key?: Prisma.SortOrder
+  api_key_ciphertext?: Prisma.SortOrder
+  api_key_last4?: Prisma.SortOrder
+  key_version?: Prisma.SortOrder
+  rotated_at?: Prisma.SortOrder
   sender_email?: Prisma.SortOrder
   sender_name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
 
-export type provider_configsCreateNestedOneWithoutTenantsInput = {
-  create?: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantsInput, Prisma.provider_configsUncheckedCreateWithoutTenantsInput>
-  connectOrCreate?: Prisma.provider_configsCreateOrConnectWithoutTenantsInput
+export type provider_configsSumOrderByAggregateInput = {
+  key_version?: Prisma.SortOrder
+}
+
+export type provider_configsCreateNestedOneWithoutDefault_for_tenantsInput = {
+  create?: Prisma.XOR<Prisma.provider_configsCreateWithoutDefault_for_tenantsInput, Prisma.provider_configsUncheckedCreateWithoutDefault_for_tenantsInput>
+  connectOrCreate?: Prisma.provider_configsCreateOrConnectWithoutDefault_for_tenantsInput
   connect?: Prisma.provider_configsWhereUniqueInput
 }
 
-export type provider_configsUpdateOneWithoutTenantsNestedInput = {
-  create?: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantsInput, Prisma.provider_configsUncheckedCreateWithoutTenantsInput>
-  connectOrCreate?: Prisma.provider_configsCreateOrConnectWithoutTenantsInput
-  upsert?: Prisma.provider_configsUpsertWithoutTenantsInput
+export type provider_configsCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantInput, Prisma.provider_configsUncheckedCreateWithoutTenantInput> | Prisma.provider_configsCreateWithoutTenantInput[] | Prisma.provider_configsUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.provider_configsCreateOrConnectWithoutTenantInput | Prisma.provider_configsCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.provider_configsCreateManyTenantInputEnvelope
+  connect?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+}
+
+export type provider_configsUncheckedCreateNestedManyWithoutTenantInput = {
+  create?: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantInput, Prisma.provider_configsUncheckedCreateWithoutTenantInput> | Prisma.provider_configsCreateWithoutTenantInput[] | Prisma.provider_configsUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.provider_configsCreateOrConnectWithoutTenantInput | Prisma.provider_configsCreateOrConnectWithoutTenantInput[]
+  createMany?: Prisma.provider_configsCreateManyTenantInputEnvelope
+  connect?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+}
+
+export type provider_configsUpdateOneWithoutDefault_for_tenantsNestedInput = {
+  create?: Prisma.XOR<Prisma.provider_configsCreateWithoutDefault_for_tenantsInput, Prisma.provider_configsUncheckedCreateWithoutDefault_for_tenantsInput>
+  connectOrCreate?: Prisma.provider_configsCreateOrConnectWithoutDefault_for_tenantsInput
+  upsert?: Prisma.provider_configsUpsertWithoutDefault_for_tenantsInput
   disconnect?: Prisma.provider_configsWhereInput | boolean
   delete?: Prisma.provider_configsWhereInput | boolean
   connect?: Prisma.provider_configsWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.provider_configsUpdateToOneWithWhereWithoutTenantsInput, Prisma.provider_configsUpdateWithoutTenantsInput>, Prisma.provider_configsUncheckedUpdateWithoutTenantsInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.provider_configsUpdateToOneWithWhereWithoutDefault_for_tenantsInput, Prisma.provider_configsUpdateWithoutDefault_for_tenantsInput>, Prisma.provider_configsUncheckedUpdateWithoutDefault_for_tenantsInput>
+}
+
+export type provider_configsUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantInput, Prisma.provider_configsUncheckedCreateWithoutTenantInput> | Prisma.provider_configsCreateWithoutTenantInput[] | Prisma.provider_configsUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.provider_configsCreateOrConnectWithoutTenantInput | Prisma.provider_configsCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.provider_configsUpsertWithWhereUniqueWithoutTenantInput | Prisma.provider_configsUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.provider_configsCreateManyTenantInputEnvelope
+  set?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+  disconnect?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+  delete?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+  connect?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+  update?: Prisma.provider_configsUpdateWithWhereUniqueWithoutTenantInput | Prisma.provider_configsUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.provider_configsUpdateManyWithWhereWithoutTenantInput | Prisma.provider_configsUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.provider_configsScalarWhereInput | Prisma.provider_configsScalarWhereInput[]
+}
+
+export type provider_configsUncheckedUpdateManyWithoutTenantNestedInput = {
+  create?: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantInput, Prisma.provider_configsUncheckedCreateWithoutTenantInput> | Prisma.provider_configsCreateWithoutTenantInput[] | Prisma.provider_configsUncheckedCreateWithoutTenantInput[]
+  connectOrCreate?: Prisma.provider_configsCreateOrConnectWithoutTenantInput | Prisma.provider_configsCreateOrConnectWithoutTenantInput[]
+  upsert?: Prisma.provider_configsUpsertWithWhereUniqueWithoutTenantInput | Prisma.provider_configsUpsertWithWhereUniqueWithoutTenantInput[]
+  createMany?: Prisma.provider_configsCreateManyTenantInputEnvelope
+  set?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+  disconnect?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+  delete?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+  connect?: Prisma.provider_configsWhereUniqueInput | Prisma.provider_configsWhereUniqueInput[]
+  update?: Prisma.provider_configsUpdateWithWhereUniqueWithoutTenantInput | Prisma.provider_configsUpdateWithWhereUniqueWithoutTenantInput[]
+  updateMany?: Prisma.provider_configsUpdateManyWithWhereWithoutTenantInput | Prisma.provider_configsUpdateManyWithWhereWithoutTenantInput[]
+  deleteMany?: Prisma.provider_configsScalarWhereInput | Prisma.provider_configsScalarWhereInput[]
 }
 
 export type Enumprovider_typeFieldUpdateOperationsInput = {
   set?: $Enums.provider_type
 }
 
-export type provider_configsCreateWithoutTenantsInput = {
+export type provider_configsCreateWithoutDefault_for_tenantsInput = {
   id?: string
   name: string
   provider: $Enums.provider_type
-  api_key: string
+  api_key_ciphertext: string
+  api_key_last4?: string | null
+  key_version?: number
+  rotated_at?: Date | string | null
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  tenant: Prisma.tenantsCreateNestedOneWithoutOwned_provider_configsInput
+}
+
+export type provider_configsUncheckedCreateWithoutDefault_for_tenantsInput = {
+  id?: string
+  tenant_id: string
+  name: string
+  provider: $Enums.provider_type
+  api_key_ciphertext: string
+  api_key_last4?: string | null
+  key_version?: number
+  rotated_at?: Date | string | null
   sender_email?: string | null
   sender_name?: string | null
   created_at?: Date | string
 }
 
-export type provider_configsUncheckedCreateWithoutTenantsInput = {
-  id?: string
-  name: string
-  provider: $Enums.provider_type
-  api_key: string
-  sender_email?: string | null
-  sender_name?: string | null
-  created_at?: Date | string
-}
-
-export type provider_configsCreateOrConnectWithoutTenantsInput = {
+export type provider_configsCreateOrConnectWithoutDefault_for_tenantsInput = {
   where: Prisma.provider_configsWhereUniqueInput
-  create: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantsInput, Prisma.provider_configsUncheckedCreateWithoutTenantsInput>
+  create: Prisma.XOR<Prisma.provider_configsCreateWithoutDefault_for_tenantsInput, Prisma.provider_configsUncheckedCreateWithoutDefault_for_tenantsInput>
 }
 
-export type provider_configsUpsertWithoutTenantsInput = {
-  update: Prisma.XOR<Prisma.provider_configsUpdateWithoutTenantsInput, Prisma.provider_configsUncheckedUpdateWithoutTenantsInput>
-  create: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantsInput, Prisma.provider_configsUncheckedCreateWithoutTenantsInput>
+export type provider_configsCreateWithoutTenantInput = {
+  id?: string
+  name: string
+  provider: $Enums.provider_type
+  api_key_ciphertext: string
+  api_key_last4?: string | null
+  key_version?: number
+  rotated_at?: Date | string | null
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  default_for_tenants?: Prisma.tenantsCreateNestedManyWithoutProvider_configInput
+}
+
+export type provider_configsUncheckedCreateWithoutTenantInput = {
+  id?: string
+  name: string
+  provider: $Enums.provider_type
+  api_key_ciphertext: string
+  api_key_last4?: string | null
+  key_version?: number
+  rotated_at?: Date | string | null
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+  default_for_tenants?: Prisma.tenantsUncheckedCreateNestedManyWithoutProvider_configInput
+}
+
+export type provider_configsCreateOrConnectWithoutTenantInput = {
+  where: Prisma.provider_configsWhereUniqueInput
+  create: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantInput, Prisma.provider_configsUncheckedCreateWithoutTenantInput>
+}
+
+export type provider_configsCreateManyTenantInputEnvelope = {
+  data: Prisma.provider_configsCreateManyTenantInput | Prisma.provider_configsCreateManyTenantInput[]
+  skipDuplicates?: boolean
+}
+
+export type provider_configsUpsertWithoutDefault_for_tenantsInput = {
+  update: Prisma.XOR<Prisma.provider_configsUpdateWithoutDefault_for_tenantsInput, Prisma.provider_configsUncheckedUpdateWithoutDefault_for_tenantsInput>
+  create: Prisma.XOR<Prisma.provider_configsCreateWithoutDefault_for_tenantsInput, Prisma.provider_configsUncheckedCreateWithoutDefault_for_tenantsInput>
   where?: Prisma.provider_configsWhereInput
 }
 
-export type provider_configsUpdateToOneWithWhereWithoutTenantsInput = {
+export type provider_configsUpdateToOneWithWhereWithoutDefault_for_tenantsInput = {
   where?: Prisma.provider_configsWhereInput
-  data: Prisma.XOR<Prisma.provider_configsUpdateWithoutTenantsInput, Prisma.provider_configsUncheckedUpdateWithoutTenantsInput>
+  data: Prisma.XOR<Prisma.provider_configsUpdateWithoutDefault_for_tenantsInput, Prisma.provider_configsUncheckedUpdateWithoutDefault_for_tenantsInput>
 }
 
-export type provider_configsUpdateWithoutTenantsInput = {
+export type provider_configsUpdateWithoutDefault_for_tenantsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
-  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tenant?: Prisma.tenantsUpdateOneRequiredWithoutOwned_provider_configsNestedInput
+}
+
+export type provider_configsUncheckedUpdateWithoutDefault_for_tenantsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type provider_configsUncheckedUpdateWithoutTenantsInput = {
+export type provider_configsUpsertWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.provider_configsWhereUniqueInput
+  update: Prisma.XOR<Prisma.provider_configsUpdateWithoutTenantInput, Prisma.provider_configsUncheckedUpdateWithoutTenantInput>
+  create: Prisma.XOR<Prisma.provider_configsCreateWithoutTenantInput, Prisma.provider_configsUncheckedCreateWithoutTenantInput>
+}
+
+export type provider_configsUpdateWithWhereUniqueWithoutTenantInput = {
+  where: Prisma.provider_configsWhereUniqueInput
+  data: Prisma.XOR<Prisma.provider_configsUpdateWithoutTenantInput, Prisma.provider_configsUncheckedUpdateWithoutTenantInput>
+}
+
+export type provider_configsUpdateManyWithWhereWithoutTenantInput = {
+  where: Prisma.provider_configsScalarWhereInput
+  data: Prisma.XOR<Prisma.provider_configsUpdateManyMutationInput, Prisma.provider_configsUncheckedUpdateManyWithoutTenantInput>
+}
+
+export type provider_configsScalarWhereInput = {
+  AND?: Prisma.provider_configsScalarWhereInput | Prisma.provider_configsScalarWhereInput[]
+  OR?: Prisma.provider_configsScalarWhereInput[]
+  NOT?: Prisma.provider_configsScalarWhereInput | Prisma.provider_configsScalarWhereInput[]
+  id?: Prisma.UuidFilter<"provider_configs"> | string
+  tenant_id?: Prisma.UuidFilter<"provider_configs"> | string
+  name?: Prisma.StringFilter<"provider_configs"> | string
+  provider?: Prisma.Enumprovider_typeFilter<"provider_configs"> | $Enums.provider_type
+  api_key_ciphertext?: Prisma.StringFilter<"provider_configs"> | string
+  api_key_last4?: Prisma.StringNullableFilter<"provider_configs"> | string | null
+  key_version?: Prisma.IntFilter<"provider_configs"> | number
+  rotated_at?: Prisma.DateTimeNullableFilter<"provider_configs"> | Date | string | null
+  sender_email?: Prisma.StringNullableFilter<"provider_configs"> | string | null
+  sender_name?: Prisma.StringNullableFilter<"provider_configs"> | string | null
+  created_at?: Prisma.DateTimeFilter<"provider_configs"> | Date | string
+}
+
+export type provider_configsCreateManyTenantInput = {
+  id?: string
+  name: string
+  provider: $Enums.provider_type
+  api_key_ciphertext: string
+  api_key_last4?: string | null
+  key_version?: number
+  rotated_at?: Date | string | null
+  sender_email?: string | null
+  sender_name?: string | null
+  created_at?: Date | string
+}
+
+export type provider_configsUpdateWithoutTenantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
-  api_key?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  default_for_tenants?: Prisma.tenantsUpdateManyWithoutProvider_configNestedInput
+}
+
+export type provider_configsUncheckedUpdateWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  default_for_tenants?: Prisma.tenantsUncheckedUpdateManyWithoutProvider_configNestedInput
+}
+
+export type provider_configsUncheckedUpdateManyWithoutTenantInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.Enumprovider_typeFieldUpdateOperationsInput | $Enums.provider_type
+  api_key_ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  api_key_last4?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_version?: Prisma.IntFieldUpdateOperationsInput | number
+  rotated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sender_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sender_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -443,11 +770,11 @@ export type provider_configsUncheckedUpdateWithoutTenantsInput = {
  */
 
 export type Provider_configsCountOutputType = {
-  tenants: number
+  default_for_tenants: number
 }
 
 export type Provider_configsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  tenants?: boolean | Provider_configsCountOutputTypeCountTenantsArgs
+  default_for_tenants?: boolean | Provider_configsCountOutputTypeCountDefault_for_tenantsArgs
 }
 
 /**
@@ -463,71 +790,100 @@ export type Provider_configsCountOutputTypeDefaultArgs<ExtArgs extends runtime.T
 /**
  * Provider_configsCountOutputType without action
  */
-export type Provider_configsCountOutputTypeCountTenantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Provider_configsCountOutputTypeCountDefault_for_tenantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.tenantsWhereInput
 }
 
 
 export type provider_configsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenant_id?: boolean
   name?: boolean
   provider?: boolean
-  api_key?: boolean
+  api_key_ciphertext?: boolean
+  api_key_last4?: boolean
+  key_version?: boolean
+  rotated_at?: boolean
   sender_email?: boolean
   sender_name?: boolean
   created_at?: boolean
-  tenants?: boolean | Prisma.provider_configs$tenantsArgs<ExtArgs>
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
+  default_for_tenants?: boolean | Prisma.provider_configs$default_for_tenantsArgs<ExtArgs>
   _count?: boolean | Prisma.Provider_configsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["provider_configs"]>
 
 export type provider_configsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenant_id?: boolean
   name?: boolean
   provider?: boolean
-  api_key?: boolean
+  api_key_ciphertext?: boolean
+  api_key_last4?: boolean
+  key_version?: boolean
+  rotated_at?: boolean
   sender_email?: boolean
   sender_name?: boolean
   created_at?: boolean
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["provider_configs"]>
 
 export type provider_configsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  tenant_id?: boolean
   name?: boolean
   provider?: boolean
-  api_key?: boolean
+  api_key_ciphertext?: boolean
+  api_key_last4?: boolean
+  key_version?: boolean
+  rotated_at?: boolean
   sender_email?: boolean
   sender_name?: boolean
   created_at?: boolean
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["provider_configs"]>
 
 export type provider_configsSelectScalar = {
   id?: boolean
+  tenant_id?: boolean
   name?: boolean
   provider?: boolean
-  api_key?: boolean
+  api_key_ciphertext?: boolean
+  api_key_last4?: boolean
+  key_version?: boolean
+  rotated_at?: boolean
   sender_email?: boolean
   sender_name?: boolean
   created_at?: boolean
 }
 
-export type provider_configsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "provider" | "api_key" | "sender_email" | "sender_name" | "created_at", ExtArgs["result"]["provider_configs"]>
+export type provider_configsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenant_id" | "name" | "provider" | "api_key_ciphertext" | "api_key_last4" | "key_version" | "rotated_at" | "sender_email" | "sender_name" | "created_at", ExtArgs["result"]["provider_configs"]>
 export type provider_configsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  tenants?: boolean | Prisma.provider_configs$tenantsArgs<ExtArgs>
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
+  default_for_tenants?: boolean | Prisma.provider_configs$default_for_tenantsArgs<ExtArgs>
   _count?: boolean | Prisma.Provider_configsCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type provider_configsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type provider_configsIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type provider_configsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
+}
+export type provider_configsIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
+}
 
 export type $provider_configsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "provider_configs"
   objects: {
-    tenants: Prisma.$tenantsPayload<ExtArgs>[]
+    tenant: Prisma.$tenantsPayload<ExtArgs>
+    default_for_tenants: Prisma.$tenantsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    tenant_id: string
     name: string
     provider: $Enums.provider_type
-    api_key: string
+    api_key_ciphertext: string
+    api_key_last4: string | null
+    key_version: number
+    rotated_at: Date | null
     sender_email: string | null
     sender_name: string | null
     created_at: Date
@@ -925,7 +1281,8 @@ readonly fields: provider_configsFieldRefs;
  */
 export interface Prisma__provider_configsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  tenants<T extends Prisma.provider_configs$tenantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.provider_configs$tenantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$tenantsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tenant<T extends Prisma.tenantsDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tenantsDefaultArgs<ExtArgs>>): Prisma.Prisma__tenantsClient<runtime.Types.Result.GetResult<Prisma.$tenantsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  default_for_tenants<T extends Prisma.provider_configs$default_for_tenantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.provider_configs$default_for_tenantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$tenantsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -956,9 +1313,13 @@ export interface Prisma__provider_configsClient<T, Null = never, ExtArgs extends
  */
 export interface provider_configsFieldRefs {
   readonly id: Prisma.FieldRef<"provider_configs", 'String'>
+  readonly tenant_id: Prisma.FieldRef<"provider_configs", 'String'>
   readonly name: Prisma.FieldRef<"provider_configs", 'String'>
   readonly provider: Prisma.FieldRef<"provider_configs", 'provider_type'>
-  readonly api_key: Prisma.FieldRef<"provider_configs", 'String'>
+  readonly api_key_ciphertext: Prisma.FieldRef<"provider_configs", 'String'>
+  readonly api_key_last4: Prisma.FieldRef<"provider_configs", 'String'>
+  readonly key_version: Prisma.FieldRef<"provider_configs", 'Int'>
+  readonly rotated_at: Prisma.FieldRef<"provider_configs", 'DateTime'>
   readonly sender_email: Prisma.FieldRef<"provider_configs", 'String'>
   readonly sender_name: Prisma.FieldRef<"provider_configs", 'String'>
   readonly created_at: Prisma.FieldRef<"provider_configs", 'DateTime'>
@@ -1211,6 +1572,10 @@ export type provider_configsCreateManyAndReturnArgs<ExtArgs extends runtime.Type
    */
   data: Prisma.provider_configsCreateManyInput | Prisma.provider_configsCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.provider_configsIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1281,6 +1646,10 @@ export type provider_configsUpdateManyAndReturnArgs<ExtArgs extends runtime.Type
    * Limit how many provider_configs to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.provider_configsIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1350,9 +1719,9 @@ export type provider_configsDeleteManyArgs<ExtArgs extends runtime.Types.Extensi
 }
 
 /**
- * provider_configs.tenants
+ * provider_configs.default_for_tenants
  */
-export type provider_configs$tenantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type provider_configs$default_for_tenantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the tenants
    */

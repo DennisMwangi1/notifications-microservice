@@ -1,15 +1,19 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import prisma from '../config/prisma.config';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { RateLimiterService } from '../common/rate-limiter.service';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
+import { DbContextService } from '../common/db-context.service';
+import { AuthenticatedRequest } from '../common/actor-context';
 
 @Controller('api/v1/admin/stats')
 @UseGuards(AdminAuthGuard)
 export class StatsController {
-  constructor(private readonly rateLimiterService: RateLimiterService) {}
+  constructor(
+    private readonly rateLimiterService: RateLimiterService,
+    private readonly dbContext: DbContextService,
+  ) {}
 
   @Get()
-  async getDashboardStats() {
+  async getDashboardStats(@Req() req: AuthenticatedRequest) {
     const [
       totalTenants,
       activeTenants,
@@ -21,45 +25,53 @@ export class StatsController {
       statusBreakdown,
       activeTenantConfigs,
       distinctTenantTemplates,
-    ] = await Promise.all([
-      prisma.tenants.count(),
-      prisma.tenants.count({ where: { is_active: true } }),
-      prisma.templates.count(),
-      prisma.notification_logs.count(),
-      prisma.in_app_notifications.count(),
-      prisma.notification_logs.findMany({
-        orderBy: { sent_at: 'desc' },
-        take: 20,
-      }),
-      prisma.notification_logs.groupBy({
-        by: ['channel'],
-        _count: { channel: true },
-      }),
-      prisma.notification_logs.groupBy({
-        by: ['status'],
-        _count: { status: true },
-      }),
-      prisma.tenants.findMany({
-        where: { is_active: true },
-        select: {
-          id: true,
-          name: true,
-          rate_limit_per_minute: true,
-          daily_notification_cap: true,
-          max_template_count: true,
-        },
-        orderBy: { created_at: 'desc' },
-      }),
-      prisma.templates.findMany({
-        where: { tenant_id: { not: null } },
-        distinct: ['tenant_id', 'template_id'],
-        select: { tenant_id: true, template_id: true },
-      }),
-    ]);
+    ] = await this.dbContext.withActorContext(
+      req.actorContext,
+      (tx) =>
+        Promise.all([
+          tx.tenants.count(),
+          tx.tenants.count({ where: { is_active: true } }),
+          tx.templates.count(),
+          tx.notification_logs.count(),
+          tx.in_app_notifications.count(),
+          tx.notification_logs.findMany({
+            orderBy: { sent_at: 'desc' },
+            take: 20,
+          }),
+          tx.notification_logs.groupBy({
+            by: ['channel'],
+            _count: { channel: true },
+          }),
+          tx.notification_logs.groupBy({
+            by: ['status'],
+            _count: { status: true },
+          }),
+          tx.tenants.findMany({
+            where: { is_active: true },
+            select: {
+              id: true,
+              name: true,
+              rate_limit_per_minute: true,
+              daily_notification_cap: true,
+              max_template_count: true,
+            },
+            orderBy: { created_at: 'desc' },
+          }),
+          tx.templates.findMany({
+            where: { tenant_id: { not: null } },
+            distinct: ['tenant_id', 'template_id'],
+            select: { tenant_id: true, template_id: true },
+          }),
+        ]),
+    );
 
-    const unreadInApp = await prisma.in_app_notifications.count({
-      where: { status: 'UNREAD' },
-    });
+    const unreadInApp = await this.dbContext.withActorContext(
+      req.actorContext,
+      (tx) =>
+        tx.in_app_notifications.count({
+          where: { status: 'UNREAD' },
+        }),
+    );
 
     const templateCountByTenant = new Map<string, number>();
     for (const item of distinctTenantTemplates) {
