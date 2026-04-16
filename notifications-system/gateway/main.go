@@ -28,7 +28,8 @@ func main() {
 	// ─── Database Connection ────────────────────────────
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
-		log.Fatalf("DB_URL environment variable is required")
+		// TODO: In production, this should be provided via environment variable or secret management
+		dbURL = "postgres://admin:password@localhost:5432/notification_db"
 	}
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {

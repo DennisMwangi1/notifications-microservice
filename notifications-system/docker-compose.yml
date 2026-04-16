@@ -1,3 +1,4 @@
+#TODO: Readd network configuration for dokploy
 services:
   # The Central Nervous System
   kafka:
@@ -6,22 +7,22 @@ services:
       - "9092:9092"
     environment:
       KAFKA_NODE_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092"
       KAFKA_JMX_PORT: 9101
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
-      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      KAFKA_LISTENERS: "PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
       KAFKA_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-    networks:
-      - default
-      - dokploy-network
+    # networks:
+    #   - default
+    #   - dokploy-network
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -30,12 +31,12 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: notification-cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      DYNAMIC_CONFIG_ENABLED: 'true'
+      DYNAMIC_CONFIG_ENABLED: "true"
     depends_on:
       - kafka
-    networks:
-      - default
-      - dokploy-network
+    # networks:
+    #   - default
+    #   - dokploy-network
   # Primary Storage
   postgres:
     image: postgres:17-alpine
@@ -48,9 +49,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
-    networks:
-      - default
-      - dokploy-network
+    # networks:
+    #   - default
+    #   - dokploy-network
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
@@ -62,19 +63,18 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     depends_on:
       - postgres
-    networks:
-      - default
-      - dokploy-network
-
+    # networks:
+    #   - default
+    #   - dokploy-network
 
   # State Store
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
-    networks:
-      - default
-      - dokploy-network
+    # networks:
+    #   - default
+    #   - dokploy-network
 
   # Real-time Gateway
   centrifugo:
@@ -88,13 +88,13 @@ services:
     volumes:
       - ./centrifugo/config.yaml:/centrifugo/config.yaml
     command: centrifugo --config /centrifugo/config.yaml
-    networks:
-      - default
-      - dokploy-network
+    # networks:
+    #   - default
+    #   - dokploy-network
 
 volumes:
   postgres_data:
 
-networks:
-  dokploy-network:
-    external: true
+# networks:
+#   dokploy-network:
+#     external: true
