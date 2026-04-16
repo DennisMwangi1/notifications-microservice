@@ -1,8 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { API_URL } from '../../../../lib/api';
-import { authHeaders } from '../../../../lib/auth';
+import dynamic from "next/dynamic";
+import type * as Monaco from "monaco-editor";
+import type { MutableRefObject } from "react";
+import { useEffect, useRef, useState } from "react";
+import { API_URL } from "../../../../lib/api";
+import { authHeaders } from "../../../../lib/auth";
+import {
+  analyzeTemplateVariables,
+  parseSampleData,
+  type TemplateVariableAnalysis,
+} from "../../../../lib/template-analysis";
+
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+});
 
 const DEFAULT_MJML = `<mjml>
   <mj-body background-color="#f4f4f5">
@@ -28,326 +40,980 @@ const DEFAULT_MJML = `<mjml>
 
 const DEFAULT_SMS = `Hi {{name}}, your order {{orderId}} ({{amount}}) is confirmed! Track at {{action_url}}`;
 
-const DEFAULT_PUSH = `{"title": "Order Confirmed", "body": "Hi {{name}}, your order {{orderId}} has been confirmed!", "data": {"orderId": "{{orderId}}"}}`;
+const DEFAULT_PUSH = `{"title":"Order Confirmed","body":"Hi {{name}}, your order {{orderId}} has been confirmed!","data":{"orderId":"{{orderId}}"}}`;
 
 const DEFAULT_SAMPLE_DATA = JSON.stringify(
-    {
-        name: 'Jane Doe',
-        email: 'jane.doe@example.com',
-        userId: 'usr_abc123',
-        orderId: 'ORD-2025-0042',
-        amount: '$149.99',
-        company: 'Acme Corp',
-        action_url: 'https://example.com/track',
-        timestamp: new Date().toISOString(),
-        support_email: 'support@example.com',
+  {
+    name: "Jane Doe",
+    email: "jane.doe@example.com",
+    userId: "usr_abc123",
+    orderId: "ORD-2025-0042",
+    amount: "$149.99",
+    company: "Acme Corp",
+    action_url: "https://example.com/track",
+    timestamp: new Date().toISOString(),
+    support_email: "support@example.com",
+    user: {
+      profile: {
+        firstName: "Jane",
+        loyaltyTier: "Gold",
+      },
     },
-    null,
-    2
+  },
+  null,
+  2,
 );
 
-const channelDefaults: Record<string, string> = {
-    EMAIL: DEFAULT_MJML,
-    SMS: DEFAULT_SMS,
-    PUSH: DEFAULT_PUSH,
+const channelDefaults: Record<"EMAIL" | "SMS" | "PUSH", string> = {
+  EMAIL: DEFAULT_MJML,
+  SMS: DEFAULT_SMS,
+  PUSH: DEFAULT_PUSH,
 };
 
-export default function TemplatePlaygroundPage() {
-    const [channelType, setChannelType] = useState<'EMAIL' | 'SMS' | 'PUSH'>('EMAIL');
-    const [contentBody, setContentBody] = useState(DEFAULT_MJML);
-    const [subjectLine, setSubjectLine] = useState('Order Confirmed — {{orderId}}');
-    const [sampleData, setSampleData] = useState(DEFAULT_SAMPLE_DATA);
-    const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-    const [previewSubject, setPreviewSubject] = useState<string | null>(null);
-    const [warnings, setWarnings] = useState<string[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+const emptyAnalysis: TemplateVariableAnalysis = {
+  availableVariables: [],
+  referencedVariables: [],
+  missingVariables: [],
+  unusedVariables: [],
+  syntaxErrors: [],
+};
 
-    const handleChannelChange = (channel: 'EMAIL' | 'SMS' | 'PUSH') => {
-        setChannelType(channel);
-        setContentBody(channelDefaults[channel]);
-        setPreviewHtml(null);
-        setPreviewSubject(null);
-        setWarnings([]);
-        setError(null);
+type InspectorTab = "missing" | "referenced" | "available" | "unused";
+
+interface PreviewPayload {
+  html: string | null;
+  subject: string | null;
+  warnings: string[];
+  referenced_variables: string[];
+  missing_variables: string[];
+  unused_variables: string[];
+}
+
+interface TemplateLibraryEntry {
+  id: string;
+  name: string;
+  channel_type: "EMAIL" | "SMS" | "PUSH";
+  subject_line: string | null;
+  content_body: string;
+  sample_data: Record<string, unknown>;
+}
+
+function createHandlebarsSuggestions(
+  monaco: typeof Monaco,
+  availableVariablesRef: MutableRefObject<string[]>,
+) {
+  const buildSuggestions = (
+    model: Monaco.editor.ITextModel,
+    position: Monaco.Position,
+  ): Monaco.languages.CompletionList => {
+    const linePrefix = model.getValueInRange({
+      startLineNumber: position.lineNumber,
+      startColumn: 1,
+      endLineNumber: position.lineNumber,
+      endColumn: position.column,
+    });
+    const match = linePrefix.match(/\{\{\s*([a-zA-Z0-9_.]*)$/);
+
+    if (!match) {
+      return { suggestions: [] };
+    }
+
+    const typedPrefix = match[1] ?? "";
+    const startColumn = position.column - typedPrefix.length;
+    const range = new monaco.Range(
+      position.lineNumber,
+      startColumn,
+      position.lineNumber,
+      position.column,
+    );
+
+    return {
+      suggestions: availableVariablesRef.current
+        .filter(
+          (variablePath) =>
+            !typedPrefix || variablePath.startsWith(typedPrefix),
+        )
+        .map((variablePath) => ({
+          label: variablePath,
+          kind: monaco.languages.CompletionItemKind.Variable,
+          insertText: variablePath,
+          range,
+          detail: "Sample data variable",
+        })),
+    };
+  };
+
+  return [
+    monaco.languages.registerCompletionItemProvider("html", {
+      triggerCharacters: ["{", "."],
+      provideCompletionItems: (model, position) =>
+        buildSuggestions(model, position),
+    }),
+    monaco.languages.registerCompletionItemProvider("plaintext", {
+      triggerCharacters: ["{", "."],
+      provideCompletionItems: (model, position) =>
+        buildSuggestions(model, position),
+    }),
+  ];
+}
+
+export default function TemplatePlaygroundPage() {
+  const [channelType, setChannelType] = useState<"EMAIL" | "SMS" | "PUSH">(
+    "EMAIL",
+  );
+  const [contentBody, setContentBody] = useState(DEFAULT_MJML);
+  const [subjectLine, setSubjectLine] = useState(
+    "Order Confirmed - {{orderId}}",
+  );
+  const [sampleData, setSampleData] = useState(DEFAULT_SAMPLE_DATA);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewSubject, setPreviewSubject] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
+  const [libraryName, setLibraryName] = useState("");
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [templateLibrary, setTemplateLibrary] = useState<
+    TemplateLibraryEntry[]
+  >([]);
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [parsedSampleData, setParsedSampleData] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [liveAnalysis, setLiveAnalysis] =
+    useState<TemplateVariableAnalysis>(emptyAnalysis);
+  const [showDiagnosticsPanel, setShowDiagnosticsPanel] = useState(true);
+  const [showSampleDataPanel, setShowSampleDataPanel] = useState(true);
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("missing");
+  const [inspectorQuery, setInspectorQuery] = useState("");
+  const sampleEditorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(
+    null,
+  );
+  const monacoRef = useRef<typeof Monaco | null>(null);
+  const completionDisposablesRef = useRef<Monaco.IDisposable[]>([]);
+  const availableVariablesRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    const result = parseSampleData(sampleData);
+    setParsedSampleData(result.parsed);
+    setJsonError(result.error);
+  }, [sampleData]);
+
+  useEffect(() => {
+    if (!parsedSampleData) {
+      setLiveAnalysis(emptyAnalysis);
+      availableVariablesRef.current = [];
+      return;
+    }
+
+    const nextAnalysis = analyzeTemplateVariables(
+      contentBody,
+      parsedSampleData,
+      subjectLine,
+    );
+    setLiveAnalysis(nextAnalysis);
+    availableVariablesRef.current = nextAnalysis.availableVariables;
+  }, [contentBody, parsedSampleData, subjectLine]);
+
+  useEffect(() => {
+    const monaco = monacoRef.current;
+    const model = sampleEditorRef.current?.getModel();
+
+    if (!monaco || !model) {
+      return;
+    }
+
+    const markers = jsonError
+      ? [
+          {
+            severity: monaco.MarkerSeverity.Error,
+            message: jsonError,
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: 1,
+            endColumn: 1,
+          },
+        ]
+      : [];
+
+    monaco.editor.setModelMarkers(model, "playground-json-shape", markers);
+  }, [jsonError]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const fetchLibrary = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/admin/template-library`, {
+          headers: authHeaders(),
+        });
+        const json = await res.json();
+
+        if (!ignore && json.success) {
+          setTemplateLibrary(json.data);
+        }
+      } catch (fetchError) {
+        console.error("Failed to fetch template library:", fetchError);
+      }
     };
 
-    const handleRender = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        setWarnings([]);
+    fetchLibrary();
 
-        try {
-            let parsedSampleData: Record<string, unknown> = {};
-            try {
-                parsedSampleData = JSON.parse(sampleData);
-            } catch {
-                setError('Invalid JSON in sample data');
-                setLoading(false);
-                return;
-            }
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
-            const res = await fetch(`${API_URL}/api/v1/admin/templates/preview`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...authHeaders() },
-                body: JSON.stringify({
-                    content_body: contentBody,
-                    channel_type: channelType,
-                    subject_line: subjectLine || undefined,
-                    sample_data: parsedSampleData,
-                }),
-            });
+  useEffect(
+    () => () => {
+      completionDisposablesRef.current.forEach((disposable) =>
+        disposable.dispose(),
+      );
+      completionDisposablesRef.current = [];
+    },
+    [],
+  );
 
-            const json = await res.json();
+  const handleChannelChange = (channel: "EMAIL" | "SMS" | "PUSH") => {
+    setChannelType(channel);
+    setContentBody(channelDefaults[channel]);
+    setPreviewHtml(null);
+    setPreviewSubject(null);
+    setWarnings([]);
+    setError(null);
+    setSaveMessage(null);
+    setSaveError(null);
+  };
 
-            if (json.success && json.data) {
-                setPreviewHtml(json.data.html);
-                setPreviewSubject(json.data.subject);
-                setWarnings(json.data.warnings || []);
-            } else {
-                setError(json.message || 'Preview failed');
-                if (json.data?.warnings) setWarnings(json.data.warnings);
-            }
-        } catch {
-            setError('Failed to connect to preview API');
-        } finally {
-            setLoading(false);
-        }
-    }, [contentBody, channelType, subjectLine, sampleData]);
+  const handleTemplateEditorMount = (
+    editor: Monaco.editor.IStandaloneCodeEditor,
+    monaco: typeof Monaco,
+  ) => {
+    monacoRef.current = monaco;
 
-    return (
-        <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-neutral-200 pb-6 gap-4">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-neutral-900 mb-1 flex items-center gap-3">
-                        Template Playground
-                        <span className="text-xs font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-lg border border-neutral-200">Live Preview</span>
-                    </h2>
-                    <p className="text-sm text-neutral-500">
-                        Write MJML + Handlebars templates and preview rendered output in real-time.
-                    </p>
-                </div>
-                <button
-                    onClick={handleRender}
-                    disabled={loading}
-                    className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm ${loading
-                            ? 'bg-neutral-500 text-neutral-200 cursor-wait'
-                            : 'bg-neutral-900 hover:bg-neutral-800 text-white hover:shadow-lg'
-                        }`}
-                >
-                    {loading ? (
-                        <span className="flex items-center gap-2">
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                            Rendering...
-                        </span>
-                    ) : (
-                        <span className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
-                            </svg>
-                            Render Preview
-                        </span>
-                    )}
-                </button>
+    if (completionDisposablesRef.current.length === 0) {
+      completionDisposablesRef.current = createHandlebarsSuggestions(
+        monaco,
+        availableVariablesRef,
+      );
+    }
+
+    editor.updateOptions({ glyphMargin: false });
+  };
+
+  const handleSampleEditorMount = (
+    editor: Monaco.editor.IStandaloneCodeEditor,
+    monaco: typeof Monaco,
+  ) => {
+    sampleEditorRef.current = editor;
+    monacoRef.current = monaco;
+  };
+
+  const handleRender = async () => {
+    if (!parsedSampleData) {
+      setError(jsonError || "Sample data must be a valid JSON object.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setWarnings([]);
+
+    try {
+      const res = await fetch(`${API_URL}/api/v1/admin/templates/preview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          content_body: contentBody,
+          channel_type: channelType,
+          subject_line: subjectLine || undefined,
+          sample_data: parsedSampleData,
+        }),
+      });
+
+      const json = (await res.json()) as {
+        success: boolean;
+        data?: PreviewPayload;
+        message?: string;
+      };
+
+      if (json.success && json.data) {
+        setPreviewHtml(json.data.html);
+        setPreviewSubject(json.data.subject);
+        setWarnings(json.data.warnings || []);
+      } else {
+        setError(json.message || "Preview failed");
+        setWarnings(json.data?.warnings || []);
+      }
+    } catch {
+      setError("Failed to connect to preview API");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!libraryName.trim()) {
+      setSaveError("Library name is required before saving.");
+      setSaveMessage(null);
+      return;
+    }
+
+    if (!parsedSampleData) {
+      setSaveError(jsonError || "Sample data must be a valid JSON object.");
+      setSaveMessage(null);
+      return;
+    }
+
+    setSaveLoading(true);
+    setSaveError(null);
+    setSaveMessage(null);
+
+    try {
+      const res = await fetch(`${API_URL}/api/v1/admin/template-library`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          name: libraryName.trim(),
+          channel_type: channelType,
+          subject_line: channelType === "PUSH" ? null : subjectLine || null,
+          content_body: contentBody,
+          sample_data: parsedSampleData,
+        }),
+      });
+      const json = (await res.json()) as {
+        success: boolean;
+        data?: TemplateLibraryEntry;
+        message?: string;
+      };
+
+      if (json.success && json.data) {
+        setTemplateLibrary((currentEntries) => [
+          json.data as TemplateLibraryEntry,
+          ...currentEntries,
+        ]);
+        setSaveMessage(
+          `Saved "${json.data.name}" to the reusable template library.`,
+        );
+        setLibraryName("");
+      } else {
+        setSaveError(json.message || "Failed to save template.");
+      }
+    } catch {
+      setSaveError("Failed to save template to the reusable library.");
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const recentTemplates = templateLibrary
+    .filter((entry) => entry.channel_type === channelType)
+    .slice(0, 6);
+  const isJsonValid = !!parsedSampleData && !jsonError;
+  const diagnostics = liveAnalysis;
+  const cardShell =
+    "rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_20px_70px_-40px_rgba(15,23,42,0.28)]";
+  const cardHeader =
+    "flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-5 sm:px-6";
+  const cardBody = "p-5 sm:p-6";
+  const sectionLabel =
+    "block text-[11px] uppercase tracking-[0.22em] font-bold text-slate-500";
+  const editorOptions = {
+    minimap: { enabled: false },
+    fontSize: 13,
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+    scrollBeyondLastLine: false,
+    wordWrap: "on" as const,
+    lineNumbersMinChars: 3,
+    padding: { top: 12, bottom: 12 },
+  };
+  const channelLabel =
+    channelType === "EMAIL"
+      ? "MJML + Handlebars Template"
+      : channelType === "SMS"
+        ? "Text Template"
+        : "Push Template";
+  const inspectorItemsByTab: Record<InspectorTab, string[]> = {
+    missing: diagnostics.missingVariables,
+    referenced: diagnostics.referencedVariables,
+    available: diagnostics.availableVariables,
+    unused: diagnostics.unusedVariables,
+  };
+  const inspectorLabels: Record<InspectorTab, string> = {
+    missing: "Missing",
+    referenced: "Referenced",
+    available: "Available",
+    unused: "Unused",
+  };
+  const inspectorDescriptions: Record<InspectorTab, string> = {
+    missing: "Variables used in the template but not present in sample data.",
+    referenced:
+      "Every Handlebars variable currently referenced in the template or subject.",
+    available:
+      "Paths discovered from the current JSON payload for autocomplete and validation.",
+    unused:
+      "Leaf-level payload fields that are currently not used by the template.",
+  };
+  const filteredInspectorItems = inspectorItemsByTab[inspectorTab].filter(
+    (item) => item.toLowerCase().includes(inspectorQuery.trim().toLowerCase()),
+  );
+  const healthCards = [
+    {
+      label: "Missing",
+      value: diagnostics.missingVariables.length,
+      tone:
+        diagnostics.missingVariables.length > 0
+          ? "border-amber-200 bg-amber-50 text-amber-700"
+          : "border-emerald-200 bg-emerald-50 text-emerald-700",
+    },
+    {
+      label: "Syntax",
+      value: diagnostics.syntaxErrors.length,
+      tone:
+        diagnostics.syntaxErrors.length > 0
+          ? "border-rose-200 bg-rose-50 text-rose-700"
+          : "border-emerald-200 bg-emerald-50 text-emerald-700",
+    },
+    {
+      label: "Referenced",
+      value: diagnostics.referencedVariables.length,
+      tone: "border-slate-200 bg-slate-50 text-slate-700",
+    },
+    {
+      label: "Unused",
+      value: diagnostics.unusedVariables.length,
+      tone: "border-slate-200 bg-slate-50 text-slate-700",
+    },
+  ];
+  const previewFrameHeight = viewMode === "mobile" ? "720px" : "800px";
+
+  return (
+    <div className="mx-auto max-w-[1760px] space-y-6 pb-32 animate-in fade-in duration-500">
+      <section className={`${cardShell} overflow-hidden`}>
+        <div className="bg-[linear-gradient(135deg,#f8fafc_0%,#eef2ff_42%,#ffffff_100%)] px-5 py-6 sm:px-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-md">
+              <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">
+                Template Playground
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-600">
+                Use the playground to iterate on MJML and Handlebars, inspect
+                variable coverage, and compare the rendered output as you refine
+                each template.
+              </p>
             </div>
 
-            {/* Channel Selector — semantic colors kept for channel badges */}
-            <div className="flex gap-3">
-                {(['EMAIL', 'SMS', 'PUSH'] as const).map((ch) => (
-                    <button
-                        key={ch}
-                        onClick={() => handleChannelChange(ch)}
-                        className={`px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${channelType === ch
-                                ? ch === 'EMAIL'
-                                    ? 'bg-sky-50 text-sky-600 border-sky-200 ring-2 ring-sky-500/10'
-                                    : ch === 'SMS'
-                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200 ring-2 ring-emerald-500/10'
-                                        : 'bg-amber-50 text-amber-600 border-amber-200 ring-2 ring-amber-500/10'
-                                : 'bg-white text-neutral-400 border-neutral-200 hover:border-neutral-300'
-                            }`}
-                    >
-                        {ch}
-                    </button>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] lg:min-w-[720px]">
+              <input
+                type="text"
+                value={libraryName}
+                onChange={(event) => setLibraryName(event.target.value)}
+                placeholder="Reusable template name"
+                className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <button
+                onClick={handleSaveTemplate}
+                disabled={saveLoading || !isJsonValid || !libraryName.trim()}
+                className={`rounded-2xl px-5 py-3 text-sm font-semibold transition ${
+                  saveLoading || !isJsonValid || !libraryName.trim()
+                    ? "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                    : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                {saveLoading ? "Saving..." : "Save To Library"}
+              </button>
+              <button
+                onClick={handleRender}
+                disabled={loading || !isJsonValid}
+                className={`rounded-2xl px-6 py-3 text-sm font-semibold transition ${
+                  loading || !isJsonValid
+                    ? "cursor-not-allowed bg-slate-200 text-slate-400"
+                    : "bg-indigo-500 text-white hover:bg-indigo-400"
+                }`}
+              >
+                {loading ? "Rendering..." : "Render Preview"}
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-6 2xl:flex-row 2xl:items-start 2xl:justify-between">
+            <div className="flex flex-wrap items-center gap-3 2xl:ml-auto 2xl:justify-end">
+              <div className="inline-flex rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm">
+                {(["EMAIL", "SMS", "PUSH"] as const).map((channel) => (
+                  <button
+                    key={channel}
+                    onClick={() => handleChannelChange(channel)}
+                    className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] transition ${
+                      channelType === channel
+                        ? channel === "EMAIL"
+                          ? "bg-sky-50 text-sky-700"
+                          : channel === "SMS"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-amber-50 text-amber-700"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {channel}
+                  </button>
                 ))}
+              </div>
+
+              <button
+                onClick={() => setShowDiagnosticsPanel((current) => !current)}
+                className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 transition hover:border-slate-300 hover:bg-white"
+              >
+                {showDiagnosticsPanel ? "Hide Diagnostics" : "Show Diagnostics"}
+              </button>
             </div>
-
-            {/* Warnings / Errors — semantic colors kept */}
-            {error && (
-                <div className="flex items-start gap-2.5 bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200">
-                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>
-                    {error}
-                </div>
-            )}
-            {warnings.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl text-sm space-y-1 animate-in fade-in duration-200">
-                    <p className="font-bold text-xs uppercase tracking-wider text-amber-600 mb-1">MJML Warnings</p>
-                    {warnings.map((w, i) => (
-                        <p key={i} className="text-xs font-mono">{w}</p>
-                    ))}
-                </div>
-            )}
-
-            {/* Split Editor + Preview */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Editor Panel */}
-                <div className="space-y-4">
-                    {/* Subject Line (EMAIL only) */}
-                    {channelType === 'EMAIL' && (
-                        <div>
-                            <label className="block text-xs uppercase tracking-wider font-bold text-neutral-500 mb-2">Subject Line</label>
-                            <input
-                                type="text"
-                                value={subjectLine}
-                                onChange={(e) => setSubjectLine(e.target.value)}
-                                placeholder="e.g. Your invoice for {{orderId}}"
-                                className="w-full bg-white border border-neutral-300 rounded-xl px-4 py-3 text-sm font-mono text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-400 shadow-sm placeholder-neutral-400"
-                            />
-                        </div>
-                    )}
-
-                    {/* Template Body */}
-                    <div>
-                        <label className="block text-xs uppercase tracking-wider font-bold text-neutral-500 mb-2">
-                            {channelType === 'EMAIL' ? 'MJML + Handlebars Template' : channelType === 'SMS' ? 'Text Template' : 'Push JSON Template'}
-                        </label>
-                        <textarea
-                            value={contentBody}
-                            onChange={(e) => setContentBody(e.target.value)}
-                            rows={18}
-                            spellCheck={false}
-                            className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-4 py-4 text-sm font-mono text-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-500/50 shadow-inner whitespace-pre custom-scrollbar leading-relaxed selection:bg-neutral-500/30"
-                        />
-                    </div>
-
-                    {/* Sample Data */}
-                    <div>
-                        <label className="block text-xs uppercase tracking-wider font-bold text-neutral-500 mb-2 flex items-center gap-2">
-                            Sample Data (JSON)
-                            <span className="text-[9px] text-neutral-400 normal-case tracking-normal font-medium">Used to fill Handlebars variables</span>
-                        </label>
-                        <textarea
-                            value={sampleData}
-                            onChange={(e) => setSampleData(e.target.value)}
-                            rows={8}
-                            spellCheck={false}
-                            className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-4 py-4 text-sm font-mono text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-400 shadow-sm whitespace-pre custom-scrollbar leading-relaxed"
-                        />
-                    </div>
-                </div>
-
-                {/* Preview Panel */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <label className="block text-xs uppercase tracking-wider font-bold text-neutral-500">
-                            Rendered Preview
-                        </label>
-                        {channelType === 'EMAIL' && (
-                            <div className="flex bg-neutral-100 rounded-lg p-0.5 border border-neutral-200">
-                                <button
-                                    onClick={() => setViewMode('desktop')}
-                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${viewMode === 'desktop' ? 'bg-white text-neutral-700 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'
-                                        }`}
-                                >
-                                    <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
-                                    </svg>
-                                    Desktop
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('mobile')}
-                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${viewMode === 'mobile' ? 'bg-white text-neutral-700 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'
-                                        }`}
-                                >
-                                    <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-                                    </svg>
-                                    Mobile
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Subject Preview */}
-                    {previewSubject && (
-                        <div className="bg-white border border-neutral-200 rounded-xl px-4 py-3">
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 mb-1">Subject</p>
-                            <p className="text-sm font-semibold text-neutral-800">{previewSubject}</p>
-                        </div>
-                    )}
-
-                    {/* HTML Preview */}
-                    {channelType === 'EMAIL' ? (
-                        <div
-                            className={`bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${viewMode === 'mobile' ? 'max-w-[375px] mx-auto' : 'w-full'
-                                }`}
-                        >
-                            {previewHtml ? (
-                                <iframe
-                                    srcDoc={previewHtml}
-                                    className="w-full border-0"
-                                    style={{ minHeight: '600px' }}
-                                    title="Email Preview"
-                                    sandbox="allow-same-origin"
-                                />
-                            ) : (
-                                <div className="h-96 flex flex-col items-center justify-center text-neutral-300 gap-3">
-                                    <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" strokeWidth={0.5} stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H6.911a2.25 2.25 0 00-2.15 1.588L2.35 12.838c-.066.214-.1.437-.1.661z" />
-                                    </svg>
-                                    <p className="text-sm font-medium">Click &quot;Render Preview&quot; to see your email</p>
-                                    <p className="text-xs text-neutral-300">MJML → HTML compilation happens server-side</p>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        /* SMS / Push Preview */
-                        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
-                            {previewHtml ? (
-                                <div className="p-6">
-                                    {channelType === 'SMS' ? (
-                                        /* SMS bubble — semantic green kept */
-                                        <div className="max-w-sm mx-auto">
-                                            <div className="bg-emerald-500 text-white px-5 py-3.5 rounded-2xl rounded-bl-md text-sm leading-relaxed shadow-sm">
-                                                {previewHtml}
-                                            </div>
-                                            <p className="text-[10px] text-neutral-400 mt-2 ml-1">Preview · Not actually sent</p>
-                                        </div>
-                                    ) : (
-                                        /* Push notification card */
-                                        <div className="max-w-sm mx-auto bg-neutral-50 rounded-2xl border border-neutral-200 p-4 shadow-sm">
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center shrink-0">
-                                                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-                                                    </svg>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <pre className="text-sm text-neutral-800 font-mono whitespace-pre-wrap leading-relaxed">{previewHtml}</pre>
-                                                </div>
-                                            </div>
-                                            <p className="text-[10px] text-neutral-400 mt-3">Preview · Not actually sent</p>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="h-48 flex flex-col items-center justify-center text-neutral-300 gap-3">
-                                    <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" strokeWidth={0.5} stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                                    </svg>
-                                    <p className="text-sm font-medium">Click &quot;Render Preview&quot; to see your {channelType.toLowerCase()} message</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
+          </div>
         </div>
-    );
+      </section>
+
+      {(error || saveError || saveMessage) && (
+        <section className="grid gap-3">
+          {error && (
+            <div className="flex items-start gap-2.5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              <svg
+                className="mt-0.5 h-4 w-4 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                />
+              </svg>
+              {error}
+            </div>
+          )}
+          {saveError && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              {saveError}
+            </div>
+          )}
+          {saveMessage && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+              {saveMessage}
+            </div>
+          )}
+        </section>
+      )}
+
+      <div
+        className={`grid grid-cols-1 gap-6 ${
+          showDiagnosticsPanel
+            ? "xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.78fr)_minmax(360px,0.95fr)]"
+            : "xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)]"
+        }`}
+      >
+        <section className={`${cardShell} order-1 overflow-hidden`}>
+          <div className={cardHeader}>
+            <h3 className="mt-1 text-lg font-semibold text-slate-900">
+              Editor Workspace
+            </h3>
+          </div>
+
+          <div className={`${cardBody} space-y-5`}>
+            {channelType === "EMAIL" && (
+              <div className="space-y-2">
+                <label className={sectionLabel}>Subject Line</label>
+                <input
+                  type="text"
+                  value={subjectLine}
+                  onChange={(event) => setSubjectLine(event.target.value)}
+                  placeholder="e.g. Your invoice for {{orderId}}"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-mono text-slate-800 shadow-sm outline-none transition focus:border-indigo-500/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <label className={sectionLabel}>{channelLabel}</label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Type{" "}
+                    <span className="font-mono text-slate-700">{"{{"}</span> to
+                    trigger variable suggestions from the current sample
+                    payload.
+                  </p>
+                </div>
+                <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                  {diagnostics.referencedVariables.length} referenced
+                </div>
+              </div>
+              <div className="overflow-hidden rounded-[1.5rem] border border-neutral-900 shadow-sm">
+                <MonacoEditor
+                  height="560px"
+                  language={channelType === "EMAIL" ? "html" : "plaintext"}
+                  theme="vs-dark"
+                  value={contentBody}
+                  onChange={(value) => setContentBody(value || "")}
+                  onMount={handleTemplateEditorMount}
+                  options={editorOptions}
+                />
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-50/60">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                <div>
+                  <p className={sectionLabel}>Sample Data</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Keep JSON close to the editor, but collapse it when you want
+                    more room for template work.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] ${
+                      jsonError
+                        ? "bg-rose-50 text-rose-600"
+                        : "bg-emerald-50 text-emerald-600"
+                    }`}
+                  >
+                    {jsonError ? "Needs Fixing" : "Valid"}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setShowSampleDataPanel((current) => !current)
+                    }
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                  >
+                    {showSampleDataPanel ? "Collapse" : "Expand"}
+                  </button>
+                </div>
+              </div>
+
+              {showSampleDataPanel ? (
+                <div className="space-y-3 px-4 py-4">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white shadow-sm">
+                    <MonacoEditor
+                      height="260px"
+                      language="json"
+                      theme="vs"
+                      value={sampleData}
+                      onChange={(value) => setSampleData(value || "")}
+                      onMount={handleSampleEditorMount}
+                      options={editorOptions}
+                    />
+                  </div>
+                  {jsonError ? (
+                    <p className="text-sm font-medium text-rose-600">
+                      {jsonError}
+                    </p>
+                  ) : (
+                    <p className="text-xs font-medium text-emerald-600">
+                      Sample JSON is valid and exposes{" "}
+                      {diagnostics.availableVariables.length} variable path
+                      {diagnostics.availableVariables.length === 1
+                        ? ""
+                        : "s"}{" "}
+                      for autocomplete.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 text-sm text-slate-600">
+                  <p>
+                    {jsonError
+                      ? "JSON has validation errors and needs attention before rendering."
+                      : `JSON is valid with ${diagnostics.availableVariables.length} available variable path${diagnostics.availableVariables.length === 1 ? "" : "s"}.`}
+                  </p>
+                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500">
+                    {sampleData.split("\n").length} lines
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {showDiagnosticsPanel && (
+          <aside className="order-3 xl:order-2 xl:sticky xl:top-6 xl:self-start">
+            <section className={cardShell}>
+              <div className={cardHeader}>
+                <div>
+                  <p className={sectionLabel}>Diagnostics</p>
+                </div>
+              </div>
+
+              <div className={`${cardBody} space-y-5`}>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.keys(inspectorItemsByTab) as InspectorTab[]).map(
+                      (tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setInspectorTab(tab)}
+                          className={`rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] transition ${
+                            inspectorTab === tab
+                              ? tab === "missing"
+                                ? "border-amber-200 bg-amber-50 text-amber-700"
+                                : "border-slate-300 bg-slate-900 text-white"
+                              : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                          }`}
+                        >
+                          {inspectorLabels[tab]} (
+                          {inspectorItemsByTab[tab].length})
+                        </button>
+                      ),
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={inspectorQuery}
+                      onChange={(event) =>
+                        setInspectorQuery(event.target.value)
+                      }
+                      placeholder={`Search ${inspectorLabels[inspectorTab].toLowerCase()} variables`}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-500/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                    <p className="text-xs leading-5 text-slate-500">
+                      {inspectorDescriptions[inspectorTab]}
+                    </p>
+                  </div>
+
+                  <div
+                    className={`rounded-[1.4rem] border p-4 ${
+                      inspectorTab === "missing"
+                        ? "border-amber-200 bg-amber-50/70"
+                        : "border-slate-200 bg-slate-50/70"
+                    }`}
+                  >
+                    {filteredInspectorItems.length > 0 ? (
+                      <div className="flex max-h-[320px] flex-wrap gap-2 overflow-y-auto pr-1">
+                        {filteredInspectorItems.map((item) => (
+                          <span
+                            key={item}
+                            className={`rounded-full border bg-white px-2.5 py-1 text-[11px] font-mono ${
+                              inspectorTab === "missing"
+                                ? "border-amber-200 text-amber-700"
+                                : "border-slate-200 text-slate-700"
+                            }`}
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">
+                        {inspectorQuery.trim()
+                          ? `No ${inspectorLabels[inspectorTab].toLowerCase()} variables match that search.`
+                          : inspectorTab === "missing"
+                            ? "No missing variables detected. The sample payload currently covers everything referenced."
+                            : `No ${inspectorLabels[inspectorTab].toLowerCase()} variables to show yet.`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div
+                    className={`rounded-[1.4rem] border p-4 ${
+                      diagnostics.syntaxErrors.length > 0
+                        ? "border-rose-200 bg-rose-50"
+                        : "border-emerald-200 bg-emerald-50"
+                    }`}
+                  >
+                    <p
+                      className={`mb-3 text-[10px] font-bold uppercase tracking-[0.22em] ${
+                        diagnostics.syntaxErrors.length > 0
+                          ? "text-rose-700"
+                          : "text-emerald-700"
+                      }`}
+                    >
+                      Handlebars Syntax Health
+                    </p>
+                    {diagnostics.syntaxErrors.length > 0 ? (
+                      <div className="space-y-2">
+                        {diagnostics.syntaxErrors.map((syntaxError) => (
+                          <p
+                            key={syntaxError}
+                            className="text-xs font-mono whitespace-pre-wrap text-rose-700"
+                          >
+                            {syntaxError}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-emerald-700">
+                        No Handlebars syntax issues detected.
+                      </p>
+                    )}
+                  </div>
+
+                  {warnings.length > 0 && (
+                    <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 p-4">
+                      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                        Render Warnings
+                      </p>
+                      <div className="space-y-2">
+                        {warnings.map((warning, index) => (
+                          <p
+                            key={index}
+                            className="text-xs font-mono whitespace-pre-wrap text-amber-700"
+                          >
+                            {warning}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          </aside>
+        )}
+
+        <aside
+          className={`${showDiagnosticsPanel ? "order-2 xl:order-3" : "order-2"} xl:sticky xl:top-6 xl:self-start`}
+        >
+          <section className={`${cardShell} overflow-hidden`}>
+            <div className={cardHeader}>
+              <div>
+                <p className={sectionLabel}>Preview</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-900">
+                  Rendered Output
+                </h3>
+              </div>
+              {channelType === "EMAIL" && (
+                <div className="flex rounded-xl border border-slate-200 bg-slate-100 p-0.5">
+                  <button
+                    onClick={() => setViewMode("desktop")}
+                    className={`rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] transition ${
+                      viewMode === "desktop"
+                        ? "bg-white text-slate-700 shadow-sm"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Desktop
+                  </button>
+                  <button
+                    onClick={() => setViewMode("mobile")}
+                    className={`rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] transition ${
+                      viewMode === "mobile"
+                        ? "bg-white text-slate-700 shadow-sm"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Mobile
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className={`${cardBody} space-y-4`}>
+              {previewSubject && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                    Subject
+                  </p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {previewSubject}
+                  </p>
+                </div>
+              )}
+
+              {channelType === "EMAIL" ? (
+                <div
+                  className={`overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-300 ${
+                    viewMode === "mobile" ? "mx-auto max-w-[390px]" : "w-full"
+                  }`}
+                >
+                  {previewHtml ? (
+                    <iframe
+                      srcDoc={previewHtml}
+                      className="w-full border-0"
+                      style={{ height: previewFrameHeight }}
+                      title="Email Preview"
+                      sandbox="allow-same-origin"
+                    />
+                  ) : (
+                    <div className="flex h-[520px] flex-col items-center justify-center gap-3 px-6 text-center text-slate-300">
+                      <svg
+                        className="h-16 w-16"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={0.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H6.911a2.25 2.25 0 00-2.15 1.588L2.35 12.838c-.066.214-.1.437-.1.661z"
+                        />
+                      </svg>
+                      <p className="text-sm font-medium text-slate-500">
+                        Render the template to see the email output.
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        The preview column stays pinned so changes are easier to
+                        evaluate while you edit.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+                  {previewHtml ? (
+                    <div className="min-h-[420px] p-6">
+                      {channelType === "SMS" ? (
+                        <div className="mx-auto max-w-sm">
+                          <div className="rounded-2xl rounded-bl-md bg-emerald-500 px-5 py-3.5 text-sm leading-relaxed text-white shadow-sm">
+                            {previewHtml}
+                          </div>
+                          <p className="ml-1 mt-2 text-[10px] text-slate-400">
+                            Preview only
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mx-auto max-w-sm rounded-2xl border border-slate-100 bg-slate-50/70 p-4 shadow-sm">
+                          <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-slate-800">
+                            {previewHtml}
+                          </pre>
+                          <p className="mt-3 text-[10px] text-slate-400">
+                            Preview only
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex h-[420px] flex-col items-center justify-center gap-3 px-6 text-center text-slate-300">
+                      <svg
+                        className="h-12 w-12"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={0.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+                        />
+                      </svg>
+                      <p className="text-sm font-medium text-slate-500">
+                        Render the template to preview the{" "}
+                        {channelType.toLowerCase()} output.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
 }

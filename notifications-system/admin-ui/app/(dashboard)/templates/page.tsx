@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { API_URL } from '../../../lib/api';
 import { authHeaders } from '../../../lib/auth';
@@ -19,6 +20,16 @@ interface Template {
     created_at: string | null;
 }
 
+interface TemplateLibraryEntry {
+    id: string;
+    name: string;
+    channel_type: 'EMAIL' | 'SMS' | 'PUSH';
+    subject_line: string | null;
+    content_body: string;
+    sample_data: Record<string, unknown>;
+    created_at: string;
+}
+
 // Semantic channel colors (RGB — kept for meaning)
 const channelBadge: Record<string, string> = {
     EMAIL: 'bg-sky-50 text-sky-600 border-sky-200',
@@ -29,6 +40,7 @@ const channelBadge: Record<string, string> = {
 export default function TemplatesPage() {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [tenants, setTenants] = useState<Tenant[]>([]);
+    const [templateLibrary, setTemplateLibrary] = useState<TemplateLibraryEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Editor Modal
@@ -44,19 +56,26 @@ export default function TemplatesPage() {
     const [detailTemplate, setDetailTemplate] = useState<Template | null>(null);
     const [versionHistory, setVersionHistory] = useState<Template[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [libraryDetail, setLibraryDetail] = useState<TemplateLibraryEntry | null>(null);
 
     useEffect(() => { fetchData(); }, []);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [tplRes, tntRes] = await Promise.all([
+            const [tplRes, tntRes, libraryRes] = await Promise.all([
                 fetch(`${API_URL}/api/v1/admin/templates`, { headers: authHeaders() }),
-                fetch(`${API_URL}/api/v1/admin/tenants`, { headers: authHeaders() })
+                fetch(`${API_URL}/api/v1/admin/tenants`, { headers: authHeaders() }),
+                fetch(`${API_URL}/api/v1/admin/template-library`, { headers: authHeaders() }),
             ]);
-            const [tplJson, tntJson] = await Promise.all([tplRes.json(), tntRes.json()]);
+            const [tplJson, tntJson, libraryJson] = await Promise.all([
+                tplRes.json(),
+                tntRes.json(),
+                libraryRes.json(),
+            ]);
             if (tplJson.success) setTemplates(tplJson.data.filter((t: Template) => t.tenant_id === null));
             if (tntJson.success) setTenants(tntJson.data);
+            if (libraryJson.success) setTemplateLibrary(libraryJson.data);
         } catch (err) { console.error('Failed to fetch data:', err); }
         finally { setLoading(false); }
     };
@@ -134,6 +153,28 @@ export default function TemplatesPage() {
         }, {})
     );
 
+    const countSampleDataLeaves = (value: unknown): number => {
+        if (Array.isArray(value)) {
+            if (value.length === 0) {
+                return 1;
+            }
+
+            return value.reduce((total, item) => total + countSampleDataLeaves(item), 0);
+        }
+
+        if (value && typeof value === 'object') {
+            const entries = Object.values(value as Record<string, unknown>);
+
+            if (entries.length === 0) {
+                return 1;
+            }
+
+            return entries.reduce((total, item) => total + countSampleDataLeaves(item), 0);
+        }
+
+        return 1;
+    };
+
     const inputClasses = "w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white transition-all shadow-sm";
 
     return (
@@ -141,17 +182,45 @@ export default function TemplatesPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-100 pb-6 gap-4">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">Global Templates</h2>
-                    <p className="text-sm text-slate-500">Manage generic baseline configurations (like &quot;global.success&quot;) reusable by any tenant.</p>
+                    <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">Template Library</h2>
+                    <p className="text-sm text-slate-500">Manage published global defaults and reusable tenant starter templates from one place.</p>
                 </div>
-                <button onClick={() => { closeModal(); setIsModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 px-5 py-2.5 rounded-2xl font-medium transition-all shadow-sm">+ Publish Global Default</button>
+                <div className="flex flex-wrap gap-3">
+                    <Link href="/templates/playground" className="px-5 py-2.5 rounded-2xl font-medium border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm">
+                        Open Playground
+                    </Link>
+                    <button onClick={() => { closeModal(); setIsModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 px-5 py-2.5 rounded-2xl font-medium transition-all shadow-sm">+ Publish Global Default</button>
+                </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-[0.24em] font-bold text-slate-400">Global Defaults</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900">{latestTemplates.length}</p>
+                    <p className="mt-1 text-sm text-slate-500">Published baseline templates available to all tenant routing flows.</p>
+                </div>
+                <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-[0.24em] font-bold text-slate-400">Tenant Library</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900">{templateLibrary.length}</p>
+                    <p className="mt-1 text-sm text-slate-500">Reusable building blocks saved from the playground for routing overrides.</p>
+                </div>
+                <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-[0.24em] font-bold text-slate-400">Projects Covered</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900">{tenants.length}</p>
+                    <p className="mt-1 text-sm text-slate-500">Active tenant projects that can consume global defaults or library-based overrides.</p>
+                </div>
             </div>
 
             {/* Table */}
-            {loading ? (
-                <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-2xl border border-slate-100"></div>)}</div>
-            ) : (
-                <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
+            <section className="space-y-4">
+                <div>
+                    <h3 className="text-xl font-bold text-slate-900">Global Defaults</h3>
+                    <p className="mt-1 text-sm text-slate-500">Versioned baseline templates published directly into the notification engine.</p>
+                </div>
+                {loading ? (
+                    <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-2xl border border-slate-100"></div>)}</div>
+                ) : (
+                    <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
                     <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                         <div className="col-span-1">Channel</div>
                         <div className="col-span-3">Event Trigger</div>
@@ -207,7 +276,71 @@ export default function TemplatesPage() {
                         </div>
                     )}
                 </div>
-            )}
+                )}
+            </section>
+
+            <section className="space-y-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-900">Tenant Reusable Library</h3>
+                        <p className="mt-1 text-sm text-slate-500">Saved starter templates teams can pull into tenant-specific routing overrides.</p>
+                    </div>
+                    <p className="text-xs font-medium text-slate-400">Built for {tenants.length} tenant project{tenants.length === 1 ? '' : 's'}</p>
+                </div>
+
+                {loading ? (
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {[...Array(3)].map((_, i) => <div key={i} className="h-48 bg-slate-100 rounded-[1.8rem] border border-slate-100 animate-pulse"></div>)}
+                    </div>
+                ) : templateLibrary.length === 0 ? (
+                    <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
+                        <p className="text-sm text-slate-400">No reusable tenant templates have been saved yet. Create one in the playground to seed tenant routing flows faster.</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {templateLibrary.map((entry) => (
+                            <div key={entry.id} className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${channelBadge[entry.channel_type]}`}>
+                                            {entry.channel_type}
+                                        </span>
+                                        <h4 className="mt-3 text-lg font-bold text-slate-900">{entry.name}</h4>
+                                    </div>
+                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                                        {countSampleDataLeaves(entry.sample_data)} vars
+                                    </span>
+                                </div>
+
+                                <p className="mt-3 text-sm text-slate-500 line-clamp-3">
+                                    {entry.subject_line || entry.content_body}
+                                </p>
+
+                                <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                                    <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-slate-400">Sample JSON Shape</p>
+                                    <pre className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-slate-600 font-mono">
+                                        {JSON.stringify(entry.sample_data, null, 2)}
+                                    </pre>
+                                </div>
+
+                                <div className="mt-4 flex items-center justify-between gap-3">
+                                    <p className="text-[11px] text-slate-400">
+                                        Saved {new Date(entry.created_at).toLocaleDateString()}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setLibraryDetail(entry)} className="rounded-xl border border-slate-200 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">
+                                            View
+                                        </button>
+                                        <Link href="/routing" className="rounded-xl border border-slate-200 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">
+                                            Use
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
 
             {/* Detail + Version History Modal */}
             {detailTemplate && (
@@ -285,6 +418,57 @@ export default function TemplatesPage() {
                 </div>
             )}
 
+            {libraryDetail && (
+                <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setLibraryDetail(null)}>
+                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200" onClick={(event) => event.stopPropagation()}>
+                        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl flex justify-between items-start gap-4">
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-lg font-bold text-slate-900">{libraryDetail.name}</h3>
+                                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${channelBadge[libraryDetail.channel_type]}`}>
+                                        {libraryDetail.channel_type}
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-sm text-slate-500">Reusable tenant-library entry saved from the playground for routing overrides.</p>
+                            </div>
+                            <Link href="/templates/playground" className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">
+                                Open Playground
+                            </Link>
+                        </div>
+
+                        <div className="overflow-y-auto p-6 space-y-5">
+                            {libraryDetail.subject_line && (
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Subject</p>
+                                    <p className="text-sm font-medium text-slate-700">{libraryDetail.subject_line}</p>
+                                </div>
+                            )}
+                            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Content Body</p>
+                                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 max-h-80 overflow-y-auto">
+                                        <pre className="text-xs text-slate-600 font-mono whitespace-pre-wrap leading-relaxed">{libraryDetail.content_body}</pre>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Sample JSON Shape</p>
+                                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 max-h-80 overflow-y-auto">
+                                        <pre className="text-xs text-slate-600 font-mono whitespace-pre-wrap leading-relaxed">{JSON.stringify(libraryDetail.sample_data, null, 2)}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end gap-3">
+                            <Link href="/routing" className="px-5 py-2 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                                Open Routing
+                            </Link>
+                            <button onClick={() => setLibraryDetail(null)} className="px-5 py-2 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Editor Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
@@ -315,9 +499,9 @@ export default function TemplatesPage() {
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-3">Channel</label>
                                     <div className="flex gap-3">
-                                        {['EMAIL', 'SMS', 'PUSH'].map(type => (
+                                        {(['EMAIL', 'SMS', 'PUSH'] as const).map(type => (
                                             <label key={type} className={`flex-1 cursor-pointer border rounded-2xl p-3 flex flex-col items-center transition-all ${editingTemplate ? 'pointer-events-none' : ''} ${channelType === type ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'}`}>
-                                                <input type="radio" value={type} checked={channelType === type} onChange={() => setChannelType(type as any)} className="sr-only" disabled={!!editingTemplate} />
+                                                <input type="radio" value={type} checked={channelType === type} onChange={() => setChannelType(type)} className="sr-only" disabled={!!editingTemplate} />
                                                 <span className="font-extrabold tracking-wider text-sm">{type}</span>
                                             </label>
                                         ))}
