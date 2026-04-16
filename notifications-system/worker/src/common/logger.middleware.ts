@@ -15,8 +15,8 @@ declare module 'express-serve-static-core' {
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
   constructor(
-      private readonly appLogger: AppLoggerService,
-      private readonly requestContext: RequestContextService,
+    private readonly appLogger: AppLoggerService,
+    private readonly requestContext: RequestContextService,
   ) {}
 
   use(req: Request, res: Response, next: NextFunction): void {
@@ -27,23 +27,26 @@ export class LoggerMiddleware implements NestMiddleware {
     req.traceId = traceId;
     req.startedAt = Date.now();
 
-    this.requestContext.run({
-      traceId,
-      requestId,
-      method: req.method,
-      route: req.originalUrl,
-    }, () => {
-      this.appLogger.log('HTTP request received');
+    this.requestContext.run(
+      {
+        traceId,
+        requestId,
+        method: req.method,
+        route: req.originalUrl,
+      },
+      () => {
+        this.appLogger.log('HTTP request received');
 
-      res.on('finish', () => {
-        const latencyMs = Date.now() - (req.startedAt ?? Date.now());
-        this.appLogger.log('HTTP request completed', {
-          statusCode: res.statusCode,
-          latencyMs,
+        res.on('finish', () => {
+          const latencyMs = Date.now() - (req.startedAt ?? Date.now());
+          this.appLogger.log('HTTP request completed', {
+            statusCode: res.statusCode,
+            latencyMs,
+          });
         });
-      });
 
-      next();
-    });
+        next();
+      },
+    );
   }
 }

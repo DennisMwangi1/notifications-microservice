@@ -105,7 +105,8 @@ async function bootstrap() {
   };
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const corsOrigin = process.env.CORS_ALLOWED_ORIGINS;
+    const corsOrigin =
+      process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:5173';
 
     if (corsOrigin) {
       res.header('Vary', 'Origin');

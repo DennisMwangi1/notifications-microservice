@@ -9,13 +9,12 @@ import { LoggerMiddleware } from './common/logger.middleware';
 
 @Global()
 @Module({
-    imports: [AuthModule, NotificationsModule, EventsModule, AdminModule],
-    providers: [AppLoggerService, RequestContextService],
-    exports: [AppLoggerService, RequestContextService],
+  imports: [AuthModule, NotificationsModule, EventsModule, AdminModule],
+  providers: [AppLoggerService, RequestContextService],
+  exports: [AppLoggerService, RequestContextService],
 })
 export class AppModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer.apply(LoggerMiddleware).forRoutes('*');
-    }
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
 }
-

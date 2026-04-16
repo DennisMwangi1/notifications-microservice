@@ -50,6 +50,11 @@ export type notification_logs = Prisma.notification_logsModel
  */
 export type templates = Prisma.templatesModel
 /**
+ * Model template_library
+ * 
+ */
+export type template_library = Prisma.template_libraryModel
+/**
  * Model in_app_notifications
  * 
  */

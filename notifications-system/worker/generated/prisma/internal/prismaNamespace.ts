@@ -386,6 +386,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   notification_logs: 'notification_logs',
   templates: 'templates',
+  template_library: 'template_library',
   in_app_notifications: 'in_app_notifications',
   tenants: 'tenants',
   processed_events: 'processed_events',
@@ -406,7 +407,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "notification_logs" | "templates" | "in_app_notifications" | "tenants" | "processed_events" | "failed_notifications" | "provider_configs"
+    modelProps: "notification_logs" | "templates" | "template_library" | "in_app_notifications" | "tenants" | "processed_events" | "failed_notifications" | "provider_configs"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -555,6 +556,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.templatesCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.TemplatesCountAggregateOutputType> | number
+        }
+      }
+    }
+    template_library: {
+      payload: Prisma.$template_libraryPayload<ExtArgs>
+      fields: Prisma.template_libraryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.template_libraryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.template_libraryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>
+        }
+        findFirst: {
+          args: Prisma.template_libraryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.template_libraryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>
+        }
+        findMany: {
+          args: Prisma.template_libraryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>[]
+        }
+        create: {
+          args: Prisma.template_libraryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>
+        }
+        createMany: {
+          args: Prisma.template_libraryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.template_libraryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>[]
+        }
+        delete: {
+          args: Prisma.template_libraryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>
+        }
+        update: {
+          args: Prisma.template_libraryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>
+        }
+        deleteMany: {
+          args: Prisma.template_libraryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.template_libraryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.template_libraryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>[]
+        }
+        upsert: {
+          args: Prisma.template_libraryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$template_libraryPayload>
+        }
+        aggregate: {
+          args: Prisma.Template_libraryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTemplate_library>
+        }
+        groupBy: {
+          args: Prisma.template_libraryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Template_libraryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.template_libraryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Template_libraryCountAggregateOutputType> | number
         }
       }
     }
@@ -1000,6 +1075,20 @@ export const TemplatesScalarFieldEnum = {
 export type TemplatesScalarFieldEnum = (typeof TemplatesScalarFieldEnum)[keyof typeof TemplatesScalarFieldEnum]
 
 
+export const Template_libraryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  channel_type: 'channel_type',
+  subject_line: 'subject_line',
+  content_body: 'content_body',
+  sample_data: 'sample_data',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Template_libraryScalarFieldEnum = (typeof Template_libraryScalarFieldEnum)[keyof typeof Template_libraryScalarFieldEnum]
+
+
 export const In_app_notificationsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
@@ -1361,6 +1450,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   notification_logs?: Prisma.notification_logsOmit
   templates?: Prisma.templatesOmit
+  template_library?: Prisma.template_libraryOmit
   in_app_notifications?: Prisma.in_app_notificationsOmit
   tenants?: Prisma.tenantsOmit
   processed_events?: Prisma.processed_eventsOmit

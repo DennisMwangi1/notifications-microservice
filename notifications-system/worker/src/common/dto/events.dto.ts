@@ -3,15 +3,15 @@
  */
 
 export interface TriggerEventDto {
-    eventType: string;
-    payload: EventPayload;
+  eventType: string;
+  payload: EventPayload;
 }
 
 export interface EventPayload {
-    userId: string;
-    recipientEmail?: string;
-    recipientPhone?: string;
-    [key: string]: unknown; // Allow arbitrary template data
+  userId: string;
+  recipientEmail?: string;
+  recipientPhone?: string;
+  [key: string]: unknown; // Allow arbitrary template data
 }
 
 /**
@@ -19,12 +19,12 @@ export interface EventPayload {
  * after webhook authentication. Strictly excludes secrets.
  */
 export interface EnrichedKafkaPayload {
-    userId: string;
-    eventType: string;
-    tenant: TenantIdentity;
-    recipientEmail?: string;
-    recipientPhone?: string;
-    [key: string]: unknown;
+  userId: string;
+  eventType: string;
+  tenant: TenantIdentity;
+  recipientEmail?: string;
+  recipientPhone?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -32,9 +32,9 @@ export interface EnrichedKafkaPayload {
  * NEVER include api_key or other secrets in message brokers.
  */
 export interface TenantIdentity {
-    id: string;
-    name: string;
-    sender_email?: string | null;
-    sender_name?: string | null;
-    provider_config_id?: string | null;
+  id: string;
+  name: string;
+  sender_email?: string | null;
+  sender_name?: string | null;
+  provider_config_id?: string | null;
 }

@@ -4,21 +4,20 @@ import { AppLogMeta } from './app-logger.service';
 
 @Injectable()
 export class RequestContextService {
-    private readonly asyncLocalStorage = new AsyncLocalStorage<AppLogMeta>();
+  private readonly asyncLocalStorage = new AsyncLocalStorage<AppLogMeta>();
 
-    run<T>(initialContext: AppLogMeta, callback: () => T): T {
-        return this.asyncLocalStorage.run(initialContext, callback);
-    }
+  run<T>(initialContext: AppLogMeta, callback: () => T): T {
+    return this.asyncLocalStorage.run(initialContext, callback);
+  }
 
-    getStore(): AppLogMeta | undefined {
-        return this.asyncLocalStorage.getStore();
-    }
+  getStore(): AppLogMeta | undefined {
+    return this.asyncLocalStorage.getStore();
+  }
 
-    set(key: string, value: unknown): void {
-        const store = this.asyncLocalStorage.getStore();
-        if (store) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (store as any)[key] = value;
-        }
+  set(key: string, value: unknown): void {
+    const store = this.asyncLocalStorage.getStore();
+    if (store) {
+      (store as any)[key] = value;
     }
+  }
 }

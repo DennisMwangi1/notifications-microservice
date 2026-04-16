@@ -16,16 +16,16 @@ export class RenderService {
       const interpolatedMjml = hbTemplate(context);
 
       const { html, errors } = mjml2html(interpolatedMjml, {
-        validationLevel: "soft",
+        validationLevel: 'soft',
       });
 
       if (errors?.length) {
-        this.logger.warn("MJML warnings", { errors });
+        this.logger.warn('MJML warnings', { errors });
       }
 
       return html;
     } catch (err) {
-      this.logger.error("MJML render failed:", err);
+      this.logger.error('MJML render failed:', err);
       throw err;
     }
   }
@@ -37,5 +37,4 @@ export class RenderService {
     const hbTemplate = handlebars.compile(templateString, { noEscape: true });
     return hbTemplate(context);
   }
-
 }

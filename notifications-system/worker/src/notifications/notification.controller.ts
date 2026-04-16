@@ -1,9 +1,23 @@
-import { Controller, Inject, OnModuleInit, Get, Put, Param, Logger } from '@nestjs/common';
-import { ClientKafka, MessagePattern, Payload } from '@nestjs/microservices';import { AppLoggerService } from '../common/app-logger.service';import { RenderService } from './render.service';
+import {
+  Controller,
+  Inject,
+  OnModuleInit,
+  Get,
+  Put,
+  Param,
+  Logger,
+} from '@nestjs/common';
+import { ClientKafka, MessagePattern, Payload } from '@nestjs/microservices';
+import { AppLoggerService } from '../common/app-logger.service';
+import { RenderService } from './render.service';
 import prisma from '../config/prisma.config';
 import { randomUUID } from 'crypto';
 import { EnrichedKafkaPayload } from '../common/dto/events.dto';
-import { EmailDispatchPayload, SmsDispatchPayload, RealtimeDispatchPayload } from '../common/dto/admin.dto';
+import {
+  EmailDispatchPayload,
+  SmsDispatchPayload,
+  RealtimeDispatchPayload,
+} from '../common/dto/admin.dto';
 
 /**
  * Message processing controller that listens to enriched tenant events from Kafka
@@ -19,7 +33,7 @@ export class NotificationsController implements OnModuleInit {
     private readonly renderService: RenderService,
     @Inject('GO_GATEWAY_SERVICE') private readonly kafkaClient: ClientKafka,
     private readonly logger: AppLoggerService,
-  ) { }
+  ) {}
 
   /**
    * Lifecycle hook: forces Kafka connection retry until connected.
@@ -29,11 +43,11 @@ export class NotificationsController implements OnModuleInit {
     while (!connected) {
       try {
         await this.kafkaClient.connect();
-        this.logger.log("Kafka Client Connected to Go gateway");
+        this.logger.log('Kafka Client Connected to Go gateway');
         connected = true;
       } catch (err) {
-        this.logger.warn("Kafka not ready yet, retrying in 5 seconds...");
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        this.logger.warn('Kafka not ready yet, retrying in 5 seconds...');
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
   }
@@ -58,14 +72,16 @@ export class NotificationsController implements OnModuleInit {
     });
 
     const seenChannels = new Set<string>();
-    const templates = allTemplates.filter(tpl => {
+    const templates = allTemplates.filter((tpl) => {
       if (seenChannels.has(tpl.channel_type)) return false;
       seenChannels.add(tpl.channel_type);
       return true;
     });
 
     if (!templates || templates.length === 0) {
-      this.logger.error(`❌ No Templates for Event '${eventType}' and Tenant '${tenant.id}' found in DB`);
+      this.logger.error(
+        `❌ No Templates for Event '${eventType}' and Tenant '${tenant.id}' found in DB`,
+      );
       return;
     }
 
@@ -73,15 +89,23 @@ export class NotificationsController implements OnModuleInit {
     let providerConfig = null;
     if (tenant.provider_config_id) {
       providerConfig = await this.prisma.provider_configs.findUnique({
-        where: { id: tenant.provider_config_id }
+        where: { id: tenant.provider_config_id },
       });
     }
 
     for (const template of templates) {
-      const dynamicSubject = this.renderService.renderText(template.subject_line || 'Notification', payloadData as Record<string, unknown>).replace(/<[^>]*>?/gm, '');
+      const dynamicSubject = this.renderService
+        .renderText(
+          template.subject_line || 'Notification',
+          payloadData as Record<string, unknown>,
+        )
+        .replace(/<[^>]*>?/gm, '');
       const notificationId = randomUUID();
       if (template.channel_type === 'EMAIL') {
-        const finalHtml = this.renderService.render(template.content_body, payloadData as Record<string, unknown>);
+        const finalHtml = this.renderService.render(
+          template.content_body,
+          payloadData as Record<string, unknown>,
+        );
 
         // Initialize log as PENDING
         await this.prisma.notification_logs.create({
@@ -93,19 +117,21 @@ export class NotificationsController implements OnModuleInit {
             channel: 'EMAIL',
             status: 'PENDING',
             metadata: data as object,
-          }
+          },
         });
         const emailPayload: EmailDispatchPayload = {
           actionType: 'EMAIL',
           notificationId,
           tenantId: tenant.id,
           userId,
-          recipient: (payloadData.recipientEmail as string) || "error_no_email_provided@system",
+          recipient:
+            (payloadData.recipientEmail as string) ||
+            'error_no_email_provided@system',
           senderEmail: providerConfig?.sender_email || tenant.sender_email,
           senderName: providerConfig?.sender_name || tenant.sender_name,
           subject: dynamicSubject,
           body: finalHtml,
-          provider: providerConfig?.provider || "RESEND",
+          provider: providerConfig?.provider || 'RESEND',
           apiKey: providerConfig?.api_key,
         };
 
@@ -116,7 +142,10 @@ export class NotificationsController implements OnModuleInit {
       // 🚀 BRANCH B: SMS TEMPLATE
       // -----------------------------
       else if (template.channel_type === 'SMS') {
-        const finalSmsText = this.renderService.renderText(template.content_body, payloadData as Record<string, unknown>);
+        const finalSmsText = this.renderService.renderText(
+          template.content_body,
+          payloadData as Record<string, unknown>,
+        );
 
         // R4: Use Prisma typed create() instead of raw SQL
         await this.prisma.notification_logs.create({
@@ -128,7 +157,7 @@ export class NotificationsController implements OnModuleInit {
             channel: 'SMS',
             status: 'PENDING',
             metadata: data as object,
-          }
+          },
         });
 
         const smsPayload: SmsDispatchPayload = {
@@ -136,10 +165,10 @@ export class NotificationsController implements OnModuleInit {
           notificationId,
           tenantId: tenant.id,
           userId,
-          recipient: (payloadData.recipientPhone as string) || "+10000000000",
+          recipient: (payloadData.recipientPhone as string) || '+10000000000',
           subject: dynamicSubject,
           body: finalSmsText,
-          provider: providerConfig?.provider || "TWILIO",
+          provider: providerConfig?.provider || 'TWILIO',
           apiKey: providerConfig?.api_key,
         };
         this.kafkaClient.emit('notification.dispatch', smsPayload);
@@ -151,17 +180,32 @@ export class NotificationsController implements OnModuleInit {
       else if (template.channel_type === 'PUSH') {
         // You cannot send a targeted real-time push if there is no user
         if (!userId) {
-          this.logger.warn(`Skipping PUSH notification for event '${eventType}' because the payload is missing a userId (e.g., Guest invite).`);
+          this.logger.warn(
+            `Skipping PUSH notification for event '${eventType}' because the payload is missing a userId (e.g., Guest invite).`,
+          );
           continue;
         }
 
-        const finalPushBody = this.renderService.renderText(template.content_body, payloadData as Record<string, unknown>);
-        const wsChannel = template.target_ws_channel ? `${template.target_ws_channel}#${userId}` : `global_system#${userId}`;
+        const finalPushBody = this.renderService.renderText(
+          template.content_body,
+          payloadData as Record<string, unknown>,
+        );
+        const wsChannel = template.target_ws_channel
+          ? `${template.target_ws_channel}#${userId}`
+          : `global_system#${userId}`;
 
         // Derive the visual category from the event type prefix for frontend styling
         const eventParts = eventType.split('.');
-        const knownCategories = ['success', 'warning', 'alert', 'error', 'info'];
-        const category = knownCategories.includes(eventParts[1]) ? eventParts[1] : 'info';
+        const knownCategories = [
+          'success',
+          'warning',
+          'alert',
+          'error',
+          'info',
+        ];
+        const category = knownCategories.includes(eventParts[1])
+          ? eventParts[1]
+          : 'info';
 
         // R4: Use Prisma typed create() instead of raw SQL
         await this.prisma.in_app_notifications.create({
@@ -173,7 +217,7 @@ export class NotificationsController implements OnModuleInit {
             title: dynamicSubject,
             body: finalPushBody,
             status: 'UNREAD',
-          }
+          },
         });
 
         const realtimePayload: RealtimeDispatchPayload = {
@@ -185,7 +229,7 @@ export class NotificationsController implements OnModuleInit {
           body: finalPushBody,
           category,
           eventType,
-          wsChannel
+          wsChannel,
         };
         this.kafkaClient.emit('notification.dispatch', realtimePayload);
       }
@@ -208,7 +252,7 @@ export class NotificationsController implements OnModuleInit {
   @Get('api/v1/notifications/:tenantId/:userId')
   async getNotifications(
     @Param('tenantId') tenantId: string,
-    @Param('userId') userId: string
+    @Param('userId') userId: string,
   ) {
     const notifications = await this.prisma.in_app_notifications.findMany({
       where: {
@@ -236,7 +280,7 @@ export class NotificationsController implements OnModuleInit {
   async markAsRead(
     @Param('tenantId') tenantId: string,
     @Param('userId') userId: string,
-    @Param('notificationId') notificationId: string
+    @Param('notificationId') notificationId: string,
   ) {
     // using updateMany to apply additional where constraints for strict tenant isolation
     const result = await this.prisma.in_app_notifications.updateMany({
@@ -246,12 +290,15 @@ export class NotificationsController implements OnModuleInit {
         tenant_id: tenantId,
       },
       data: {
-        status: 'READ'
-      }
+        status: 'READ',
+      },
     });
 
     if (result.count === 0) {
-      return { success: false, message: 'Notification not found or access denied.' };
+      return {
+        success: false,
+        message: 'Notification not found or access denied.',
+      };
     }
 
     return { success: true, message: 'Notification marked as READ' };
@@ -262,16 +309,21 @@ export class NotificationsController implements OnModuleInit {
   // -------------------------------------------------------------
 
   @MessagePattern('notification.dlq')
-  async handleDeadLetter(@Payload() data: {
-    originalPayload: Record<string, unknown>;
-    retryCount: number;
-    maxRetries: number;
-    lastError: string;
-    notificationId: string;
-    tenantId: string;
-    channel: string;
-  }) {
-    this.logger.warn(`💀 DLQ: Persisting permanently failed notification ${data.notificationId}`);
+  async handleDeadLetter(
+    @Payload()
+    data: {
+      originalPayload: Record<string, unknown>;
+      retryCount: number;
+      maxRetries: number;
+      lastError: string;
+      notificationId: string;
+      tenantId: string;
+      channel: string;
+    },
+  ) {
+    this.logger.warn(
+      `💀 DLQ: Persisting permanently failed notification ${data.notificationId}`,
+    );
 
     try {
       // Persist to failed_notifications table for admin review
@@ -285,7 +337,7 @@ export class NotificationsController implements OnModuleInit {
           retry_count: data.retryCount,
           max_retries: data.maxRetries,
           permanently_failed: true,
-        }
+        },
       });
 
       // Update the notification_logs status to FAILED with error context
@@ -294,12 +346,17 @@ export class NotificationsController implements OnModuleInit {
         data: {
           status: 'FAILED',
           error_details: `DLQ: ${data.lastError} (after ${data.retryCount} retries)`,
-        }
+        },
       });
 
-      this.logger.log(`💀 DLQ: Notification ${data.notificationId} persisted to failed_notifications table`);
+      this.logger.log(
+        `💀 DLQ: Notification ${data.notificationId} persisted to failed_notifications table`,
+      );
     } catch (err) {
-      this.logger.error(`❌ DLQ: Failed to persist dead letter for ${data.notificationId}:`, err);
+      this.logger.error(
+        `❌ DLQ: Failed to persist dead letter for ${data.notificationId}:`,
+        err,
+      );
     }
   }
 }

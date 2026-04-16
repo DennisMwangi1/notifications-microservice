@@ -375,10 +375,6 @@ export type Enumin_app_statusFieldUpdateOperationsInput = {
   set?: $Enums.in_app_status
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
-}
-
 
 
 export type in_app_notificationsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{

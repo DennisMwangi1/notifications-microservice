@@ -2,6 +2,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator generated_client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  esm      = false
+}
+
 datasource db {
   provider = "postgresql"
 }
@@ -33,6 +39,19 @@ model templates {
   target_ws_channel String?      @db.VarChar(100)
 
   @@id([template_id, version])
+}
+
+model template_library {
+  id           String       @id @default(uuid()) @db.Uuid
+  name         String       @db.VarChar(255)
+  channel_type channel_enum
+  subject_line String?      @db.VarChar(255)
+  content_body String
+  sample_data  Json
+  created_at   DateTime     @default(now()) @db.Timestamp(6)
+  updated_at   DateTime     @updatedAt @db.Timestamp(6)
+
+  @@index([channel_type])
 }
 
 enum channel_enum {

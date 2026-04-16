@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   notification_logs: 'notification_logs',
   templates: 'templates',
+  template_library: 'template_library',
   in_app_notifications: 'in_app_notifications',
   tenants: 'tenants',
   processed_events: 'processed_events',
@@ -107,6 +108,20 @@ export const TemplatesScalarFieldEnum = {
 } as const
 
 export type TemplatesScalarFieldEnum = (typeof TemplatesScalarFieldEnum)[keyof typeof TemplatesScalarFieldEnum]
+
+
+export const Template_libraryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  channel_type: 'channel_type',
+  subject_line: 'subject_line',
+  content_body: 'content_body',
+  sample_data: 'sample_data',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Template_libraryScalarFieldEnum = (typeof Template_libraryScalarFieldEnum)[keyof typeof Template_libraryScalarFieldEnum]
 
 
 export const In_app_notificationsScalarFieldEnum = {

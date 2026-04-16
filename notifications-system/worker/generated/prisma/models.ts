@@ -10,6 +10,7 @@
  */
 export type * from './models/notification_logs'
 export type * from './models/templates'
+export type * from './models/template_library'
 export type * from './models/in_app_notifications'
 export type * from './models/tenants'
 export type * from './models/processed_events'
