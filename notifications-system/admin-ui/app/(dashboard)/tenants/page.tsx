@@ -1,424 +1,944 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { API_URL } from '../../../lib/api';
-import { authHeaders } from '../../../lib/auth';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { apiFetch } from '../../../lib/api';
 
 interface Tenant {
+  id: string;
+  name: string;
+  api_key: string;
+  allowed_channels: string[];
+  is_active: boolean;
+  created_at: string;
+  sender_email?: string | null;
+  sender_name?: string | null;
+  rate_limit_per_minute: number;
+  daily_notification_cap: number;
+  max_template_count: number;
+}
+
+interface TenantAdmin {
+  id: string;
+  tenant_id: string;
+  username: string;
+  email: string;
+  display_name?: string | null;
+  must_reset_password: boolean;
+  password_set_at?: string | null;
+  is_active: boolean;
+  welcome_sent_at?: string | null;
+  welcome_delivery_status?: string | null;
+  welcome_delivery_error?: string | null;
+  can_reset_temporary_password: boolean;
+  can_resend_onboarding: boolean;
+  credential_intervention_locked: boolean;
+  credential_intervention_reason?: string | null;
+}
+
+interface ProvisioningResult {
+  tenant: Tenant;
+  tenantAdmin: TenantAdmin | null;
+  initialCredentials: {
+    username: string;
+    temporaryPassword: string;
+  } | null;
+  onboarding: {
+    status: string;
+    sentAt?: string | null;
+    deliveryError?: string | null;
+  };
+}
+
+interface TenantOps {
+  tenant: {
     id: string;
     name: string;
-    api_key: string;
-    allowed_channels: string[];
     is_active: boolean;
-    created_at: string;
-    provider_config_id?: string | null;
-    sender_email?: string | null;
-    sender_name?: string | null;
+    allowed_channels: string[];
+    sender_email: string | null;
+    sender_name: string | null;
     rate_limit_per_minute: number;
     daily_notification_cap: number;
+    max_template_count: number;
+    created_at: string;
+  };
+  quotas: {
+    rate_limit_per_minute: number;
+    daily_notification_cap: number;
+    max_template_count: number;
+  };
+  usage: {
+    minuteCount: number;
+    minuteLimit: number;
+    minuteUsagePct: number;
+    dailyCount: number;
+    dailyLimit: number;
+    dailyUsagePct: number;
+    burstRemaining: number;
+    burstCapacity: number;
+    burstUsagePct: number;
+    templateCount: number;
+    templateLimit: number;
+    templateUsagePct: number;
+  };
+  onboarding: {
+    totalAdmins: number;
+    activeAdmins: number;
+    mustResetPassword: number;
+    welcomeFailed: number;
+    welcomePending: number;
+    latestWelcomeSentAt: string | null;
+  };
+  providers: {
+    count: number;
+    latest: {
+      id: string;
+      name: string;
+      provider: string;
+      api_key_last4: string | null;
+      key_version: number;
+      rotated_at: string | null;
+      created_at: string;
+    } | null;
+  };
+  templates: {
+    totalTenantOwned: number;
+  };
+  failures: {
+    failedLogCount: number;
+    dlqCount: number;
+    recentFailures: {
+      notification_id: string;
+      channel: string;
+      status: string;
+      error_details: string | null;
+      sent_at: string | null;
+    }[];
+  };
+  recentActivity: {
+    notification_id: string;
+    channel: string;
+    status: string;
+    provider_ref: string | null;
+    sent_at: string | null;
+  }[];
 }
 
-interface ProviderConfig {
-    id: string;
-    name: string;
-}
+const inputClasses =
+  'w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40';
 
 export default function TenantsPage() {
-    const [tenants, setTenants] = useState<Tenant[]>([]);
-    const [providers, setProviders] = useState<ProviderConfig[]>([]);
-    const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [tenantOps, setTenantOps] = useState<TenantOps | null>(null);
+  const [tenantAdmins, setTenantAdmins] = useState<TenantAdmin[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [opsLoading, setOpsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [provisioningResult, setProvisioningResult] =
+    useState<ProvisioningResult | null>(null);
+  const [workingAdminId, setWorkingAdminId] = useState<string | null>(null);
+  const [workingTenantAction, setWorkingTenantAction] = useState<
+    'suspend' | 'reactivate' | null
+  >(null);
 
-    // Create Modal
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newTenantName, setNewTenantName] = useState('');
-    const [newChannels, setNewChannels] = useState('');
-    const [newProviderId, setNewProviderId] = useState('');
-    const [newSenderEmail, setNewSenderEmail] = useState('');
-    const [newSenderName, setNewSenderName] = useState('');
-    const [newRateLimit, setNewRateLimit] = useState(100);
-    const [newDailyCap, setNewDailyCap] = useState(10000);
+  const [form, setForm] = useState({
+    name: '',
+    allowed_channels: 'EMAIL,SMS',
+    sender_email: '',
+    sender_name: '',
+    rate_limit_per_minute: 100,
+    daily_notification_cap: 10000,
+    max_template_count: 50,
+    tenantAdmin: {
+      username: '',
+      email: '',
+      displayName: '',
+    },
+  });
 
-    // Edit Modal
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
-    const [editTenantName, setEditTenantName] = useState('');
-    const [editChannels, setEditChannels] = useState('');
-    const [editProviderId, setEditProviderId] = useState('');
-    const [editSenderEmail, setEditSenderEmail] = useState('');
-    const [editSenderName, setEditSenderName] = useState('');
-    const [editRateLimit, setEditRateLimit] = useState(100);
-    const [editDailyCap, setEditDailyCap] = useState(10000);
+  useEffect(() => {
+    void fetchTenants();
+  }, []);
 
-    // Detail Modal
-    const [detailTenant, setDetailTenant] = useState<Tenant | null>(null);
+  useEffect(() => {
+    if (!tenants.length) return;
+    const tenantId = searchParams.get('tenantId');
+    if (!tenantId) return;
+    const tenant = tenants.find((item) => item.id === tenantId);
+    if (tenant) {
+      void openTenantDetail(tenant);
+    }
+  }, [searchParams, tenants]);
 
-    useEffect(() => {
-        fetchTenants();
-        fetchProviders();
-    }, []);
+  const fetchTenants = async () => {
+    setLoading(true);
+    const response = await apiFetch<Tenant[]>('/api/v1/admin/tenants');
+    if (response.success && response.data) {
+      setTenants(response.data);
+    }
+    setLoading(false);
+  };
 
-    const fetchTenants = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`${API_URL}/api/v1/admin/tenants`, { headers: authHeaders() });
-            const json = await res.json();
-            if (json.success) setTenants(json.data);
-        } catch (err) { console.error('Failed to fetch tenants:', err); }
-        finally { setLoading(false); }
-    };
+  const fetchTenantAdmins = async (tenantId: string) => {
+    const response = await apiFetch<TenantAdmin[]>(
+      `/api/v1/admin/tenants/${tenantId}/admins`,
+    );
+    if (response.success) {
+      setTenantAdmins(response.data || []);
+    }
+  };
 
-    const fetchProviders = async () => {
-        try {
-            const res = await fetch(`${API_URL}/api/v1/admin/providers`, { headers: authHeaders() });
-            const json = await res.json();
-            if (json.success) setProviders(json.data);
-        } catch (err) { console.error('Failed to fetch providers:', err); }
-    };
+  const fetchTenantOps = async (tenantId: string) => {
+    setOpsLoading(true);
+    const response = await apiFetch<TenantOps>(`/api/v1/admin/tenants/${tenantId}/ops`);
+    if (response.success && response.data) {
+      setTenantOps(response.data);
+    }
+    setOpsLoading(false);
+  };
 
-    const handleCreateNew = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const channelsArray = newChannels.split(',').map(c => c.trim()).filter(Boolean);
-        try {
-            const res = await fetch(`${API_URL}/api/v1/admin/tenants`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
-                body: JSON.stringify({
-                    name: newTenantName,
-                    allowed_channels: channelsArray,
-                    provider_config_id: newProviderId || undefined,
-                    sender_email: newSenderEmail || undefined,
-                    sender_name: newSenderName || undefined,
-                    rate_limit_per_minute: Number(newRateLimit),
-                    daily_notification_cap: Number(newDailyCap)
-                }),
-            });
-            const json = await res.json();
-            if (json.success) {
-                setTenants([json.data, ...tenants]);
-                setIsModalOpen(false);
-                setNewTenantName(''); setNewChannels(''); setNewProviderId(''); setNewSenderEmail(''); setNewSenderName('');
-                setNewRateLimit(100); setNewDailyCap(10000);
-            }
-        } catch (err) { console.error('Failed to create tenant', err); }
-    };
+  const openTenantDetail = async (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    await Promise.all([fetchTenantAdmins(tenant.id), fetchTenantOps(tenant.id)]);
+  };
 
-    const handleOpenEdit = (tenant: Tenant) => {
-        setEditingTenant(tenant);
-        setEditTenantName(tenant.name);
-        setEditChannels(tenant.allowed_channels ? tenant.allowed_channels.join(', ') : '');
-        setEditProviderId(tenant.provider_config_id || '');
-        setEditSenderEmail(tenant.sender_email || '');
-        setEditSenderName(tenant.sender_name || '');
-        setEditRateLimit(tenant.rate_limit_per_minute || 100);
-        setEditDailyCap(tenant.daily_notification_cap || 10000);
-        setIsEditModalOpen(true);
-    };
+  const handleProvision = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const response = await apiFetch<ProvisioningResult>('/api/v1/admin/tenants', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: form.name,
+        allowed_channels: form.allowed_channels
+          .split(',')
+          .map((value) => value.trim())
+          .filter(Boolean),
+        sender_email: form.sender_email || undefined,
+        sender_name: form.sender_name || undefined,
+        rate_limit_per_minute: Number(form.rate_limit_per_minute),
+        daily_notification_cap: Number(form.daily_notification_cap),
+        max_template_count: Number(form.max_template_count),
+        tenantAdmin: {
+          username: form.tenantAdmin.username,
+          email: form.tenantAdmin.email,
+          displayName: form.tenantAdmin.displayName || undefined,
+        },
+      }),
+    });
 
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!editingTenant) return;
-        const channelsArray = editChannels.split(',').map(c => c.trim()).filter(Boolean);
-        try {
-            const res = await fetch(`${API_URL}/api/v1/admin/tenants/${editingTenant.id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() },
-                body: JSON.stringify({
-                    name: editTenantName,
-                    allowed_channels: channelsArray,
-                    provider_config_id: editProviderId || null,
-                    sender_email: editSenderEmail || null,
-                    sender_name: editSenderName || null,
-                    rate_limit_per_minute: Number(editRateLimit),
-                    daily_notification_cap: Number(editDailyCap)
-                }),
-            });
-            const json = await res.json();
-            if (json.success) {
-                setTenants(tenants.map(t => t.id === editingTenant.id ? {
-                    ...t,
-                    name: editTenantName,
-                    allowed_channels: channelsArray,
-                    provider_config_id: editProviderId || null,
-                    sender_email: editSenderEmail || null,
-                    sender_name: editSenderName || null,
-                    rate_limit_per_minute: Number(editRateLimit),
-                    daily_notification_cap: Number(editDailyCap)
-                } : t));
-                setIsEditModalOpen(false);
-                setEditingTenant(null);
-            }
-        } catch (err) { console.error('Failed to update tenant', err); }
-    };
+    if (response.success && response.data) {
+      setProvisioningResult(response.data);
+      setTenants((current) => [response.data!.tenant, ...current]);
+      setForm({
+        name: '',
+        allowed_channels: 'EMAIL,SMS',
+        sender_email: '',
+        sender_name: '',
+        rate_limit_per_minute: 100,
+        daily_notification_cap: 10000,
+        max_template_count: 50,
+        tenantAdmin: {
+          username: '',
+          email: '',
+          displayName: '',
+        },
+      });
+      setIsModalOpen(false);
+    }
+  };
 
-    const handleRotateKey = async (id: string) => {
-        if (!confirm('Are you sure you want to rotate this API key? Existing integrations will break immediately.')) return;
-        try {
-            const res = await fetch(`${API_URL}/api/v1/admin/tenants/${id}/rotate-key`, { method: 'PUT', headers: authHeaders() });
-            const json = await res.json();
-            if (json.success) {
-                setTenants(tenants.map(t => t.id === id ? { ...t, api_key: json.data.api_key } : t));
-                if (detailTenant?.id === id) setDetailTenant({ ...detailTenant, api_key: json.data.api_key });
-            }
-        } catch (err) { console.error('Failed to rotate API Key', err); }
-    };
+  const askReason = (label: string) => {
+    const reason = window.prompt(`Reason for ${label.toLowerCase()}:`);
+    return reason?.trim() || null;
+  };
 
-    const handleToggleActive = async (id: string, currentStatus: boolean) => {
-        if (!confirm(`Are you sure you want to ${currentStatus ? 'Deactivate' : 'Reactivate'} this Tenant?`)) return;
-        try {
-            const res = await fetch(`${API_URL}/api/v1/admin/tenants/${id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() },
-                body: JSON.stringify({ is_active: !currentStatus })
-            });
-            const json = await res.json();
-            if (json.success) {
-                setTenants(tenants.map(t => t.id === id ? { ...t, is_active: !currentStatus } : t));
-            }
-        } catch (err) { console.error('Failed to toggle status', err); }
-    };
+  const handleAdminAction = async (
+    tenantId: string,
+    adminId: string,
+    action: 'resend-onboarding' | 'reset-temporary-password',
+  ) => {
+    const reason = askReason(
+      action === 'resend-onboarding'
+        ? 'resending onboarding'
+        : 'resetting temporary password',
+    );
+    if (!reason) return;
 
-    const handleCopyId = (text: string) => {
-        navigator.clipboard.writeText(text);
-    };
+    setWorkingAdminId(adminId);
+    const response = await apiFetch<{
+      tenantAdmin: TenantAdmin;
+      initialCredentials: { username: string; temporaryPassword: string };
+      onboarding: {
+        status: string;
+        sentAt?: string | null;
+        deliveryError?: string | null;
+      };
+    }>(`/api/v1/admin/tenants/${tenantId}/admins/${adminId}/${action}`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
 
-    const inputClasses = "w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white transition-all shadow-sm";
+    if (response.success && response.data) {
+      setProvisioningResult({
+        tenant: selectedTenant!,
+        tenantAdmin: response.data.tenantAdmin,
+        initialCredentials: response.data.initialCredentials,
+        onboarding: response.data.onboarding,
+      });
+      await Promise.all([fetchTenantAdmins(tenantId), fetchTenantOps(tenantId)]);
+    } else {
+      window.alert(response.message || 'Unable to complete tenant admin action.');
+    }
 
-    return (
-        <div className="max-w-[1600px] mx-auto space-y-10 pb-10 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-100 pb-6 gap-4">
+    setWorkingAdminId(null);
+  };
+
+  const handleTenantLifecycleAction = async (
+    tenant: Tenant,
+    action: 'suspend' | 'reactivate',
+  ) => {
+    const reason = askReason(
+      action === 'suspend' ? 'suspending this tenant' : 'reactivating this tenant',
+    );
+
+    if (!reason) return;
+
+    setWorkingTenantAction(action);
+    const response = await apiFetch<Tenant>(
+      `/api/v1/admin/tenants/${tenant.id}/${action}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      },
+    );
+
+    if (response.success && response.data) {
+      setTenants((currentTenants) =>
+        currentTenants.map((item) =>
+          item.id === tenant.id ? response.data! : item,
+        ),
+      );
+      setSelectedTenant(response.data);
+      await fetchTenantOps(tenant.id);
+    } else {
+      window.alert(response.message || 'Unable to update tenant status.');
+    }
+
+    setWorkingTenantAction(null);
+  };
+
+  return (
+    <div className="max-w-[1500px] mx-auto space-y-8 pb-10">
+      <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="text-4xl font-black tracking-tight text-slate-900">
+            Tenant Governance
+          </h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Provision tenants, monitor onboarding, inspect tenant posture, and intervene from explicit tenant context.
+          </p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          + Provision Tenant
+        </button>
+      </div>
+
+      {provisioningResult && (
+        <section className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-600">
+                Latest Provisioning Result
+              </p>
+              <h3 className="mt-2 text-2xl font-black text-slate-900">
+                {provisioningResult.tenant.name}
+              </h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Onboarding status: {provisioningResult.onboarding.status}
+                {provisioningResult.onboarding.deliveryError
+                  ? ` • ${provisioningResult.onboarding.deliveryError}`
+                  : ''}
+              </p>
+            </div>
+            {provisioningResult.initialCredentials && (
+              <div className="min-w-[280px] rounded-3xl border border-emerald-200 bg-white px-5 py-4 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                  One-Time Credentials
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Username: {provisioningResult.initialCredentials.username}
+                </p>
+                <p className="mt-1 break-all font-mono text-sm text-slate-900">
+                  {provisioningResult.initialCredentials.temporaryPassword}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr]">
+        <section className="rounded-[2rem] border border-slate-100 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-100 bg-slate-50 px-6 py-4">
+            <h3 className="text-lg font-bold text-slate-900">Tenants</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Choose a tenant to inspect quotas, onboarding, providers, and failure posture.
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="space-y-3 p-6 animate-pulse">
+              {[...Array(5)].map((_, index) => (
+                <div key={index} className="h-16 rounded-2xl bg-slate-100" />
+              ))}
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-50">
+              {tenants.map((tenant) => (
+                <button
+                  key={tenant.id}
+                  onClick={() => void openTenantDetail(tenant)}
+                  className={`w-full px-6 py-4 text-left transition ${
+                    selectedTenant?.id === tenant.id ? 'bg-slate-50' : 'bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{tenant.name}</p>
+                      <p className="mt-1 text-xs font-mono text-slate-500">{tenant.id}</p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase ${
+                        tenant.is_active
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-rose-100 text-rose-700'
+                      }`}
+                    >
+                      {tenant.is_active ? 'Active' : 'Suspended'}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    RPM {tenant.rate_limit_per_minute} • Daily {tenant.daily_notification_cap} • Templates {tenant.max_template_count}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+          {!selectedTenant ? (
+            <div className="flex min-h-[480px] items-center justify-center text-center text-sm text-slate-400">
+              Select a tenant to open the operator detail view.
+            </div>
+          ) : opsLoading || !tenantOps ? (
+            <div className="space-y-3 animate-pulse">
+              {[...Array(6)].map((_, index) => (
+                <div key={index} className="h-20 rounded-2xl bg-slate-100" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-slate-900 mb-2">Project Tenants</h2>
-                    <p className="text-sm text-slate-500">Manage decoupled projects, configure channel boundaries, and securely rotate API keys.</p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="text-3xl font-black tracking-tight text-slate-900">
+                      {tenantOps.tenant.name}
+                    </h3>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${
+                        tenantOps.tenant.is_active
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-rose-100 text-rose-700'
+                      }`}
+                    >
+                      {tenantOps.tenant.is_active ? 'Tenant Active' : 'Tenant Suspended'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-500">{tenantOps.tenant.id}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {tenantOps.tenant.allowed_channels.map((channel) => (
+                      <span
+                        key={channel}
+                        className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-700"
+                      >
+                        {channel}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 px-5 py-2.5 rounded-2xl font-medium transition-all shadow-sm">+ Onboard Project</button>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() =>
+                      void handleTenantLifecycleAction(
+                        selectedTenant,
+                        tenantOps.tenant.is_active ? 'suspend' : 'reactivate',
+                      )
+                    }
+                    disabled={workingTenantAction !== null}
+                    className={`rounded-2xl px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
+                      tenantOps.tenant.is_active
+                        ? 'border border-rose-200 bg-rose-50 text-rose-700'
+                        : 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                    }`}
+                  >
+                    {workingTenantAction === 'suspend'
+                      ? 'Suspending...'
+                      : workingTenantAction === 'reactivate'
+                        ? 'Reactivating...'
+                        : tenantOps.tenant.is_active
+                          ? 'Suspend Tenant'
+                          : 'Reactivate Tenant'}
+                  </button>
+                  <Link
+                    href={`/logs?tenantId=${tenantOps.tenant.id}`}
+                    className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    Tenant Logs
+                  </Link>
+                  <Link
+                    href={`/dlq?tenantId=${tenantOps.tenant.id}`}
+                    className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    Tenant DLQ
+                  </Link>
+                  <Link
+                    href={`/limits?tenantId=${tenantOps.tenant.id}`}
+                    className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    Adjust Limits
+                  </Link>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                    Usage
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    RPM {tenantOps.usage.minuteCount}/{tenantOps.usage.minuteLimit}
+                  </p>
+                  <p className="text-sm text-slate-700">
+                    Daily {tenantOps.usage.dailyCount}/{tenantOps.usage.dailyLimit}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                    Template Quota
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    {tenantOps.usage.templateCount}/{tenantOps.usage.templateLimit}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {tenantOps.templates.totalTenantOwned} tenant-owned live templates
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                    Onboarding
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    Failed {tenantOps.onboarding.welcomeFailed}
+                  </p>
+                  <p className="text-sm text-slate-700">
+                    Pending {tenantOps.onboarding.welcomePending}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                    Delivery Risk
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    Failed logs {tenantOps.failures.failedLogCount}
+                  </p>
+                  <p className="text-sm text-slate-700">
+                    DLQ {tenantOps.failures.dlqCount}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <div className="rounded-[2rem] border border-slate-100 bg-white p-5">
+                  <h4 className="text-lg font-bold text-slate-900">Provider Posture</h4>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Platform visibility into tenant-owned integrations.
+                  </p>
+                  <div className="mt-4 rounded-3xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-600">
+                      {tenantOps.providers.count} provider configs registered
+                    </p>
+                    {tenantOps.providers.latest ? (
+                      <>
+                        <p className="mt-3 text-base font-bold text-slate-900">
+                          {tenantOps.providers.latest.name}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {tenantOps.providers.latest.provider} • key ending {tenantOps.providers.latest.api_key_last4 || 'n/a'}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Rotated {tenantOps.providers.latest.rotated_at
+                            ? new Date(tenantOps.providers.latest.rotated_at).toLocaleString()
+                            : 'not yet recorded'}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No provider configs recorded for this tenant.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-[2rem] border border-slate-100 bg-white p-5">
+                  <h4 className="text-lg font-bold text-slate-900">Sender Defaults</h4>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Tenant-level delivery identity.
+                  </p>
+                  <div className="mt-4 rounded-3xl bg-slate-50 p-4">
+                    <p className="text-base font-bold text-slate-900">
+                      {tenantOps.tenant.sender_name || 'No sender name'}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {tenantOps.tenant.sender_email || 'No sender email'}
+                    </p>
+                    <p className="mt-3 text-xs text-slate-500">
+                      Created {new Date(tenantOps.tenant.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <section className="space-y-4">
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900">Tenant Admins</h4>
+                  <p className="text-sm text-slate-500">
+                    Intervention actions require an operator reason and are captured in audit logs.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {tenantAdmins.map((admin) => (
+                    <div
+                      key={admin.id}
+                      className="rounded-3xl border border-slate-100 bg-slate-50 p-5"
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-base font-bold text-slate-900">
+                            {admin.display_name || admin.username}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {admin.email} • {admin.username}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Password state:{' '}
+                            {admin.password_set_at
+                              ? `Reset completed ${new Date(admin.password_set_at).toLocaleString()}`
+                              : admin.must_reset_password
+                                ? 'Awaiting first reset'
+                                : 'Active credential on file'}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Welcome status: {admin.welcome_delivery_status || 'NOT_SENT'}
+                            {admin.welcome_delivery_error
+                              ? ` • ${admin.welcome_delivery_error}`
+                              : ''}
+                          </p>
+                          {admin.credential_intervention_locked && (
+                            <p className="mt-2 text-xs font-medium text-amber-700">
+                              {admin.credential_intervention_reason}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() =>
+                              void handleAdminAction(
+                                selectedTenant.id,
+                                admin.id,
+                                'resend-onboarding',
+                              )
+                            }
+                            disabled={
+                              workingAdminId === admin.id ||
+                              !admin.can_resend_onboarding
+                            }
+                            className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Resend Onboarding
+                          </button>
+                          <button
+                            onClick={() =>
+                              void handleAdminAction(
+                                selectedTenant.id,
+                                admin.id,
+                                'reset-temporary-password',
+                              )
+                            }
+                            disabled={
+                              workingAdminId === admin.id ||
+                              !admin.can_reset_temporary_password
+                            }
+                            className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Reset Temp Password
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {tenantAdmins.length === 0 && (
+                    <div className="rounded-3xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
+                      No tenant admins provisioned yet.
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <section className="rounded-[2rem] border border-slate-100 bg-white p-5">
+                  <h4 className="text-lg font-bold text-slate-900">Recent Failures</h4>
+                  <div className="mt-4 space-y-3">
+                    {tenantOps.failures.recentFailures.length === 0 && (
+                      <p className="text-sm text-slate-400">
+                        No recent failed notification logs for this tenant.
+                      </p>
+                    )}
+                    {tenantOps.failures.recentFailures.map((failure) => (
+                      <div
+                        key={failure.notification_id}
+                        className="rounded-2xl bg-slate-50 px-4 py-3"
+                      >
+                        <p className="text-sm font-semibold text-slate-900">
+                          {failure.channel} • {failure.status}
+                        </p>
+                        <p className="mt-1 text-xs font-mono text-slate-500">
+                          {failure.notification_id}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {failure.error_details || 'No error details'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="rounded-[2rem] border border-slate-100 bg-white p-5">
+                  <h4 className="text-lg font-bold text-slate-900">Recent Activity</h4>
+                  <div className="mt-4 space-y-3">
+                    {tenantOps.recentActivity.length === 0 && (
+                      <p className="text-sm text-slate-400">
+                        No recent activity available yet.
+                      </p>
+                    )}
+                    {tenantOps.recentActivity.map((activity) => (
+                      <div
+                        key={activity.notification_id}
+                        className="rounded-2xl bg-slate-50 px-4 py-3"
+                      >
+                        <p className="text-sm font-semibold text-slate-900">
+                          {activity.channel} • {activity.status}
+                        </p>
+                        <p className="mt-1 text-xs font-mono text-slate-500">
+                          {activity.notification_id}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {activity.sent_at
+                            ? new Date(activity.sent_at).toLocaleString()
+                            : 'Pending timestamp'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-[2rem] border border-slate-100 bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-5">
+              <h3 className="text-lg font-bold text-slate-900">Provision Tenant</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Create a tenant, set initial quotas, bootstrap the first tenant admin, and send onboarding.
+              </p>
             </div>
 
-            {/* Table */}
-            {loading ? (
-                <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-100 rounded-2xl border border-slate-100"></div>)}</div>
-            ) : (
-                <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
-                    <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                        <div className="col-span-3">Project Name</div>
-                        <div className="col-span-3">Project ID</div>
-                        <div className="col-span-2">Namespaces</div>
-                        <div className="col-span-1 text-center">Status</div>
-                        <div className="col-span-3 text-right">Actions</div>
-                    </div>
-                    {tenants.length === 0 ? (
-                        <div className="p-12 text-center text-sm text-slate-400">No tenants onboarded yet. Click &quot;+ Onboard Project&quot; to get started.</div>
-                    ) : (
-                        <div className="divide-y divide-slate-50">
-                            {tenants.map((tenant) => (
-                                <div key={tenant.id} className={`grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-slate-50/50 transition-colors ${!tenant.is_active ? 'opacity-60' : ''}`}>
-                                    <div className="col-span-3">
-                                        <p className="text-sm font-semibold text-slate-800">{tenant.name}</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">{new Date(tenant.created_at).toLocaleDateString()}</p>
-                                    </div>
-                                    <div className="col-span-3">
-                                        <div className="flex items-center gap-1.5">
-                                            <p className="text-xs font-mono text-slate-500 truncate" title={tenant.id}>{tenant.id}</p>
-                                            <button onClick={() => handleCopyId(tenant.id)} className="text-slate-400 hover:text-slate-700 transition-colors shrink-0" title="Copy ID">
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <div className="flex flex-wrap gap-1">
-                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-500 border border-slate-100">global_system</span>
-                                            {tenant.allowed_channels?.map(ch => (
-                                                <span key={ch} className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-100">{ch}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1 text-center">
-                                        {tenant.is_active ? (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">Active</span>
-                                        ) : (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-rose-50 text-rose-500 border border-rose-100">Inactive</span>
-                                        )}
-                                    </div>
-                                    <div className="col-span-3 flex justify-end gap-2">
-                                        <button onClick={() => setDetailTenant(tenant)} className="text-[10px] uppercase tracking-wider font-bold text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-100 px-2.5 py-1.5 rounded-lg transition-colors">View</button>
-                                        <button onClick={() => handleOpenEdit(tenant)} className="text-[10px] uppercase tracking-wider font-bold text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-100 px-2.5 py-1.5 rounded-lg transition-colors">Edit</button>
-                                        <button onClick={() => handleToggleActive(tenant.id, tenant.is_active)} className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1.5 rounded-lg transition-colors border border-transparent ${tenant.is_active ? 'text-rose-500 hover:bg-rose-50 hover:border-rose-100' : 'text-emerald-500 hover:bg-emerald-50 hover:border-emerald-100'}`}>
-                                            {tenant.is_active ? 'Suspend' : 'Restore'}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+            <form onSubmit={handleProvision} className="space-y-6 p-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold uppercase tracking-[0.24em] text-slate-500">
+                    Tenant Profile
+                  </h4>
+                  <input
+                    required
+                    className={inputClasses}
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, name: event.target.value }))
+                    }
+                    placeholder="Tenant name"
+                  />
+                  <input
+                    className={inputClasses}
+                    value={form.allowed_channels}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        allowed_channels: event.target.value,
+                      }))
+                    }
+                    placeholder="EMAIL,SMS,PUSH"
+                  />
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <input
+                      className={inputClasses}
+                      type="number"
+                      value={form.rate_limit_per_minute}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          rate_limit_per_minute: Number(event.target.value),
+                        }))
+                      }
+                      placeholder="RPM"
+                    />
+                    <input
+                      className={inputClasses}
+                      type="number"
+                      value={form.daily_notification_cap}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          daily_notification_cap: Number(event.target.value),
+                        }))
+                      }
+                      placeholder="Daily cap"
+                    />
+                    <input
+                      className={inputClasses}
+                      type="number"
+                      value={form.max_template_count}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          max_template_count: Number(event.target.value),
+                        }))
+                      }
+                      placeholder="Template quota"
+                    />
+                  </div>
+                  <input
+                    className={inputClasses}
+                    value={form.sender_name}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        sender_name: event.target.value,
+                      }))
+                    }
+                    placeholder="Default sender name"
+                  />
+                  <input
+                    className={inputClasses}
+                    type="email"
+                    value={form.sender_email}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        sender_email: event.target.value,
+                      }))
+                    }
+                    placeholder="Default sender email"
+                  />
                 </div>
-            )}
 
-            {/* Detail Modal */}
-            {detailTenant && (
-                <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setDetailTenant(null)}>
-                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">{detailTenant.name}</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Created {new Date(detailTenant.created_at).toLocaleDateString()}</p>
-                            </div>
-                            {detailTenant.is_active ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">Active</span>
-                            ) : (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-500 border border-rose-100">Inactive</span>
-                            )}
-                        </div>
-                        <div className="p-6 space-y-5">
-                            <div>
-                                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Project ID (Public — Frontend Safe)</p>
-                                <div className="flex items-center gap-2">
-                                    <code className="flex-1 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 truncate">{detailTenant.id}</code>
-                                    <button onClick={() => handleCopyId(detailTenant.id)} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors text-xs font-bold">Copy</button>
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">API Webhook Key (Secret — Backend Only)</p>
-                                <div className="flex items-center gap-2">
-                                    <code className="flex-1 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 truncate">{detailTenant.api_key}</code>
-                                    <button onClick={() => handleCopyId(detailTenant.api_key)} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors text-xs font-bold">Copy</button>
-                                    <button onClick={() => handleRotateKey(detailTenant.id)} className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors text-xs font-bold border border-rose-100">Rotate</button>
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">WebSocket Namespaces</p>
-                                <div className="flex flex-wrap gap-2">
-                                    <span className="px-2 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-100">global_system</span>
-                                    {detailTenant.allowed_channels?.map(ch => (
-                                        <span key={ch} className="px-2 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-100">{ch}</span>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Rate Limit (Per Min)</p>
-                                    <div className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600">
-                                        {detailTenant.rate_limit_per_minute} req/m
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Daily Quota</p>
-                                    <div className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600">
-                                        {detailTenant.daily_notification_cap?.toLocaleString()}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end">
-                            <button onClick={() => setDetailTenant(null)} className="px-5 py-2 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors">Close</button>
-                        </div>
-                    </div>
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold uppercase tracking-[0.24em] text-slate-500">
+                    First Tenant Admin
+                  </h4>
+                  <input
+                    required
+                    className={inputClasses}
+                    value={form.tenantAdmin.username}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        tenantAdmin: {
+                          ...current.tenantAdmin,
+                          username: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Username"
+                  />
+                  <input
+                    required
+                    className={inputClasses}
+                    type="email"
+                    value={form.tenantAdmin.email}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        tenantAdmin: {
+                          ...current.tenantAdmin,
+                          email: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Email"
+                  />
+                  <input
+                    className={inputClasses}
+                    value={form.tenantAdmin.displayName}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        tenantAdmin: {
+                          ...current.tenantAdmin,
+                          displayName: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Display name"
+                  />
                 </div>
-            )}
+              </div>
 
-            {/* Create Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
-                            <h3 className="text-lg font-bold text-slate-900">Configure New Project</h3>
-                            <p className="text-sm text-slate-500 mt-1">Generate an independent API Key and WebSocket boundary isolation.</p>
-                        </div>
-                        <form onSubmit={handleCreateNew} className="p-6 space-y-6">
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Project Name</label>
-                                <input type="text" required value={newTenantName} onChange={e => setNewTenantName(e.target.value)} placeholder="e.g. TMaaS Processing Engine" className={inputClasses} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">WebSocket Boundaries</label>
-                                <input type="text" value={newChannels} onChange={e => setNewChannels(e.target.value)} placeholder="e.g. ecommerce_store, support_chat" className={inputClasses} />
-                                <p className="text-[11px] text-slate-500 mt-2 font-medium">Comma separated namespaces for real-time In-App Popups (Optional).</p>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Integration Configuration (BYOP)</label>
-                                <select value={newProviderId} onChange={e => setNewProviderId(e.target.value)} className={inputClasses}>
-                                    <option value="">System Default</option>
-                                    {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Email</label>
-                                    <input type="email" value={newSenderEmail} onChange={e => setNewSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className={inputClasses} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Name</label>
-                                    <input type="text" value={newSenderName} onChange={e => setNewSenderName(e.target.value)} placeholder="TMaaS App" className={inputClasses} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Rate Limit (req/min)</label>
-                                    <input type="number" required value={newRateLimit} onChange={e => setNewRateLimit(parseInt(e.target.value) || 0)} className={inputClasses} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Daily Notifications Cap</label>
-                                    <input type="number" required value={newDailyCap} onChange={e => setNewDailyCap(parseInt(e.target.value) || 0)} className={inputClasses} />
-                                </div>
-                            </div>
-                            <div className="pt-2 flex justify-end space-x-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                                <button type="submit" className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm">Establish Infrastructure</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Modal */}
-            {isEditModalOpen && editingTenant && (
-                <div className="fixed inset-0 bg-slate-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-white border border-slate-100 rounded-[2rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
-                            <h3 className="text-lg font-bold text-slate-900">Edit Project</h3>
-                            <p className="text-sm text-slate-500 mt-1">Update the project name and websocket boundaries.</p>
-                        </div>
-                        <form onSubmit={handleEditSubmit} className="p-6 space-y-6">
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Project Name</label>
-                                <input type="text" required value={editTenantName} onChange={e => setEditTenantName(e.target.value)} className={inputClasses} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">WebSocket Boundaries</label>
-                                <input type="text" value={editChannels} onChange={e => setEditChannels(e.target.value)} placeholder="e.g. ecommerce_store, support_chat" className={inputClasses} />
-                                <p className="text-[11px] text-slate-500 mt-2 font-medium">Comma separated namespaces (Optional).</p>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Integration Configuration (BYOP)</label>
-                                <select value={editProviderId} onChange={e => setEditProviderId(e.target.value)} className={inputClasses}>
-                                    <option value="">System Default</option>
-                                    {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Email</label>
-                                    <input type="email" value={editSenderEmail} onChange={e => setEditSenderEmail(e.target.value)} placeholder="hello@tmaas.africa" className={inputClasses} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Override Sender Name</label>
-                                    <input type="text" value={editSenderName} onChange={e => setEditSenderName(e.target.value)} placeholder="TMaaS App" className={inputClasses} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Rate Limit (req/min)</label>
-                                    <input type="number" required value={editRateLimit} onChange={e => setEditRateLimit(parseInt(e.target.value) || 0)} className={inputClasses} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Daily Notifications Cap</label>
-                                    <input type="number" required value={editDailyCap} onChange={e => setEditDailyCap(parseInt(e.target.value) || 0)} className={inputClasses} />
-                                </div>
-                            </div>
-                            <div className="pt-2 flex justify-end space-x-3">
-                                <button type="button" onClick={() => { setIsEditModalOpen(false); setEditingTenant(null); }} className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                                <button type="submit" className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm">Save Changes</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  Provision Tenant
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 }

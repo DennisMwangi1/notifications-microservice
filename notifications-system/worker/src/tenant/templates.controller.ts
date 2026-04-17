@@ -1,20 +1,24 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Param,
   Post,
   Put,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import mjml2html from 'mjml';
+import * as handlebars from 'handlebars';
 import { randomUUID } from 'crypto';
 import { CreateTemplateDto } from '../common/dto/admin.dto';
 import { TenantAuthGuard } from '../common/guards/tenant-auth.guard';
 import { AuthenticatedRequest } from '../common/actor-context';
 import { DbContextService } from '../common/db-context.service';
 import { AuditLogService } from '../common/audit-log.service';
+import { TemplatePreviewDto } from '../common/dto/admin-auth.dto';
+import { analyzeTemplateVariables, isJsonObject } from '../admin/template-analysis';
 
 @Controller('api/v1/tenant/templates')
 @UseGuards(TenantAuthGuard)
@@ -30,7 +34,6 @@ export class TenantTemplatesController {
     @Req() req: AuthenticatedRequest,
   ) {
     const tenantId = req.actorContext.tenantId!;
-    const scope = body.scope || 'TENANT_CUSTOM';
 
     const template = await this.dbContext.withActorContext(
       req.actorContext,
@@ -40,9 +43,8 @@ export class TenantTemplatesController {
             tenant_id: tenantId,
             event_type: body.event_type,
             channel_type: body.channel_type,
-            scope,
           },
-          orderBy: { version: 'desc' },
+          orderBy: [{ version: 'desc' }, { created_at: 'desc' }],
         });
 
         const version = existing ? existing.version + 1 : 1;
@@ -58,7 +60,7 @@ export class TenantTemplatesController {
             subject_line: body.subject_line,
             content_body: body.content_body,
             target_ws_channel: body.target_ws_channel,
-            scope,
+            scope: 'TENANT_CUSTOM',
             is_active: true,
           },
         });
@@ -78,11 +80,90 @@ export class TenantTemplatesController {
     return { success: true, data: template };
   }
 
+  @Post('preview')
+  async previewTemplate(@Body() body: TemplatePreviewDto) {
+    const { content_body, channel_type, subject_line, sample_data } = body;
+
+    if (!content_body?.trim()) {
+      throw new BadRequestException('content_body is required');
+    }
+
+    if (sample_data !== undefined && !isJsonObject(sample_data)) {
+      throw new BadRequestException('sample_data must be a JSON object');
+    }
+
+    const context = sample_data ?? this.getDefaultSampleData();
+    const analysis = analyzeTemplateVariables(
+      content_body,
+      context,
+      subject_line,
+    );
+
+    try {
+      let renderedBody: string;
+      let renderedSubject: string | null = null;
+      const warnings: string[] = [...analysis.syntaxErrors];
+
+      if (subject_line) {
+        const subjectTemplate = handlebars.compile(subject_line);
+        renderedSubject = subjectTemplate(context);
+      }
+
+      if (channel_type === 'EMAIL') {
+        const hbTemplate = handlebars.compile(content_body);
+        const interpolatedMjml = hbTemplate(context);
+        const { html, errors } = mjml2html(interpolatedMjml, {
+          validationLevel: 'soft',
+        });
+
+        if (errors?.length) {
+          for (const err of errors) {
+            warnings.push(`${err.tagName}: ${err.message}`);
+          }
+        }
+
+        renderedBody = html;
+      } else {
+        const hbTemplate = handlebars.compile(content_body, { noEscape: true });
+        renderedBody = hbTemplate(context);
+      }
+
+      return {
+        success: true,
+        data: {
+          html: renderedBody,
+          subject: renderedSubject,
+          channel_type,
+          warnings,
+          available_variables: analysis.availableVariables,
+          referenced_variables: analysis.referencedVariables,
+          missing_variables: analysis.missingVariables,
+          unused_variables: analysis.unusedVariables,
+          sampleDataUsed: context,
+        },
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        success: false,
+        message: `Template rendering failed: ${message}`,
+        data: {
+          html: null,
+          subject: null,
+          channel_type,
+          warnings: [...analysis.syntaxErrors, message],
+          available_variables: analysis.availableVariables,
+          referenced_variables: analysis.referencedVariables,
+          missing_variables: analysis.missingVariables,
+          unused_variables: analysis.unusedVariables,
+          sampleDataUsed: context,
+        },
+      };
+    }
+  }
+
   @Get()
-  async listTemplates(
-    @Query('scope') scope: 'TENANT_OVERRIDE' | 'TENANT_CUSTOM' | undefined,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  async listTemplates(@Req() req: AuthenticatedRequest) {
     const tenantId = req.actorContext.tenantId!;
     const templates = await this.dbContext.withActorContext(
       req.actorContext,
@@ -90,9 +171,13 @@ export class TenantTemplatesController {
         tx.templates.findMany({
           where: {
             tenant_id: tenantId,
-            ...(scope ? { scope } : {}),
           },
-          orderBy: [{ event_type: 'asc' }, { version: 'desc' }],
+          orderBy: [
+            { event_type: 'asc' },
+            { channel_type: 'asc' },
+            { version: 'desc' },
+            { created_at: 'desc' },
+          ],
         }),
     );
 
@@ -163,5 +248,19 @@ export class TenantTemplatesController {
     );
 
     return { success: true, data: updated };
+  }
+
+  private getDefaultSampleData(): Record<string, unknown> {
+    return {
+      name: 'Jane Doe',
+      email: 'jane.doe@example.com',
+      userId: 'usr_abc123',
+      orderId: 'ORD-2025-0042',
+      amount: '$149.99',
+      company: 'Acme Corp',
+      action_url: 'https://example.com/verify',
+      timestamp: new Date().toISOString(),
+      support_email: 'support@example.com',
+    };
   }
 }

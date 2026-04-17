@@ -67,3 +67,13 @@ export type audit_logs = Prisma.audit_logsModel
  * 
  */
 export type tenant_admins = Prisma.tenant_adminsModel
+/**
+ * Model operational_mailer_configs
+ * 
+ */
+export type operational_mailer_configs = Prisma.operational_mailer_configsModel
+/**
+ * Model operational_email_templates
+ * 
+ */
+export type operational_email_templates = Prisma.operational_email_templatesModel

@@ -192,14 +192,49 @@ model tenant_admins {
   id            String      @id @default(uuid()) @db.Uuid
   tenant_id     String      @db.Uuid
   username      String      @db.VarChar(150)
+  email         String      @db.VarChar(255)
+  display_name  String?     @db.VarChar(255)
   password_hash String      @db.VarChar(255)
+  must_reset_password Boolean @default(true)
+  password_set_at DateTime? @db.Timestamp(6)
+  welcome_sent_at DateTime? @db.Timestamp(6)
+  welcome_delivery_status String? @db.VarChar(50)
+  welcome_delivery_error String?
   is_active     Boolean     @default(true)
   created_at    DateTime    @default(now()) @db.Timestamp(6)
   updated_at    DateTime    @updatedAt @db.Timestamp(6)
   tenant        tenants     @relation(fields: [tenant_id], references: [id])
 
   @@unique([tenant_id, username])
+  @@unique([tenant_id, email])
   @@index([tenant_id, is_active])
+}
+
+model operational_mailer_configs {
+  id                 String   @id @default(uuid()) @db.Uuid
+  name               String   @db.VarChar(255)
+  provider           provider_type
+  api_key_ciphertext String   @db.Text
+  api_key_last4      String?  @db.VarChar(8)
+  key_version        Int      @default(1)
+  rotated_at         DateTime? @db.Timestamp(6)
+  sender_email       String?  @db.VarChar(255)
+  sender_name        String?  @db.VarChar(255)
+  is_active          Boolean  @default(true)
+  created_at         DateTime @default(now()) @db.Timestamp(6)
+  updated_at         DateTime @updatedAt @db.Timestamp(6)
+}
+
+model operational_email_templates {
+  id              String   @id @default(uuid()) @db.Uuid
+  template_key    String   @unique @db.VarChar(120)
+  name            String   @db.VarChar(255)
+  subject_line    String?  @db.VarChar(255)
+  content_body    String
+  sample_data     Json
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
 }
 
 enum template_scope_enum {

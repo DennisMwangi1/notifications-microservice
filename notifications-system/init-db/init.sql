@@ -172,12 +172,52 @@ CREATE TABLE "tenant_admins" (
     "id" UUID NOT NULL,
     "tenant_id" UUID NOT NULL,
     "username" VARCHAR(150) NOT NULL,
+    "email" VARCHAR(255) NOT NULL,
+    "display_name" VARCHAR(255),
     "password_hash" VARCHAR(255) NOT NULL,
+    "must_reset_password" BOOLEAN NOT NULL DEFAULT true,
+    "password_set_at" TIMESTAMP(6),
+    "welcome_sent_at" TIMESTAMP(6),
+    "welcome_delivery_status" VARCHAR(50),
+    "welcome_delivery_error" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6) NOT NULL,
 
     CONSTRAINT "tenant_admins_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "operational_mailer_configs" (
+    "id" UUID NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "provider" "provider_type" NOT NULL,
+    "api_key_ciphertext" TEXT NOT NULL,
+    "api_key_last4" VARCHAR(8),
+    "key_version" INTEGER NOT NULL DEFAULT 1,
+    "rotated_at" TIMESTAMP(6),
+    "sender_email" VARCHAR(255),
+    "sender_name" VARCHAR(255),
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+
+    CONSTRAINT "operational_mailer_configs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "operational_email_templates" (
+    "id" UUID NOT NULL,
+    "template_key" VARCHAR(120) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "subject_line" VARCHAR(255),
+    "content_body" TEXT NOT NULL,
+    "sample_data" JSONB NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+
+    CONSTRAINT "operational_email_templates_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -224,6 +264,12 @@ CREATE INDEX "tenant_admins_tenant_id_is_active_idx" ON "tenant_admins"("tenant_
 
 -- CreateIndex
 CREATE UNIQUE INDEX "tenant_admins_tenant_id_username_key" ON "tenant_admins"("tenant_id", "username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tenant_admins_tenant_id_email_key" ON "tenant_admins"("tenant_id", "email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "operational_email_templates_template_key_key" ON "operational_email_templates"("template_key");
 
 -- AddForeignKey
 ALTER TABLE "template_library" ADD CONSTRAINT "template_library_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

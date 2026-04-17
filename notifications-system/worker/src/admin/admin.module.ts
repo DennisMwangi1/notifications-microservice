@@ -9,6 +9,8 @@ import { DlqController } from './dlq.controller';
 import { AdminAuthController } from './admin-auth.controller';
 import { TemplatePreviewController } from './template-preview.controller';
 import { TemplateLibraryController } from './template-library.controller';
+import { OperationalMailerController } from './operational-mailer.controller';
+import { AuditLogsController } from './audit-logs.controller';
 import { RateLimiterService } from '../common/rate-limiter.service';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 
@@ -37,9 +39,11 @@ import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
     TemplatePreviewController,
     TemplateLibraryController,
     StatsController,
+    AuditLogsController,
     LogsController,
     ProvidersController,
     DlqController,
+    OperationalMailerController,
   ],
 })
 export class AdminModule {}

@@ -66,13 +66,9 @@ export class NotificationsController implements OnModuleInit {
           where: {
             event_type: eventType,
             is_active: true,
-            OR: [
-              { tenant_id: tenant.id, scope: 'TENANT_OVERRIDE' },
-              { tenant_id: tenant.id, scope: 'TENANT_CUSTOM' },
-              { tenant_id: null, scope: 'PLATFORM_DEFAULT' },
-            ],
+            tenant_id: tenant.id,
           },
-          orderBy: { version: 'desc' },
+          orderBy: [{ version: 'desc' }, { created_at: 'desc' }],
         });
 
         const resolvedProviderConfig = tenant.provider_config_id
@@ -87,14 +83,6 @@ export class NotificationsController implements OnModuleInit {
 
     const seenChannels = new Set<string>();
     const resolvedTemplates = [...templates]
-      .sort((left, right) => {
-        const leftRank = this.resolveTemplatePriority(left.scope);
-        const rightRank = this.resolveTemplatePriority(right.scope);
-        if (leftRank !== rightRank) {
-          return leftRank - rightRank;
-        }
-        return right.version - left.version;
-      })
       .filter((tpl) => {
         if (seenChannels.has(tpl.channel_type)) return false;
         seenChannels.add(tpl.channel_type);
@@ -457,14 +445,4 @@ export class NotificationsController implements OnModuleInit {
     }
   }
 
-  private resolveTemplatePriority(scope: string): number {
-    switch (scope) {
-      case 'TENANT_OVERRIDE':
-        return 0;
-      case 'TENANT_CUSTOM':
-        return 1;
-      default:
-        return 2;
-    }
-  }
 }

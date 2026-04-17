@@ -1,85 +1,147 @@
-/**
- * Admin Authentication library for the Admin UI.
- * Manages JWT tokens in localStorage and provides auth helpers.
- */
+type SessionActor = 'platform' | 'tenant';
 
-const TOKEN_KEY = 'nucleus_admin_token';
-const USER_KEY = 'nucleus_admin_user';
+const STORAGE_KEYS = {
+  platform: {
+    token: 'nucleus_platform_token',
+    user: 'nucleus_platform_user',
+  },
+  tenant: {
+    token: 'nucleus_tenant_token',
+    user: 'nucleus_tenant_user',
+  },
+} as const;
 
-export interface AdminUser {
-    username: string;
-    role: string;
+export interface PlatformUser {
+  username: string;
+  role: 'platform_operator' | 'admin';
 }
 
-export interface LoginResponse {
-    success: boolean;
-    data?: {
-        token: string;
-        expiresIn: string;
-        user: AdminUser;
-    };
-    message?: string;
+export interface TenantUser {
+  id: string;
+  username: string;
+  email: string;
+  displayName?: string | null;
+  role: 'tenant_admin';
+  tenantId: string;
+  mustResetPassword: boolean;
 }
 
-/**
- * Get the stored JWT token
- */
+export interface PlatformLoginResponse {
+  success: boolean;
+  data?: {
+    token: string;
+    expiresIn: string;
+    user: PlatformUser;
+  };
+  message?: string;
+}
+
+export type LoginResponse = PlatformLoginResponse;
+
+export interface TenantLoginResponse {
+  success: boolean;
+  data?: {
+    token: string;
+    expiresIn: string;
+    user: TenantUser;
+  };
+  message?: string;
+}
+
+function getStorageKey(actor: SessionActor, key: 'token' | 'user') {
+  return STORAGE_KEYS[actor][key];
+}
+
+function getStoredToken(actor: SessionActor): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(getStorageKey(actor, 'token'));
+}
+
+function getStoredUser<T>(actor: SessionActor): T | null {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem(getStorageKey(actor, 'user'));
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredAuth<T>(actor: SessionActor, token: string, user: T): void {
+  localStorage.setItem(getStorageKey(actor, 'token'), token);
+  localStorage.setItem(getStorageKey(actor, 'user'), JSON.stringify(user));
+}
+
+function clearStoredAuth(actor: SessionActor): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(getStorageKey(actor, 'token'));
+  localStorage.removeItem(getStorageKey(actor, 'user'));
+}
+
+function isStoredAuthenticated(actor: SessionActor): boolean {
+  const token = getStoredToken(actor);
+  if (!token) return false;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+function authHeadersFor(actor: SessionActor): Record<string, string> {
+  const token = getStoredToken(actor);
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
 export function getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(TOKEN_KEY);
+  return getStoredToken('platform');
 }
 
-/**
- * Get the stored admin user info
- */
-export function getUser(): AdminUser | null {
-    if (typeof window === 'undefined') return null;
-    const raw = localStorage.getItem(USER_KEY);
-    if (!raw) return null;
-    try {
-        return JSON.parse(raw);
-    } catch {
-        return null;
-    }
+export function getUser(): PlatformUser | null {
+  return getStoredUser<PlatformUser>('platform');
 }
 
-/**
- * Store authentication data after successful login
- */
-export function setAuth(token: string, user: AdminUser): void {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+export function setAuth(token: string, user: PlatformUser): void {
+  setStoredAuth('platform', token, user);
 }
 
-/**
- * Clear all authentication data (logout)
- */
 export function clearAuth(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+  clearStoredAuth('platform');
 }
 
-/**
- * Check if the user is currently authenticated
- */
 export function isAuthenticated(): boolean {
-    const token = getToken();
-    if (!token) return false;
-
-    // Check JWT expiry (decode without verification — server validates)
-    try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.exp * 1000 > Date.now();
-    } catch {
-        return false;
-    }
+  return isStoredAuthenticated('platform');
 }
 
-/**
- * Create auth headers for API requests
- */
 export function authHeaders(): Record<string, string> {
-    const token = getToken();
-    if (!token) return {};
-    return { Authorization: `Bearer ${token}` };
+  return authHeadersFor('platform');
+}
+
+export function getTenantToken(): string | null {
+  return getStoredToken('tenant');
+}
+
+export function getTenantUser(): TenantUser | null {
+  return getStoredUser<TenantUser>('tenant');
+}
+
+export function setTenantAuth(token: string, user: TenantUser): void {
+  setStoredAuth('tenant', token, user);
+}
+
+export function clearTenantAuth(): void {
+  clearStoredAuth('tenant');
+}
+
+export function isTenantAuthenticated(): boolean {
+  return isStoredAuthenticated('tenant');
+}
+
+export function tenantAuthHeaders(): Record<string, string> {
+  return authHeadersFor('tenant');
 }

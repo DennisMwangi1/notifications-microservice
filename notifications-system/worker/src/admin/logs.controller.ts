@@ -13,6 +13,9 @@ export class LogsController {
     @Query('channel') channel: string | undefined,
     @Query('status') status: string | undefined,
     @Query('tenantId') tenantId: string | undefined,
+    @Query('providerRef') providerRef: string | undefined,
+    @Query('from') from: string | undefined,
+    @Query('to') to: string | undefined,
     @Query('page') page: string | undefined,
     @Query('limit') limit: string | undefined,
     @Req() req: AuthenticatedRequest,
@@ -24,6 +27,18 @@ export class LogsController {
     if (channel) whereClause.channel = channel;
     if (status) whereClause.status = status;
     if (tenantId) whereClause.tenant_id = tenantId;
+    if (providerRef?.trim()) {
+      whereClause.provider_ref = {
+        contains: providerRef.trim(),
+        mode: 'insensitive',
+      };
+    }
+    if (from || to) {
+      whereClause.sent_at = {
+        ...(from ? { gte: new Date(from) } : {}),
+        ...(to ? { lte: new Date(to) } : {}),
+      };
+    }
 
     const [logs, total] = await this.dbContext.withActorContext(
       req.actorContext,

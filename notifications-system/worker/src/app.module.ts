@@ -10,6 +10,8 @@ import { LoggerMiddleware } from './common/logger.middleware';
 import { DbContextService } from './common/db-context.service';
 import { AuditLogService } from './common/audit-log.service';
 import { ProviderCryptoService } from './common/provider-crypto.service';
+import { OperationalMailerService } from './common/operational-mailer.service';
+import { TenantAdminCredentialsService } from './common/tenant-admin-credentials.service';
 
 @Global()
 @Module({
@@ -20,6 +22,8 @@ import { ProviderCryptoService } from './common/provider-crypto.service';
     DbContextService,
     AuditLogService,
     ProviderCryptoService,
+    OperationalMailerService,
+    TenantAdminCredentialsService,
   ],
   exports: [
     AppLoggerService,
@@ -27,6 +31,8 @@ import { ProviderCryptoService } from './common/provider-crypto.service';
     DbContextService,
     AuditLogService,
     ProviderCryptoService,
+    OperationalMailerService,
+    TenantAdminCredentialsService,
   ],
 })
 export class AppModule implements NestModule {

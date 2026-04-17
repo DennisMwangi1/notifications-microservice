@@ -94,7 +94,7 @@ export default function LoginPage() {
                         {/* Header */}
                         <div className="mb-8">
                             <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
-                            <p className="text-sm text-slate-500 mt-2">Sign in to the administrative console to continue.</p>
+                            <p className="text-sm text-slate-500 mt-2">Sign in to the platform operator console to continue.</p>
                         </div>
 
                         {/* Form */}
@@ -163,6 +163,10 @@ export default function LoginPage() {
                                 )}
                             </button>
                         </form>
+
+                        <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                            Tenant admins sign in at <span className="font-semibold text-slate-700">/tenant/login</span>.
+                        </div>
                     </div>
 
                     <p className="text-center text-xs text-slate-400 font-medium mt-8">

@@ -1,8 +1,8 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { RateLimiterService } from '../common/rate-limiter.service';
 import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 import { DbContextService } from '../common/db-context.service';
 import { AuthenticatedRequest } from '../common/actor-context';
+import { RateLimiterService } from '../common/rate-limiter.service';
 
 @Controller('api/v1/admin/stats')
 @UseGuards(AdminAuthGuard)
@@ -17,7 +17,7 @@ export class StatsController {
     const [
       totalTenants,
       activeTenants,
-      totalTemplates,
+      totalPlatformDefaultTemplates,
       totalNotificationLogs,
       totalInAppNotifications,
       recentLogs,
@@ -25,13 +25,18 @@ export class StatsController {
       statusBreakdown,
       activeTenantConfigs,
       distinctTenantTemplates,
+      failedNotifications,
+      failedNotificationGroups,
+      tenantAdmins,
+      operationalMailerConfig,
+      recentProviderFailures,
     ] = await this.dbContext.withActorContext(
       req.actorContext,
       (tx) =>
         Promise.all([
           tx.tenants.count(),
           tx.tenants.count({ where: { is_active: true } }),
-          tx.templates.count(),
+          tx.templates.count({ where: { scope: 'PLATFORM_DEFAULT' } }),
           tx.notification_logs.count(),
           tx.in_app_notifications.count(),
           tx.notification_logs.findMany({
@@ -62,6 +67,50 @@ export class StatsController {
             distinct: ['tenant_id', 'template_id'],
             select: { tenant_id: true, template_id: true },
           }),
+          tx.failed_notifications.count(),
+          tx.failed_notifications.groupBy({
+            by: ['tenant_id'],
+            _count: { tenant_id: true },
+            orderBy: {
+              _count: {
+                tenant_id: 'desc',
+              },
+            },
+            take: 5,
+          }),
+          tx.tenant_admins.findMany({
+            select: {
+              id: true,
+              tenant_id: true,
+              must_reset_password: true,
+              welcome_delivery_status: true,
+              welcome_sent_at: true,
+            },
+          }),
+          tx.operational_mailer_configs.findFirst({
+            orderBy: { created_at: 'asc' },
+            select: {
+              id: true,
+              provider: true,
+              is_active: true,
+              api_key_last4: true,
+              key_version: true,
+              rotated_at: true,
+            },
+          }),
+          tx.notification_logs.findMany({
+            where: {
+              status: 'FAILED',
+              provider_ref: { not: null },
+            },
+            select: {
+              provider_ref: true,
+              tenant_id: true,
+              sent_at: true,
+            },
+            orderBy: { sent_at: 'desc' },
+            take: 200,
+          }),
         ]),
     );
 
@@ -81,6 +130,10 @@ export class StatsController {
         (templateCountByTenant.get(item.tenant_id) || 0) + 1,
       );
     }
+
+    const tenantNameById = new Map(
+      activeTenantConfigs.map((tenant) => [tenant.id, tenant.name]),
+    );
 
     const tenantRateLimitStats = await Promise.all(
       activeTenantConfigs.map(async (tenant) => {
@@ -151,14 +204,55 @@ export class StatsController {
           b.burstUsagePct,
         );
         return bScore - aScore;
-      })
+      });
+
+    const onboarding = {
+      totalAdmins: tenantAdmins.length,
+      mustResetPassword: tenantAdmins.filter((admin) => admin.must_reset_password)
+        .length,
+      welcomeFailed: tenantAdmins.filter(
+        (admin) => admin.welcome_delivery_status === 'FAILED',
+      ).length,
+      welcomePending: tenantAdmins.filter(
+        (admin) =>
+          !admin.welcome_delivery_status ||
+          admin.welcome_delivery_status === 'SKIPPED',
+      ).length,
+    };
+
+    const dlqBacklogByTenant = failedNotificationGroups.map((entry) => ({
+      tenantId: entry.tenant_id,
+      tenantName: tenantNameById.get(entry.tenant_id) || entry.tenant_id,
+      count: entry._count.tenant_id,
+    }));
+
+    const providerFailureMap = new Map<
+      string,
+      { providerRef: string; count: number; latestSentAt: Date | null }
+    >();
+    for (const item of recentProviderFailures) {
+      if (!item.provider_ref) continue;
+      const current = providerFailureMap.get(item.provider_ref) || {
+        providerRef: item.provider_ref,
+        count: 0,
+        latestSentAt: null,
+      };
+      current.count += 1;
+      if (!current.latestSentAt || (item.sent_at && item.sent_at > current.latestSentAt)) {
+        current.latestSentAt = item.sent_at;
+      }
+      providerFailureMap.set(item.provider_ref, current);
+    }
+
+    const providerFailureTrends = Array.from(providerFailureMap.values())
+      .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
     return {
       success: true,
       data: {
         tenants: { total: totalTenants, active: activeTenants },
-        templates: { total: totalTemplates },
+        templates: { total: totalPlatformDefaultTemplates },
         notifications: {
           totalDispatched: totalNotificationLogs,
           totalInApp: totalInAppNotifications,
@@ -174,8 +268,34 @@ export class StatsController {
             (sum, tenant) => sum + tenant.dailyCount,
             0,
           ),
-          tenantsNearingLimits: watchlist,
+          tenantsNearingLimits: watchlist.slice(0, 5),
+          tenantUsage: tenantRateLimitStats.sort((a, b) =>
+            a.tenantName.localeCompare(b.tenantName),
+          ),
         },
+        onboarding,
+        dlq: {
+          total: failedNotifications,
+          backlogByTenant: dlqBacklogByTenant,
+        },
+        operationalMailer: operationalMailerConfig
+          ? {
+              configured: true,
+              provider: operationalMailerConfig.provider,
+              isActive: operationalMailerConfig.is_active,
+              apiKeyLast4: operationalMailerConfig.api_key_last4,
+              keyVersion: operationalMailerConfig.key_version,
+              rotatedAt: operationalMailerConfig.rotated_at,
+            }
+          : {
+              configured: false,
+              provider: null,
+              isActive: false,
+              apiKeyLast4: null,
+              keyVersion: null,
+              rotatedAt: null,
+            },
+        providerFailureTrends,
         channelBreakdown: channelBreakdown.map((c) => ({
           channel: c.channel,
           count: c._count.channel,

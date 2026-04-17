@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
   Post,
@@ -15,6 +17,7 @@ import { AdminAuthGuard } from '../common/guards/admin-auth.guard';
 import { DbContextService } from '../common/db-context.service';
 import { AuditLogService } from '../common/audit-log.service';
 import { AuthenticatedRequest } from '../common/actor-context';
+import { AdminActionReasonDto } from '../common/dto/admin.dto';
 
 @Controller('api/v1/admin/dlq')
 @UseGuards(AdminAuthGuard)
@@ -36,6 +39,8 @@ export class DlqController {
     @Query('tenantId') tenantId: string | undefined,
     @Query('channel') channel: string | undefined,
     @Query('permanentlyFailed') permanentlyFailed: string | undefined,
+    @Query('from') from: string | undefined,
+    @Query('to') to: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -47,6 +52,12 @@ export class DlqController {
     if (channel) where.channel = channel;
     if (permanentlyFailed !== undefined) {
       where.permanently_failed = permanentlyFailed === 'true';
+    }
+    if (from || to) {
+      where.created_at = {
+        ...(from ? { gte: new Date(from) } : {}),
+        ...(to ? { lte: new Date(to) } : {}),
+      };
     }
 
     const [items, total] = await this.dbContext.withActorContext(
@@ -103,7 +114,12 @@ export class DlqController {
    * to the notification.dispatch topic.
    */
   @Post(':id/retry')
-  async retryNotification(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  async retryNotification(
+    @Param('id') id: string,
+    @Body() body: AdminActionReasonDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const reason = this.requireReason(body?.reason);
     const item = await this.dbContext.withActorContext(
       req.actorContext,
       (tx) =>
@@ -142,6 +158,7 @@ export class DlqController {
         afterState: {
           notification_id: item.notification_id,
           retry_count: item.retry_count + 1,
+          reason,
         },
       });
     });
@@ -160,7 +177,11 @@ export class DlqController {
    * Retry all non-permanently-failed DLQ entries.
    */
   @Post('retry-all')
-  async retryAll(@Req() req: AuthenticatedRequest) {
+  async retryAll(
+    @Body() body: AdminActionReasonDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const reason = this.requireReason(body?.reason);
     const items = await this.dbContext.withActorContext(
       req.actorContext,
       (tx) =>
@@ -191,6 +212,7 @@ export class DlqController {
           afterState: {
             notification_id: item.notification_id,
             retry_count: item.retry_count + 1,
+            reason,
           },
         });
       });
@@ -212,7 +234,12 @@ export class DlqController {
    * Purge a single DLQ entry (permanently remove it).
    */
   @Delete(':id')
-  async purgeNotification(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  async purgeNotification(
+    @Param('id') id: string,
+    @Body() body: AdminActionReasonDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const reason = this.requireReason(body?.reason);
     try {
       await this.dbContext.withActorContext(req.actorContext, async (tx) => {
         const existing = await tx.failed_notifications.findUnique({
@@ -230,6 +257,7 @@ export class DlqController {
             resourceId: existing.id,
             tenantId: existing.tenant_id,
             beforeState: existing as unknown as Record<string, unknown>,
+            afterState: { reason },
           });
         }
       });
@@ -267,5 +295,15 @@ export class DlqController {
         pendingRetry: pending,
       },
     };
+  }
+
+  private requireReason(reason: string | undefined) {
+    const normalized = reason?.trim();
+
+    if (!normalized) {
+      throw new BadRequestException('reason is required for operator intervention');
+    }
+
+    return normalized;
   }
 }

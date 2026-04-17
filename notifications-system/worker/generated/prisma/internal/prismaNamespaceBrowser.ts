@@ -60,7 +60,9 @@ export const ModelName = {
   failed_notifications: 'failed_notifications',
   provider_configs: 'provider_configs',
   audit_logs: 'audit_logs',
-  tenant_admins: 'tenant_admins'
+  tenant_admins: 'tenant_admins',
+  operational_mailer_configs: 'operational_mailer_configs',
+  operational_email_templates: 'operational_email_templates'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -231,13 +233,53 @@ export const Tenant_adminsScalarFieldEnum = {
   id: 'id',
   tenant_id: 'tenant_id',
   username: 'username',
+  email: 'email',
+  display_name: 'display_name',
   password_hash: 'password_hash',
+  must_reset_password: 'must_reset_password',
+  password_set_at: 'password_set_at',
+  welcome_sent_at: 'welcome_sent_at',
+  welcome_delivery_status: 'welcome_delivery_status',
+  welcome_delivery_error: 'welcome_delivery_error',
   is_active: 'is_active',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
 
 export type Tenant_adminsScalarFieldEnum = (typeof Tenant_adminsScalarFieldEnum)[keyof typeof Tenant_adminsScalarFieldEnum]
+
+
+export const Operational_mailer_configsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  provider: 'provider',
+  api_key_ciphertext: 'api_key_ciphertext',
+  api_key_last4: 'api_key_last4',
+  key_version: 'key_version',
+  rotated_at: 'rotated_at',
+  sender_email: 'sender_email',
+  sender_name: 'sender_name',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Operational_mailer_configsScalarFieldEnum = (typeof Operational_mailer_configsScalarFieldEnum)[keyof typeof Operational_mailer_configsScalarFieldEnum]
+
+
+export const Operational_email_templatesScalarFieldEnum = {
+  id: 'id',
+  template_key: 'template_key',
+  name: 'name',
+  subject_line: 'subject_line',
+  content_body: 'content_body',
+  sample_data: 'sample_data',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Operational_email_templatesScalarFieldEnum = (typeof Operational_email_templatesScalarFieldEnum)[keyof typeof Operational_email_templatesScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -28,7 +28,14 @@ export type Tenant_adminsMinAggregateOutputType = {
   id: string | null
   tenant_id: string | null
   username: string | null
+  email: string | null
+  display_name: string | null
   password_hash: string | null
+  must_reset_password: boolean | null
+  password_set_at: Date | null
+  welcome_sent_at: Date | null
+  welcome_delivery_status: string | null
+  welcome_delivery_error: string | null
   is_active: boolean | null
   created_at: Date | null
   updated_at: Date | null
@@ -38,7 +45,14 @@ export type Tenant_adminsMaxAggregateOutputType = {
   id: string | null
   tenant_id: string | null
   username: string | null
+  email: string | null
+  display_name: string | null
   password_hash: string | null
+  must_reset_password: boolean | null
+  password_set_at: Date | null
+  welcome_sent_at: Date | null
+  welcome_delivery_status: string | null
+  welcome_delivery_error: string | null
   is_active: boolean | null
   created_at: Date | null
   updated_at: Date | null
@@ -48,7 +62,14 @@ export type Tenant_adminsCountAggregateOutputType = {
   id: number
   tenant_id: number
   username: number
+  email: number
+  display_name: number
   password_hash: number
+  must_reset_password: number
+  password_set_at: number
+  welcome_sent_at: number
+  welcome_delivery_status: number
+  welcome_delivery_error: number
   is_active: number
   created_at: number
   updated_at: number
@@ -60,7 +81,14 @@ export type Tenant_adminsMinAggregateInputType = {
   id?: true
   tenant_id?: true
   username?: true
+  email?: true
+  display_name?: true
   password_hash?: true
+  must_reset_password?: true
+  password_set_at?: true
+  welcome_sent_at?: true
+  welcome_delivery_status?: true
+  welcome_delivery_error?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -70,7 +98,14 @@ export type Tenant_adminsMaxAggregateInputType = {
   id?: true
   tenant_id?: true
   username?: true
+  email?: true
+  display_name?: true
   password_hash?: true
+  must_reset_password?: true
+  password_set_at?: true
+  welcome_sent_at?: true
+  welcome_delivery_status?: true
+  welcome_delivery_error?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -80,7 +115,14 @@ export type Tenant_adminsCountAggregateInputType = {
   id?: true
   tenant_id?: true
   username?: true
+  email?: true
+  display_name?: true
   password_hash?: true
+  must_reset_password?: true
+  password_set_at?: true
+  welcome_sent_at?: true
+  welcome_delivery_status?: true
+  welcome_delivery_error?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -163,7 +205,14 @@ export type Tenant_adminsGroupByOutputType = {
   id: string
   tenant_id: string
   username: string
+  email: string
+  display_name: string | null
   password_hash: string
+  must_reset_password: boolean
+  password_set_at: Date | null
+  welcome_sent_at: Date | null
+  welcome_delivery_status: string | null
+  welcome_delivery_error: string | null
   is_active: boolean
   created_at: Date
   updated_at: Date
@@ -194,7 +243,14 @@ export type tenant_adminsWhereInput = {
   id?: Prisma.UuidFilter<"tenant_admins"> | string
   tenant_id?: Prisma.UuidFilter<"tenant_admins"> | string
   username?: Prisma.StringFilter<"tenant_admins"> | string
+  email?: Prisma.StringFilter<"tenant_admins"> | string
+  display_name?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
   password_hash?: Prisma.StringFilter<"tenant_admins"> | string
+  must_reset_password?: Prisma.BoolFilter<"tenant_admins"> | boolean
+  password_set_at?: Prisma.DateTimeNullableFilter<"tenant_admins"> | Date | string | null
+  welcome_sent_at?: Prisma.DateTimeNullableFilter<"tenant_admins"> | Date | string | null
+  welcome_delivery_status?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
+  welcome_delivery_error?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
   is_active?: Prisma.BoolFilter<"tenant_admins"> | boolean
   created_at?: Prisma.DateTimeFilter<"tenant_admins"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"tenant_admins"> | Date | string
@@ -205,7 +261,14 @@ export type tenant_adminsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   tenant_id?: Prisma.SortOrder
   username?: Prisma.SortOrder
+  email?: Prisma.SortOrder
+  display_name?: Prisma.SortOrderInput | Prisma.SortOrder
   password_hash?: Prisma.SortOrder
+  must_reset_password?: Prisma.SortOrder
+  password_set_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  welcome_sent_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  welcome_delivery_status?: Prisma.SortOrderInput | Prisma.SortOrder
+  welcome_delivery_error?: Prisma.SortOrderInput | Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -215,23 +278,38 @@ export type tenant_adminsOrderByWithRelationInput = {
 export type tenant_adminsWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   tenant_id_username?: Prisma.tenant_adminsTenant_idUsernameCompoundUniqueInput
+  tenant_id_email?: Prisma.tenant_adminsTenant_idEmailCompoundUniqueInput
   AND?: Prisma.tenant_adminsWhereInput | Prisma.tenant_adminsWhereInput[]
   OR?: Prisma.tenant_adminsWhereInput[]
   NOT?: Prisma.tenant_adminsWhereInput | Prisma.tenant_adminsWhereInput[]
   tenant_id?: Prisma.UuidFilter<"tenant_admins"> | string
   username?: Prisma.StringFilter<"tenant_admins"> | string
+  email?: Prisma.StringFilter<"tenant_admins"> | string
+  display_name?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
   password_hash?: Prisma.StringFilter<"tenant_admins"> | string
+  must_reset_password?: Prisma.BoolFilter<"tenant_admins"> | boolean
+  password_set_at?: Prisma.DateTimeNullableFilter<"tenant_admins"> | Date | string | null
+  welcome_sent_at?: Prisma.DateTimeNullableFilter<"tenant_admins"> | Date | string | null
+  welcome_delivery_status?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
+  welcome_delivery_error?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
   is_active?: Prisma.BoolFilter<"tenant_admins"> | boolean
   created_at?: Prisma.DateTimeFilter<"tenant_admins"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"tenant_admins"> | Date | string
   tenant?: Prisma.XOR<Prisma.TenantsScalarRelationFilter, Prisma.tenantsWhereInput>
-}, "id" | "tenant_id_username">
+}, "id" | "tenant_id_username" | "tenant_id_email">
 
 export type tenant_adminsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   tenant_id?: Prisma.SortOrder
   username?: Prisma.SortOrder
+  email?: Prisma.SortOrder
+  display_name?: Prisma.SortOrderInput | Prisma.SortOrder
   password_hash?: Prisma.SortOrder
+  must_reset_password?: Prisma.SortOrder
+  password_set_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  welcome_sent_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  welcome_delivery_status?: Prisma.SortOrderInput | Prisma.SortOrder
+  welcome_delivery_error?: Prisma.SortOrderInput | Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -247,7 +325,14 @@ export type tenant_adminsScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"tenant_admins"> | string
   tenant_id?: Prisma.UuidWithAggregatesFilter<"tenant_admins"> | string
   username?: Prisma.StringWithAggregatesFilter<"tenant_admins"> | string
+  email?: Prisma.StringWithAggregatesFilter<"tenant_admins"> | string
+  display_name?: Prisma.StringNullableWithAggregatesFilter<"tenant_admins"> | string | null
   password_hash?: Prisma.StringWithAggregatesFilter<"tenant_admins"> | string
+  must_reset_password?: Prisma.BoolWithAggregatesFilter<"tenant_admins"> | boolean
+  password_set_at?: Prisma.DateTimeNullableWithAggregatesFilter<"tenant_admins"> | Date | string | null
+  welcome_sent_at?: Prisma.DateTimeNullableWithAggregatesFilter<"tenant_admins"> | Date | string | null
+  welcome_delivery_status?: Prisma.StringNullableWithAggregatesFilter<"tenant_admins"> | string | null
+  welcome_delivery_error?: Prisma.StringNullableWithAggregatesFilter<"tenant_admins"> | string | null
   is_active?: Prisma.BoolWithAggregatesFilter<"tenant_admins"> | boolean
   created_at?: Prisma.DateTimeWithAggregatesFilter<"tenant_admins"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"tenant_admins"> | Date | string
@@ -256,7 +341,14 @@ export type tenant_adminsScalarWhereWithAggregatesInput = {
 export type tenant_adminsCreateInput = {
   id?: string
   username: string
+  email: string
+  display_name?: string | null
   password_hash: string
+  must_reset_password?: boolean
+  password_set_at?: Date | string | null
+  welcome_sent_at?: Date | string | null
+  welcome_delivery_status?: string | null
+  welcome_delivery_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -267,7 +359,14 @@ export type tenant_adminsUncheckedCreateInput = {
   id?: string
   tenant_id: string
   username: string
+  email: string
+  display_name?: string | null
   password_hash: string
+  must_reset_password?: boolean
+  password_set_at?: Date | string | null
+  welcome_sent_at?: Date | string | null
+  welcome_delivery_status?: string | null
+  welcome_delivery_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -276,7 +375,14 @@ export type tenant_adminsUncheckedCreateInput = {
 export type tenant_adminsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  display_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  must_reset_password?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  password_set_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_delivery_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcome_delivery_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -287,7 +393,14 @@ export type tenant_adminsUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  display_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  must_reset_password?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  password_set_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_delivery_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcome_delivery_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -297,7 +410,14 @@ export type tenant_adminsCreateManyInput = {
   id?: string
   tenant_id: string
   username: string
+  email: string
+  display_name?: string | null
   password_hash: string
+  must_reset_password?: boolean
+  password_set_at?: Date | string | null
+  welcome_sent_at?: Date | string | null
+  welcome_delivery_status?: string | null
+  welcome_delivery_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -306,7 +426,14 @@ export type tenant_adminsCreateManyInput = {
 export type tenant_adminsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  display_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  must_reset_password?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  password_set_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_delivery_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcome_delivery_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -316,7 +443,14 @@ export type tenant_adminsUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tenant_id?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  display_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  must_reset_password?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  password_set_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_delivery_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcome_delivery_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -337,11 +471,23 @@ export type tenant_adminsTenant_idUsernameCompoundUniqueInput = {
   username: string
 }
 
+export type tenant_adminsTenant_idEmailCompoundUniqueInput = {
+  tenant_id: string
+  email: string
+}
+
 export type tenant_adminsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   tenant_id?: Prisma.SortOrder
   username?: Prisma.SortOrder
+  email?: Prisma.SortOrder
+  display_name?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
+  must_reset_password?: Prisma.SortOrder
+  password_set_at?: Prisma.SortOrder
+  welcome_sent_at?: Prisma.SortOrder
+  welcome_delivery_status?: Prisma.SortOrder
+  welcome_delivery_error?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -351,7 +497,14 @@ export type tenant_adminsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   tenant_id?: Prisma.SortOrder
   username?: Prisma.SortOrder
+  email?: Prisma.SortOrder
+  display_name?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
+  must_reset_password?: Prisma.SortOrder
+  password_set_at?: Prisma.SortOrder
+  welcome_sent_at?: Prisma.SortOrder
+  welcome_delivery_status?: Prisma.SortOrder
+  welcome_delivery_error?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -361,7 +514,14 @@ export type tenant_adminsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   tenant_id?: Prisma.SortOrder
   username?: Prisma.SortOrder
+  email?: Prisma.SortOrder
+  display_name?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
+  must_reset_password?: Prisma.SortOrder
+  password_set_at?: Prisma.SortOrder
+  welcome_sent_at?: Prisma.SortOrder
+  welcome_delivery_status?: Prisma.SortOrder
+  welcome_delivery_error?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -412,7 +572,14 @@ export type tenant_adminsUncheckedUpdateManyWithoutTenantNestedInput = {
 export type tenant_adminsCreateWithoutTenantInput = {
   id?: string
   username: string
+  email: string
+  display_name?: string | null
   password_hash: string
+  must_reset_password?: boolean
+  password_set_at?: Date | string | null
+  welcome_sent_at?: Date | string | null
+  welcome_delivery_status?: string | null
+  welcome_delivery_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -421,7 +588,14 @@ export type tenant_adminsCreateWithoutTenantInput = {
 export type tenant_adminsUncheckedCreateWithoutTenantInput = {
   id?: string
   username: string
+  email: string
+  display_name?: string | null
   password_hash: string
+  must_reset_password?: boolean
+  password_set_at?: Date | string | null
+  welcome_sent_at?: Date | string | null
+  welcome_delivery_status?: string | null
+  welcome_delivery_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -460,7 +634,14 @@ export type tenant_adminsScalarWhereInput = {
   id?: Prisma.UuidFilter<"tenant_admins"> | string
   tenant_id?: Prisma.UuidFilter<"tenant_admins"> | string
   username?: Prisma.StringFilter<"tenant_admins"> | string
+  email?: Prisma.StringFilter<"tenant_admins"> | string
+  display_name?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
   password_hash?: Prisma.StringFilter<"tenant_admins"> | string
+  must_reset_password?: Prisma.BoolFilter<"tenant_admins"> | boolean
+  password_set_at?: Prisma.DateTimeNullableFilter<"tenant_admins"> | Date | string | null
+  welcome_sent_at?: Prisma.DateTimeNullableFilter<"tenant_admins"> | Date | string | null
+  welcome_delivery_status?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
+  welcome_delivery_error?: Prisma.StringNullableFilter<"tenant_admins"> | string | null
   is_active?: Prisma.BoolFilter<"tenant_admins"> | boolean
   created_at?: Prisma.DateTimeFilter<"tenant_admins"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"tenant_admins"> | Date | string
@@ -469,7 +650,14 @@ export type tenant_adminsScalarWhereInput = {
 export type tenant_adminsCreateManyTenantInput = {
   id?: string
   username: string
+  email: string
+  display_name?: string | null
   password_hash: string
+  must_reset_password?: boolean
+  password_set_at?: Date | string | null
+  welcome_sent_at?: Date | string | null
+  welcome_delivery_status?: string | null
+  welcome_delivery_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -478,7 +666,14 @@ export type tenant_adminsCreateManyTenantInput = {
 export type tenant_adminsUpdateWithoutTenantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  display_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  must_reset_password?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  password_set_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_delivery_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcome_delivery_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -487,7 +682,14 @@ export type tenant_adminsUpdateWithoutTenantInput = {
 export type tenant_adminsUncheckedUpdateWithoutTenantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  display_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  must_reset_password?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  password_set_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_delivery_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcome_delivery_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -496,7 +698,14 @@ export type tenant_adminsUncheckedUpdateWithoutTenantInput = {
 export type tenant_adminsUncheckedUpdateManyWithoutTenantInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  display_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  must_reset_password?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  password_set_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  welcome_delivery_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  welcome_delivery_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -508,7 +717,14 @@ export type tenant_adminsSelect<ExtArgs extends runtime.Types.Extensions.Interna
   id?: boolean
   tenant_id?: boolean
   username?: boolean
+  email?: boolean
+  display_name?: boolean
   password_hash?: boolean
+  must_reset_password?: boolean
+  password_set_at?: boolean
+  welcome_sent_at?: boolean
+  welcome_delivery_status?: boolean
+  welcome_delivery_error?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -519,7 +735,14 @@ export type tenant_adminsSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   id?: boolean
   tenant_id?: boolean
   username?: boolean
+  email?: boolean
+  display_name?: boolean
   password_hash?: boolean
+  must_reset_password?: boolean
+  password_set_at?: boolean
+  welcome_sent_at?: boolean
+  welcome_delivery_status?: boolean
+  welcome_delivery_error?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -530,7 +753,14 @@ export type tenant_adminsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   id?: boolean
   tenant_id?: boolean
   username?: boolean
+  email?: boolean
+  display_name?: boolean
   password_hash?: boolean
+  must_reset_password?: boolean
+  password_set_at?: boolean
+  welcome_sent_at?: boolean
+  welcome_delivery_status?: boolean
+  welcome_delivery_error?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -541,13 +771,20 @@ export type tenant_adminsSelectScalar = {
   id?: boolean
   tenant_id?: boolean
   username?: boolean
+  email?: boolean
+  display_name?: boolean
   password_hash?: boolean
+  must_reset_password?: boolean
+  password_set_at?: boolean
+  welcome_sent_at?: boolean
+  welcome_delivery_status?: boolean
+  welcome_delivery_error?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type tenant_adminsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenant_id" | "username" | "password_hash" | "is_active" | "created_at" | "updated_at", ExtArgs["result"]["tenant_admins"]>
+export type tenant_adminsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenant_id" | "username" | "email" | "display_name" | "password_hash" | "must_reset_password" | "password_set_at" | "welcome_sent_at" | "welcome_delivery_status" | "welcome_delivery_error" | "is_active" | "created_at" | "updated_at", ExtArgs["result"]["tenant_admins"]>
 export type tenant_adminsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tenant?: boolean | Prisma.tenantsDefaultArgs<ExtArgs>
 }
@@ -567,7 +804,14 @@ export type $tenant_adminsPayload<ExtArgs extends runtime.Types.Extensions.Inter
     id: string
     tenant_id: string
     username: string
+    email: string
+    display_name: string | null
     password_hash: string
+    must_reset_password: boolean
+    password_set_at: Date | null
+    welcome_sent_at: Date | null
+    welcome_delivery_status: string | null
+    welcome_delivery_error: string | null
     is_active: boolean
     created_at: Date
     updated_at: Date
@@ -998,7 +1242,14 @@ export interface tenant_adminsFieldRefs {
   readonly id: Prisma.FieldRef<"tenant_admins", 'String'>
   readonly tenant_id: Prisma.FieldRef<"tenant_admins", 'String'>
   readonly username: Prisma.FieldRef<"tenant_admins", 'String'>
+  readonly email: Prisma.FieldRef<"tenant_admins", 'String'>
+  readonly display_name: Prisma.FieldRef<"tenant_admins", 'String'>
   readonly password_hash: Prisma.FieldRef<"tenant_admins", 'String'>
+  readonly must_reset_password: Prisma.FieldRef<"tenant_admins", 'Boolean'>
+  readonly password_set_at: Prisma.FieldRef<"tenant_admins", 'DateTime'>
+  readonly welcome_sent_at: Prisma.FieldRef<"tenant_admins", 'DateTime'>
+  readonly welcome_delivery_status: Prisma.FieldRef<"tenant_admins", 'String'>
+  readonly welcome_delivery_error: Prisma.FieldRef<"tenant_admins", 'String'>
   readonly is_active: Prisma.FieldRef<"tenant_admins", 'Boolean'>
   readonly created_at: Prisma.FieldRef<"tenant_admins", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"tenant_admins", 'DateTime'>

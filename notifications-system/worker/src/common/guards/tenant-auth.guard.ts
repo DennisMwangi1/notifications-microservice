@@ -10,12 +10,13 @@ import {
   AuthenticatedRequest,
   TenantAdminTokenPayload,
 } from '../actor-context';
+import prisma from '../../config/prisma.config';
 
 @Injectable()
 export class TenantAuthGuard implements CanActivate {
   private readonly logger = new Logger(TenantAuthGuard.name);
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authHeader = request.headers['authorization'];
 
@@ -42,6 +43,30 @@ export class TenantAuthGuard implements CanActivate {
 
       if (payload.role !== 'tenant_admin' || !payload.tenantId) {
         throw new UnauthorizedException('Insufficient permissions');
+      }
+
+      const tenantAdmin = await prisma.tenant_admins.findFirst({
+        where: {
+          id: payload.sub,
+          tenant_id: payload.tenantId,
+        },
+        include: {
+          tenant: {
+            select: { is_active: true },
+          },
+        },
+      });
+
+      if (!tenantAdmin || !tenantAdmin.is_active) {
+        throw new UnauthorizedException(
+          'Tenant admin access is no longer active',
+        );
+      }
+
+      if (!tenantAdmin.tenant?.is_active) {
+        throw new UnauthorizedException(
+          'Tenant access is suspended. Contact the platform owner.',
+        );
       }
 
       request.tenantAdminUser = payload;

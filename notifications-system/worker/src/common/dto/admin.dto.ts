@@ -13,6 +13,9 @@ export interface CreateTenantDto {
   sender_name?: string;
   rate_limit_per_minute?: number;
   daily_notification_cap?: number;
+  max_template_count?: number;
+  tenantAdmin?: ProvisionTenantAdminDto;
+  sendOnboardingEmail?: boolean;
 }
 
 export interface UpdateTenantDto {
@@ -25,11 +28,25 @@ export interface UpdateTenantDto {
   sender_name?: string;
   rate_limit_per_minute?: number;
   daily_notification_cap?: number;
+  max_template_count?: number;
+  audit_reason?: string;
 }
 
 export interface CreateTenantAdminDto {
   username: string;
-  password: string;
+  email: string;
+  display_name?: string;
+  password?: string;
+}
+
+export interface ProvisionTenantAdminDto {
+  username: string;
+  email: string;
+  displayName?: string;
+}
+
+export interface AdminActionReasonDto {
+  reason: string;
 }
 
 // ─── Provider Configs ──────────────────────
@@ -49,6 +66,23 @@ export interface UpdateProviderConfigDto {
   api_key?: string;
   sender_email?: string;
   sender_name?: string;
+}
+
+export interface UpsertOperationalMailerConfigDto {
+  name: string;
+  provider: 'SENDGRID' | 'RESEND';
+  api_key?: string;
+  sender_email?: string;
+  sender_name?: string;
+  is_active?: boolean;
+}
+
+export interface UpsertOperationalEmailTemplateDto {
+  name?: string;
+  subject_line?: string | null;
+  content_body: string;
+  sample_data?: Record<string, unknown>;
+  is_active?: boolean;
 }
 
 // ─── Templates ──────────────────────────────

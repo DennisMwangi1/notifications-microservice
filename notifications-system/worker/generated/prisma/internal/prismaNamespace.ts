@@ -393,7 +393,9 @@ export const ModelName = {
   failed_notifications: 'failed_notifications',
   provider_configs: 'provider_configs',
   audit_logs: 'audit_logs',
-  tenant_admins: 'tenant_admins'
+  tenant_admins: 'tenant_admins',
+  operational_mailer_configs: 'operational_mailer_configs',
+  operational_email_templates: 'operational_email_templates'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -409,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "notification_logs" | "templates" | "template_library" | "in_app_notifications" | "tenants" | "processed_events" | "failed_notifications" | "provider_configs" | "audit_logs" | "tenant_admins"
+    modelProps: "notification_logs" | "templates" | "template_library" | "in_app_notifications" | "tenants" | "processed_events" | "failed_notifications" | "provider_configs" | "audit_logs" | "tenant_admins" | "operational_mailer_configs" | "operational_email_templates"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1153,6 +1155,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    operational_mailer_configs: {
+      payload: Prisma.$operational_mailer_configsPayload<ExtArgs>
+      fields: Prisma.operational_mailer_configsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.operational_mailer_configsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.operational_mailer_configsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>
+        }
+        findFirst: {
+          args: Prisma.operational_mailer_configsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.operational_mailer_configsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>
+        }
+        findMany: {
+          args: Prisma.operational_mailer_configsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>[]
+        }
+        create: {
+          args: Prisma.operational_mailer_configsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>
+        }
+        createMany: {
+          args: Prisma.operational_mailer_configsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.operational_mailer_configsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>[]
+        }
+        delete: {
+          args: Prisma.operational_mailer_configsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>
+        }
+        update: {
+          args: Prisma.operational_mailer_configsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>
+        }
+        deleteMany: {
+          args: Prisma.operational_mailer_configsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.operational_mailer_configsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.operational_mailer_configsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>[]
+        }
+        upsert: {
+          args: Prisma.operational_mailer_configsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_mailer_configsPayload>
+        }
+        aggregate: {
+          args: Prisma.Operational_mailer_configsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOperational_mailer_configs>
+        }
+        groupBy: {
+          args: Prisma.operational_mailer_configsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Operational_mailer_configsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.operational_mailer_configsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Operational_mailer_configsCountAggregateOutputType> | number
+        }
+      }
+    }
+    operational_email_templates: {
+      payload: Prisma.$operational_email_templatesPayload<ExtArgs>
+      fields: Prisma.operational_email_templatesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.operational_email_templatesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.operational_email_templatesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>
+        }
+        findFirst: {
+          args: Prisma.operational_email_templatesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.operational_email_templatesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>
+        }
+        findMany: {
+          args: Prisma.operational_email_templatesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>[]
+        }
+        create: {
+          args: Prisma.operational_email_templatesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>
+        }
+        createMany: {
+          args: Prisma.operational_email_templatesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.operational_email_templatesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>[]
+        }
+        delete: {
+          args: Prisma.operational_email_templatesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>
+        }
+        update: {
+          args: Prisma.operational_email_templatesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>
+        }
+        deleteMany: {
+          args: Prisma.operational_email_templatesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.operational_email_templatesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.operational_email_templatesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>[]
+        }
+        upsert: {
+          args: Prisma.operational_email_templatesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$operational_email_templatesPayload>
+        }
+        aggregate: {
+          args: Prisma.Operational_email_templatesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOperational_email_templates>
+        }
+        groupBy: {
+          args: Prisma.operational_email_templatesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Operational_email_templatesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.operational_email_templatesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Operational_email_templatesCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1344,13 +1494,53 @@ export const Tenant_adminsScalarFieldEnum = {
   id: 'id',
   tenant_id: 'tenant_id',
   username: 'username',
+  email: 'email',
+  display_name: 'display_name',
   password_hash: 'password_hash',
+  must_reset_password: 'must_reset_password',
+  password_set_at: 'password_set_at',
+  welcome_sent_at: 'welcome_sent_at',
+  welcome_delivery_status: 'welcome_delivery_status',
+  welcome_delivery_error: 'welcome_delivery_error',
   is_active: 'is_active',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
 
 export type Tenant_adminsScalarFieldEnum = (typeof Tenant_adminsScalarFieldEnum)[keyof typeof Tenant_adminsScalarFieldEnum]
+
+
+export const Operational_mailer_configsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  provider: 'provider',
+  api_key_ciphertext: 'api_key_ciphertext',
+  api_key_last4: 'api_key_last4',
+  key_version: 'key_version',
+  rotated_at: 'rotated_at',
+  sender_email: 'sender_email',
+  sender_name: 'sender_name',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Operational_mailer_configsScalarFieldEnum = (typeof Operational_mailer_configsScalarFieldEnum)[keyof typeof Operational_mailer_configsScalarFieldEnum]
+
+
+export const Operational_email_templatesScalarFieldEnum = {
+  id: 'id',
+  template_key: 'template_key',
+  name: 'name',
+  subject_line: 'subject_line',
+  content_body: 'content_body',
+  sample_data: 'sample_data',
+  is_active: 'is_active',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Operational_email_templatesScalarFieldEnum = (typeof Operational_email_templatesScalarFieldEnum)[keyof typeof Operational_email_templatesScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1672,6 +1862,8 @@ export type GlobalOmitConfig = {
   provider_configs?: Prisma.provider_configsOmit
   audit_logs?: Prisma.audit_logsOmit
   tenant_admins?: Prisma.tenant_adminsOmit
+  operational_mailer_configs?: Prisma.operational_mailer_configsOmit
+  operational_email_templates?: Prisma.operational_email_templatesOmit
 }
 
 /* Types for Logging */
