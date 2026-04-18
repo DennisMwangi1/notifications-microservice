@@ -3,7 +3,12 @@
  * Single source of truth — no more duplicating `process.env.NEXT_PUBLIC_API_URL` in every page.
  */
 
-import { authHeaders, clearAuth, clearTenantAuth, tenantAuthHeaders } from "./auth";
+import {
+  authHeaders,
+  clearAuth,
+  clearTenantAuth,
+  tenantAuthHeaders,
+} from "./auth";
 
 function getApiUrl(): string {
   if (typeof window !== "undefined") {
@@ -18,11 +23,7 @@ function getApiUrl(): string {
     }
   }
 
-  return (
-    process.env.NEXT_PUBLIC_API_URL ||
-    //TODO: Remove hardcoded fallback once we have a better local dev story (e.g. docker-compose with Traefik)
-    "http://localhost:4000"
-  );
+  return process.env.NEXT_PUBLIC_API_URL || "";
 }
 
 export const API_URL = getApiUrl();

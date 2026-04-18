@@ -1,4 +1,3 @@
-#TODO: Readd network configuration for dokploy
 services:
   # The Central Nervous System
   kafka:
@@ -12,7 +11,8 @@ services:
       KAFKA_JMX_PORT: 9101
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
-      KAFKA_LISTENERS: "PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_LISTENERS: "PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HO\
+        ST://0.0.0.0:9092"
       KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
@@ -37,7 +37,7 @@ services:
     # networks:
     #   - default
     #   - dokploy-network
-  # Primary Storage
+    # Primary Storage
   postgres:
     image: postgres:17-alpine
     ports:
@@ -67,7 +67,7 @@ services:
     #   - default
     #   - dokploy-network
 
-  # State Store
+    # State Store
   redis:
     image: redis:7-alpine
     ports:
@@ -76,7 +76,7 @@ services:
     #   - default
     #   - dokploy-network
 
-  # Real-time Gateway
+    # Real-time Gateway
   centrifugo:
     image: centrifugo/centrifugo:latest
     ports:
@@ -95,6 +95,6 @@ services:
 volumes:
   postgres_data:
 
-# networks:
-#   dokploy-network:
-#     external: true
+networks:
+  dokploy-network:
+    external: true
