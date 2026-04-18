@@ -53,8 +53,13 @@ socket.on('error', () => {
 
 if [ "${RUN_PRISMA_DB_PUSH:-true}" = "true" ]; then
   wait_for_db
-  echo "Running prisma db push..."
-  npx prisma db push
+  if [ "${PRISMA_FORCE_RESET:-false}" = "true" ]; then
+    echo "Running prisma db push with --force-reset..."
+    npx prisma db push --force-reset
+  else
+    echo "Running prisma db push..."
+    npx prisma db push
+  fi
 fi
 
 exec "$@"
