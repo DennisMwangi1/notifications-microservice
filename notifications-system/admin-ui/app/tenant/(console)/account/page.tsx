@@ -9,9 +9,17 @@ import {
   setTenantAuth,
   type TenantUser,
 } from '../../../../lib/auth';
-
-const inputClasses =
-  'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/20';
+import {
+  KeyValueGrid,
+  MetricTile,
+  PageHeader,
+  StatusBadge,
+  Surface,
+  controlInputClassName,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+  cx,
+} from '../../../../lib/operator-console';
 
 export default function TenantAccountPage() {
   const router = useRouter();
@@ -88,101 +96,87 @@ export default function TenantAccountPage() {
     .toUpperCase();
 
   return (
-    <div className="mx-auto max-w-[1480px] space-y-8 pb-14">
-      <section className="overflow-hidden rounded-[2.4rem] border border-orange-100 bg-[radial-gradient(circle_at_top_left,_rgba(251,146,60,0.22),_transparent_38%),linear-gradient(135deg,#fff7ed_0%,#ffffff_52%,#fffbeb_100%)] shadow-[0_30px_90px_-45px_rgba(194,65,12,0.45)]">
-        <div className="grid gap-8 px-6 py-8 lg:grid-cols-[minmax(0,1.15fr)_360px] lg:px-8">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-orange-700">
-              Account Security
-            </p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-900">
-              {isForcedReset
-                ? 'Complete your first-login reset'
-                : 'Manage your tenant admin account'}
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              {isForcedReset
-                ? 'Your temporary password has served its purpose. Set a permanent credential before continuing into the tenant console.'
-                : 'Review your tenant-admin identity, confirm your access posture, and rotate your password whenever you need to.'}
-            </p>
+    <div className="mx-auto max-w-[1650px] space-y-5 pb-8">
+      <PageHeader
+        eyebrow="Tenant Identity"
+        title={isForcedReset ? 'Complete Password Reset' : 'Account & Access'}
+        description={
+          isForcedReset
+            ? 'Your temporary credential must be replaced before tenant-console access is fully restored.'
+            : 'Review your tenant-admin identity, monitor session posture, and rotate your password from the same workspace used across the rest of the console.'
+        }
+        chips={
+          <>
+            <StatusBadge tone={isForcedReset ? 'warning' : 'success'}>
+              {isForcedReset ? 'Reset required' : 'Account active'}
+            </StatusBadge>
+            <StatusBadge tone="indigo">Tenant admin</StatusBadge>
+            <StatusBadge tone="default">Tenant-scoped session</StatusBadge>
+          </>
+        }
+      />
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <StatusChip
-                label={isForcedReset ? 'Password Reset Required' : 'Password Healthy'}
-                tone={isForcedReset ? 'amber' : 'emerald'}
-              />
-              <StatusChip label="Tenant Console" tone="slate" />
-              <StatusChip label="Tenant Scoped Session" tone="orange" />
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-              Identity Snapshot
-            </p>
-            <div className="mt-4 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white shadow-lg shadow-slate-900/20">
-                {initials || 'TA'}
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-slate-900">{displayName}</h3>
-                <p className="text-sm text-slate-500">{user?.email || 'No email available'}</p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-3 rounded-[1.5rem] border border-slate-100 bg-slate-50/90 p-4">
-              <InfoRow label="Username" value={user?.username || '—'} mono />
-              <InfoRow label="Role" value="Tenant Admin" />
-              <InfoRow label="Tenant ID" value={user?.tenantId || '—'} mono />
-              <InfoRow
-                label="Password state"
-                value={isForcedReset ? 'Reset required' : 'Up to date'}
-              />
-            </div>
-          </div>
-        </div>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricTile
+          label="Access State"
+          value={isForcedReset ? 'Gated' : 'Ready'}
+          detail={
+            isForcedReset
+              ? 'Some tenant-console actions remain restricted until this reset is completed.'
+              : 'Your tenant session is ready for template work, provider updates, and delivery review.'
+          }
+          tone={isForcedReset ? 'warning' : 'success'}
+        />
+        <MetricTile
+          label="Role"
+          value="Tenant Admin"
+          detail="This session authorizes activity inside your tenant boundary only."
+          tone="indigo"
+        />
+        <MetricTile
+          label="Identity"
+          value={displayName}
+          detail={user?.email || 'No email available'}
+          tone="default"
+        />
+        <MetricTile
+          label="Password Policy"
+          value="8+ chars"
+          detail="Use a unique password not reused in staging, internal, or personal systems."
+          tone="default"
+        />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px]">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="border-b border-slate-100 pb-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-              Credential Update
-            </p>
-            <h3 className="mt-3 text-2xl font-black text-slate-900">
-              {isForcedReset ? 'Replace Temporary Password' : 'Rotate Password'}
-            </h3>
-            <p className="mt-2 text-sm text-slate-500">
-              {isForcedReset
-                ? 'Use the temporary password from onboarding one last time, then choose a permanent password with at least 8 characters.'
-                : 'Enter your current password to set a new one and keep tenant access locked down.'}
-            </p>
-          </div>
-
-          {message && (
-            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_380px]">
+        <Surface
+          title="Credential Update"
+          description={
+            isForcedReset
+              ? 'Use the temporary onboarding password one last time, then set a permanent credential.'
+              : 'Enter your current password to rotate credentials without leaving the tenant console.'
+          }
+        >
+          {message ? (
+            <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
               {message}
             </div>
-          )}
+          ) : null}
 
-          {error && (
-            <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error ? (
+            <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
             </div>
-          )}
+          ) : null}
 
-          <form onSubmit={handleChangePassword} className="mt-6 space-y-5">
+          <form onSubmit={handleChangePassword} className="space-y-5">
             <div className="grid gap-5 lg:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="current-password"
-                  className="mb-2 block text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500"
-                >
+              <label className="block space-y-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                   {isForcedReset ? 'Temporary password' : 'Current password'}
-                </label>
+                </span>
                 <input
                   id="current-password"
-                  className={inputClasses}
+                  className={controlInputClassName}
                   type="password"
                   value={currentPassword}
                   onChange={(event) => setCurrentPassword(event.target.value)}
@@ -190,18 +184,15 @@ export default function TenantAccountPage() {
                   autoComplete="current-password"
                   required
                 />
-              </div>
+              </label>
 
-              <div>
-                <label
-                  htmlFor="new-password"
-                  className="mb-2 block text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500"
-                >
+              <label className="block space-y-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                   New password
-                </label>
+                </span>
                 <input
                   id="new-password"
-                  className={inputClasses}
+                  className={controlInputClassName}
                   type="password"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
@@ -210,115 +201,108 @@ export default function TenantAccountPage() {
                   autoComplete="new-password"
                   required
                 />
+              </label>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <p className="text-sm font-semibold text-slate-900">What happens next</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {isForcedReset
+                  ? 'Once the password is changed, first-login recovery actions from the platform owner are locked and you will be returned to the tenant console.'
+                  : 'Your current tenant session stays active, and the new password becomes the credential required for future sign-ins.'}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                disabled={saving}
+                className={cx(
+                  primaryButtonClassName,
+                  saving && 'cursor-wait bg-slate-300 text-slate-600 hover:bg-slate-300',
+                )}
+              >
+                {saving
+                  ? 'Saving...'
+                  : isForcedReset
+                    ? 'Complete Password Reset'
+                    : 'Save New Password'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setError(null);
+                  setMessage(null);
+                }}
+                className={secondaryButtonClassName}
+              >
+                Clear form
+              </button>
+            </div>
+          </form>
+        </Surface>
+
+        <div className="space-y-4">
+          <Surface
+            title="Identity Snapshot"
+            description="Current tenant-admin identity and reset posture."
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white shadow-sm">
+                {initials || 'TA'}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-xl font-black tracking-tight text-slate-950">
+                  {displayName}
+                </p>
+                <p className="mt-1 truncate text-sm text-slate-500">
+                  {user?.email || 'No email available'}
+                </p>
               </div>
             </div>
 
-            <div className="rounded-[1.6rem] border border-orange-100 bg-orange-50/70 p-4">
-              <p className="text-sm font-semibold text-slate-900">
-                What happens next
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                {isForcedReset
-                  ? 'Once this password is changed, first-login recovery actions from the platform owner are locked and you will be redirected back into the console.'
-                  : 'Your existing tenant session stays active, and your new password becomes the credential required for the next login.'}
-              </p>
+            <div className="mt-4">
+              <KeyValueGrid
+                columns={2}
+                items={[
+                  { label: 'Username', value: user?.username || 'Not available' },
+                  { label: 'Role', value: 'Tenant Admin' },
+                  {
+                    label: 'Tenant ID',
+                    value: <span className="font-mono text-xs">{user?.tenantId || '—'}</span>,
+                  },
+                  {
+                    label: 'Password state',
+                    value: isForcedReset ? 'Reset required' : 'Up to date',
+                  },
+                ]}
+              />
             </div>
+          </Surface>
 
-            <button
-              disabled={saving}
-              className={`inline-flex rounded-2xl px-5 py-3 text-sm font-semibold transition ${
-                saving
-                  ? 'cursor-wait bg-slate-200 text-slate-500'
-                  : 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800'
-              }`}
-            >
-              {saving
-                ? 'Saving...'
-                : isForcedReset
-                  ? 'Complete Password Reset'
-                  : 'Save New Password'}
-            </button>
-          </form>
-        </section>
-
-        <aside className="space-y-6">
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-              Security Notes
-            </p>
-            <div className="mt-4 space-y-4">
+          <Surface
+            title="Security Notes"
+            description="Guidance that matches the rest of the tenant operations workspace."
+          >
+            <div className="space-y-3">
               <TipCard
                 title="Temporary passwords are one-time"
-                detail="After your first successful password reset, onboarding resend and temporary password recovery are intentionally locked."
+                detail="After the first successful reset, onboarding resend and temporary password recovery are intentionally locked."
               />
               <TipCard
                 title="Tenant access stays isolated"
-                detail="This session only authorizes activity inside your tenant boundary and does not grant platform-owner privileges."
+                detail="This session authorizes activity inside your tenant boundary and never grants platform-owner privileges."
               />
               <TipCard
                 title="Choose a strong password"
                 detail="Use a unique passphrase that is not reused from any internal, staging, or personal account."
               />
             </div>
-          </section>
-
-          <section className="rounded-[2rem] border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200">
-              Session Posture
-            </p>
-            <p className="mt-4 text-2xl font-black">
-              {isForcedReset ? 'Restricted Until Reset' : 'Ready For Operations'}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {isForcedReset
-                ? 'Some tenant-console actions remain gated until this reset is finished.'
-                : 'Your account is ready for template authoring, provider updates, and delivery review.'}
-            </p>
-          </section>
-        </aside>
-      </div>
-    </div>
-  );
-}
-
-function StatusChip({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: 'amber' | 'emerald' | 'orange' | 'slate';
-}) {
-  const toneClasses = {
-    amber: 'bg-amber-100 text-amber-800',
-    emerald: 'bg-emerald-100 text-emerald-800',
-    orange: 'bg-orange-100 text-orange-800',
-    slate: 'bg-slate-200 text-slate-700',
-  } as const;
-
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${toneClasses[tone]}`}
-    >
-      {label}
-    </span>
-  );
-}
-
-function InfoRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="text-slate-500">{label}</span>
-      <span className={`text-right font-semibold text-slate-900 ${mono ? 'font-mono text-xs' : ''}`}>
-        {value}
-      </span>
+          </Surface>
+        </div>
+      </section>
     </div>
   );
 }
@@ -331,7 +315,7 @@ function TipCard({
   detail: string;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50 p-4">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
       <p className="text-sm font-semibold text-slate-900">{title}</p>
       <p className="mt-1 text-sm leading-6 text-slate-500">{detail}</p>
     </div>

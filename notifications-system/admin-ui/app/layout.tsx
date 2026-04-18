@@ -1,7 +1,19 @@
 import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { theme } from '../lib/theme-config';
+
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+});
+
 const runtimeConfig = {
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
 };
@@ -18,7 +30,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
+      >
         <Script
           id="runtime-config"
           strategy="beforeInteractive"

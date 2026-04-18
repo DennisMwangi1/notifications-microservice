@@ -3,6 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiFetch } from '../../../lib/api';
+import {
+  EmptyPanel,
+  MetricTile,
+  PageHeader,
+  StatusBadge,
+  Surface,
+  controlInputClassName,
+  dangerButtonClassName,
+  secondaryButtonClassName,
+} from '../../../lib/operator-console';
 
 interface Tenant {
   id: string;
@@ -45,22 +55,14 @@ export default function DLQPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    void fetchTenants();
-  }, []);
-
-  useEffect(() => {
-    void fetchEntries();
-  }, [page, filter, tenantId, channel, from, to]);
-
-  const fetchTenants = async () => {
+  async function fetchTenants() {
     const response = await apiFetch<Tenant[]>('/api/v1/admin/tenants');
     if (response.success && response.data) {
       setTenants(response.data);
     }
-  };
+  }
 
-  const fetchEntries = async () => {
+  async function fetchEntries() {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (tenantId) params.set('tenantId', tenantId);
@@ -78,7 +80,23 @@ export default function DLQPage() {
       setPagination((response.pagination as Pagination) || null);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchTenants();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchEntries();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [page, filter, tenantId, channel, from, to]);
 
   const askReason = (label: string) => {
     const reason = window.prompt(`Reason for ${label.toLowerCase()}:`);
@@ -125,27 +143,87 @@ export default function DLQPage() {
     await fetchEntries();
   };
 
-  return (
-    <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
-      <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="text-4xl font-black tracking-tight text-slate-900">
-            Dead Letter Queue
-          </h2>
-          <p className="mt-2 text-sm text-slate-500">
-            Filter failed notifications by tenant and time window, then retry or purge with audit reasons.
-          </p>
-        </div>
-        <button
-          onClick={() => void handleRetryAll()}
-          disabled={actionLoading === 'retry-all' || entries.length === 0}
-          className="rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {actionLoading === 'retry-all' ? 'Retrying…' : 'Retry All Filtered'}
-        </button>
-      </div>
+  const clearFilters = () => {
+    setTenantId('');
+    setChannel('');
+    setFilter('all');
+    setFrom('');
+    setTo('');
+    setPage(1);
+  };
 
-      <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-sm">
+  const permanentCount = entries.filter((entry) => entry.permanently_failed).length;
+  const retryableCount = entries.length - permanentCount;
+
+  return (
+    <div className="mx-auto max-w-[1650px] space-y-5 pb-8">
+      <PageHeader
+        eyebrow="Recovery Queue"
+        title="Dead-Letter Queue"
+        description="Review failed notification deliveries, inspect payloads, and execute audited retry or purge actions across tenants."
+        chips={
+          <>
+            <StatusBadge tone={entries.length > 0 ? 'warning' : 'success'}>
+              Visible queue {entries.length}
+            </StatusBadge>
+            <StatusBadge tone={permanentCount > 0 ? 'danger' : 'default'}>
+              Permanent {permanentCount}
+            </StatusBadge>
+            <StatusBadge tone={retryableCount > 0 ? 'warning' : 'success'}>
+              Retryable {retryableCount}
+            </StatusBadge>
+          </>
+        }
+        actions={
+          <button
+            onClick={() => void handleRetryAll()}
+            disabled={actionLoading === 'retry-all' || entries.length === 0}
+            className="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {actionLoading === 'retry-all' ? 'Retrying filtered queue...' : 'Retry filtered queue'}
+          </button>
+        }
+      />
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricTile
+          label="Visible Entries"
+          value={entries.length}
+          detail="Entries currently loaded into the operator view."
+          tone={entries.length > 0 ? 'warning' : 'success'}
+        />
+        <MetricTile
+          label="Permanent Failures"
+          value={permanentCount}
+          detail="Entries that have exhausted retries and require manual handling."
+          tone={permanentCount > 0 ? 'danger' : 'success'}
+        />
+        <MetricTile
+          label="Retryable Entries"
+          value={retryableCount}
+          detail="Entries still eligible for replay through recovery actions."
+          tone={retryableCount > 0 ? 'warning' : 'success'}
+        />
+        <MetricTile
+          label="Result Pages"
+          value={pagination?.pages || 1}
+          detail={`Page ${pagination?.page || page} of the filtered DLQ result set.`}
+          tone="indigo"
+        />
+      </section>
+
+      <Surface
+        title="Filter Rail"
+        description="Constrain the dead-letter queue by tenant, channel, failure state, and event window."
+        action={
+          <button
+            onClick={clearFilters}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700"
+          >
+            Clear filters
+          </button>
+        }
+      >
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <select
             value={tenantId}
@@ -153,7 +231,7 @@ export default function DLQPage() {
               setTenantId(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+            className={controlInputClassName}
           >
             <option value="">All tenants</option>
             {tenants.map((tenant) => (
@@ -168,7 +246,7 @@ export default function DLQPage() {
               setChannel(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+            className={controlInputClassName}
           >
             <option value="">All channels</option>
             <option value="EMAIL">EMAIL</option>
@@ -181,7 +259,7 @@ export default function DLQPage() {
               setFilter(event.target.value as 'all' | 'permanent' | 'retryable');
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+            className={controlInputClassName}
           >
             <option value="all">All states</option>
             <option value="permanent">Permanently failed</option>
@@ -194,7 +272,7 @@ export default function DLQPage() {
               setFrom(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+            className={controlInputClassName}
           />
           <input
             type="datetime-local"
@@ -203,149 +281,158 @@ export default function DLQPage() {
               setTo(event.target.value);
               setPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+            className={controlInputClassName}
           />
         </div>
-      </div>
+      </Surface>
 
-      {loading ? (
-        <div className="space-y-3 animate-pulse">
-          {[...Array(5)].map((_, index) => (
-            <div key={index} className="h-20 rounded-[2rem] bg-slate-100" />
-          ))}
-        </div>
-      ) : entries.length === 0 ? (
-        <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-400">
-          No DLQ entries match the current filters.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {entries.map((entry) => (
-            <div
-              key={entry.id}
-              onClick={() =>
-                setSelectedEntry(selectedEntry?.id === entry.id ? null : entry)
-              }
-              className={`cursor-pointer rounded-[2rem] border bg-white p-5 shadow-sm ${
-                selectedEntry?.id === entry.id
-                  ? 'border-slate-400 ring-2 ring-slate-200'
-                  : 'border-slate-100'
-              }`}
-            >
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-700">
-                      {entry.channel}
-                    </span>
-                    <span
-                      className={`rounded-full px-3 py-1 text-[10px] font-bold ${
-                        entry.permanently_failed
-                          ? 'bg-rose-100 text-rose-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}
-                    >
-                      {entry.permanently_failed ? 'Permanent' : 'Retryable'}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {entry.notification_id}
-                  </p>
-                  <p className="mt-1 text-xs font-mono text-slate-500">
-                    {entry.tenant_id}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">{entry.error_details}</p>
-                </div>
-                <div className="text-right text-xs text-slate-500">
-                  <p>Retries {entry.retry_count}/{entry.max_retries}</p>
-                  <p className="mt-1">
-                    {new Date(entry.created_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              {selectedEntry?.id === entry.id && (
-                <div
-                  className="mt-4 space-y-4 border-t border-slate-100 pt-4"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <div className="grid gap-4 lg:grid-cols-3">
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                        Tenant ID
-                      </p>
-                      <p className="mt-2 break-all text-xs font-mono text-slate-700">
-                        {entry.tenant_id}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                        Updated
-                      </p>
-                      <p className="mt-2 text-xs text-slate-700">
-                        {new Date(entry.updated_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                        Status
-                      </p>
-                      <p className="mt-2 text-xs text-slate-700">
-                        {entry.permanently_failed ? 'Permanently failed' : 'Retryable'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                      Payload
-                    </p>
-                    <pre className="mt-2 whitespace-pre-wrap text-xs text-slate-700">
-                      {JSON.stringify(entry.payload, null, 2)}
-                    </pre>
-                  </div>
-
-                  <div className="flex flex-wrap justify-end gap-3">
-                    <button
-                      onClick={() => void handleRetry(entry.id)}
-                      disabled={actionLoading === entry.id}
-                      className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
-                    >
-                      Retry
-                    </button>
-                    <button
-                      onClick={() => void handlePurge(entry.id)}
-                      disabled={actionLoading === entry.id}
-                      className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                    >
-                      Purge
-                    </button>
-                  </div>
-                </div>
-              )}
+      <Surface
+        title="Recovery Queue"
+        description="Select a failed delivery to inspect payload and execute replay or purge actions."
+        bodyClassName="p-0"
+      >
+        {loading ? (
+          <div className="space-y-3 p-5 animate-pulse">
+            {[...Array(5)].map((_, index) => (
+              <div key={index} className="h-20 rounded-xl bg-slate-100" />
+            ))}
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="p-5">
+            <EmptyPanel
+              title="No DLQ entries"
+              description="No dead-letter records match the current filter rail."
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="grid min-w-[1080px] grid-cols-[110px_140px_1.4fr_1fr_140px_180px] gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              <div>Channel</div>
+              <div>State</div>
+              <div>Notification</div>
+              <div>Tenant</div>
+              <div>Retries</div>
+              <div>Created</div>
             </div>
-          ))}
-        </div>
-      )}
 
-      {pagination && pagination.pages > 1 && (
-        <div className="flex items-center justify-end gap-3">
-          <button
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            disabled={page <= 1}
-            className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
-            disabled={page >= pagination.pages}
-            className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      )}
+            {entries.map((entry) => {
+              const isSelected = selectedEntry?.id === entry.id;
+
+              return (
+                <div key={entry.id} className="border-b border-slate-100 last:border-b-0">
+                  <button
+                    onClick={() => setSelectedEntry(isSelected ? null : entry)}
+                    className="grid min-w-[1080px] grid-cols-[110px_140px_1.4fr_1fr_140px_180px] gap-3 px-5 py-4 text-left text-sm transition hover:bg-slate-50"
+                  >
+                    <div className="font-semibold text-slate-900">{entry.channel}</div>
+                    <div>
+                      <StatusBadge tone={entry.permanently_failed ? 'danger' : 'warning'}>
+                        {entry.permanently_failed ? 'Permanent' : 'Retryable'}
+                      </StatusBadge>
+                    </div>
+                    <div>
+                      <p className="truncate font-mono text-xs text-slate-700">
+                        {entry.notification_id}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {entry.error_details}
+                      </p>
+                    </div>
+                    <div className="font-mono text-xs text-slate-600">
+                      {entry.tenant_id}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {entry.retry_count}/{entry.max_retries}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {new Date(entry.created_at).toLocaleString()}
+                    </div>
+                  </button>
+
+                  {isSelected ? (
+                    <div className="grid gap-4 border-t border-slate-200 bg-slate-50 px-5 py-4 xl:grid-cols-[0.9fr_1.1fr]">
+                      <div className="space-y-4">
+                        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Failure Context
+                          </p>
+                          <div className="mt-3 space-y-2 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold text-slate-800">Tenant</span>{' '}
+                              {entry.tenant_id}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-800">
+                                Notification
+                              </span>{' '}
+                              {entry.notification_id}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-800">
+                                Updated
+                              </span>{' '}
+                              {new Date(entry.updated_at).toLocaleString()}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-800">Error</span>{' '}
+                              {entry.error_details}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            onClick={() => void handleRetry(entry.id)}
+                            disabled={actionLoading === entry.id}
+                            className={secondaryButtonClassName}
+                          >
+                            Retry entry
+                          </button>
+                          <button
+                            onClick={() => void handlePurge(entry.id)}
+                            disabled={actionLoading === entry.id}
+                            className={dangerButtonClassName}
+                          >
+                            Purge entry
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Payload Snapshot
+                        </p>
+                        <pre className="mt-3 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 px-4 py-4 text-xs leading-6 text-slate-200">
+                          {JSON.stringify(entry.payload, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {pagination && pagination.pages > 1 ? (
+          <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-5 py-4">
+            <button
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={page <= 1}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
+              disabled={page >= pagination.pages}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
+      </Surface>
     </div>
   );
 }

@@ -3,6 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/api';
+import {
+  EmptyPanel,
+  MetricTile,
+  PageHeader,
+  StatusBadge,
+  Surface,
+  cx,
+} from '../../lib/operator-console';
 
 interface DashboardStats {
   tenants: { total: number; active: number };
@@ -68,57 +76,63 @@ interface TenantUsage {
   templateUsagePct: number;
 }
 
-function MetricCard({
-  label,
-  value,
-  helper,
-}: {
-  label: string;
-  value: string | number;
-  helper: string;
-}) {
-  return (
-    <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-        {label}
-      </p>
-      <p className="mt-3 text-4xl font-black tracking-tight text-slate-900">
-        {value}
-      </p>
-      <p className="mt-2 text-sm text-slate-500">{helper}</p>
-    </div>
-  );
+function formatDateTime(value: string | null) {
+  return value ? new Date(value).toLocaleString() : 'Pending';
+}
+
+function usageTone(percent: number) {
+  if (percent >= 90) return 'danger' as const;
+  if (percent >= 75) return 'warning' as const;
+  return 'success' as const;
+}
+
+function statusTone(
+  status: string,
+): 'default' | 'success' | 'warning' | 'danger' | 'indigo' {
+  if (status === 'DELIVERED' || status === 'SENT') return 'success';
+  if (status === 'FAILED') return 'danger';
+  if (status === 'RETRYING' || status === 'PENDING') return 'warning';
+  return 'default';
 }
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    void fetchStats();
-    const interval = setInterval(() => {
-      void fetchStats();
-    }, 20000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchStats = async () => {
+  async function fetchStats() {
     const response = await apiFetch<DashboardStats>('/api/v1/admin/stats');
     if (response.success && response.data) {
       setStats(response.data);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => {
+      void fetchStats();
+    }, 0);
+    const interval = window.setInterval(() => {
+      void fetchStats();
+    }, 20000);
+
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   if (loading) {
     return (
-      <div className="max-w-[1500px] mx-auto space-y-6 animate-pulse">
-        <div className="h-10 w-72 rounded-2xl bg-slate-200" />
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {[...Array(4)].map((_, index) => (
-            <div key={index} className="h-40 rounded-[2rem] bg-white" />
+      <div className="mx-auto max-w-[1600px] space-y-5 animate-pulse">
+        <div className="h-24 rounded-2xl bg-white" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+          {[...Array(6)].map((_, index) => (
+            <div key={index} className="h-36 rounded-2xl bg-white" />
           ))}
+        </div>
+        <div className="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
+          <div className="h-[420px] rounded-2xl bg-white" />
+          <div className="h-[420px] rounded-2xl bg-white" />
         </div>
       </div>
     );
@@ -126,295 +140,435 @@ export default function DashboardPage() {
 
   if (!stats) {
     return (
-      <div className="max-w-4xl mx-auto rounded-[2rem] border border-slate-100 bg-white p-10 text-center shadow-sm">
-        <h2 className="text-2xl font-black text-slate-900">Operator overview unavailable</h2>
-        <p className="mt-2 text-sm text-slate-500">
-          The platform stats endpoint did not return data. Check the worker service and refresh.
-        </p>
+      <div className="mx-auto max-w-5xl">
+        <EmptyPanel
+          title="Platform overview unavailable"
+          description="The platform stats endpoint did not return data. Check the worker service, verify the admin token, and refresh the console."
+        />
       </div>
     );
   }
 
   return (
-    <div className="max-w-[1500px] mx-auto space-y-8 pb-10">
-      <div className="flex flex-col gap-4 border-b border-slate-100 pb-6">
-        <div>
-          <h2 className="text-4xl font-black tracking-tight text-slate-900">
-            Platform Overview
-          </h2>
-          <p className="mt-2 text-sm text-slate-500">
-            Watch tenant health, quota pressure, onboarding friction, and delivery recovery from one operator surface.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3 text-sm">
-          <Link href="/tenants" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700">
-            Open tenant governance
-          </Link>
-          <Link href="/limits" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700">
-            Review quotas
-          </Link>
-          <Link href="/audit" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700">
-            Audit operator actions
-          </Link>
-        </div>
-      </div>
+    <div className="mx-auto max-w-[1600px] space-y-5 pb-8">
+      <PageHeader
+        eyebrow="System Control Center"
+        title="Nucleus Operator Overview"
+        description="Cross-tenant runtime supervision, quota pressure, onboarding exceptions, and recovery queues in one administrative surface."
+        chips={
+          <>
+            <StatusBadge tone="success">Polling every 20s</StatusBadge>
+            <StatusBadge tone="indigo">
+              {stats.tenants.active}/{stats.tenants.total} tenants active
+            </StatusBadge>
+            <StatusBadge
+              tone={stats.dlq.total > 0 ? 'warning' : 'success'}
+            >
+              DLQ backlog {stats.dlq.total}
+            </StatusBadge>
+          </>
+        }
+        actions={
+          <>
+            <Link
+              href="/tenants"
+              className="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
+            >
+              Open tenant governance
+            </Link>
+            <Link
+              href="/logs"
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
+            >
+              Inspect event logs
+            </Link>
+          </>
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <MetricTile
+          label="Registered Tenants"
+          value={stats.tenants.total}
+          detail="Total tenants configured in the control plane."
+          tone="indigo"
+        />
+        <MetricTile
           label="Active Tenants"
           value={stats.tenants.active}
-          helper={`${stats.tenants.total} total tenants registered on the platform`}
+          detail="Tenant records currently enabled for traffic."
+          tone="success"
         />
-        <MetricCard
-          label="Tenants Near Limits"
+        <MetricTile
+          label="Quota Watchlist"
           value={stats.rateLimits.tenantsNearingLimits.length}
-          helper="Tenants approaching RPM, daily-cap, burst, or template quota thresholds"
+          detail="Tenants approaching throughput, burst, or template thresholds."
+          tone={
+            stats.rateLimits.tenantsNearingLimits.length > 0 ? 'warning' : 'success'
+          }
         />
-        <MetricCard
+        <MetricTile
           label="Onboarding Attention"
           value={stats.onboarding.welcomeFailed + stats.onboarding.welcomePending}
-          helper={`${stats.onboarding.welcomeFailed} failed and ${stats.onboarding.welcomePending} pending welcome flows`}
+          detail="Failed or pending tenant-admin welcome flows."
+          tone={
+            stats.onboarding.welcomeFailed > 0
+              ? 'danger'
+              : stats.onboarding.welcomePending > 0
+                ? 'warning'
+                : 'success'
+          }
         />
-        <MetricCard
-          label="DLQ Backlog"
+        <MetricTile
+          label="Dead-Letter Queue"
           value={stats.dlq.total}
-          helper="Failed notifications currently waiting for review or retry"
+          detail="Failed notifications waiting for review, retry, or purge."
+          tone={stats.dlq.total > 0 ? 'warning' : 'success'}
         />
-      </div>
+        <MetricTile
+          label="Operational Mailer"
+          value={stats.operationalMailer.configured ? 'Configured' : 'Missing'}
+          detail={
+            stats.operationalMailer.configured
+              ? `${stats.operationalMailer.provider || 'Provider'} ${
+                  stats.operationalMailer.isActive ? 'active' : 'inactive'
+                }`
+              : 'Platform-owned welcome delivery is not fully configured.'
+          }
+          tone={
+            stats.operationalMailer.configured && stats.operationalMailer.isActive
+              ? 'success'
+              : 'warning'
+          }
+        />
+      </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900">Quota Watchlist</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Highest-pressure tenants across throughput and template quotas.
-              </p>
-            </div>
-            <Link href="/limits" className="text-sm font-semibold text-indigo-700">
-              Open Quotas & Limits
+      <section className="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
+        <Surface
+          title="Tenant Pressure Board"
+          description="Highest-risk tenants ranked by the largest observed quota percentage across RPM, daily cap, burst, and template quota."
+          action={
+            <Link
+              href="/limits"
+              className="text-sm font-semibold text-indigo-700"
+            >
+              Open quota controls
             </Link>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {stats.rateLimits.tenantsNearingLimits.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-sm text-slate-400">
-                No tenants are near quota thresholds right now.
+          }
+          bodyClassName="p-0"
+        >
+          {stats.rateLimits.tenantsNearingLimits.length === 0 ? (
+            <div className="p-5">
+              <EmptyPanel
+                title="No quota pressure detected"
+                description="All tracked tenants are currently operating below configured pressure thresholds."
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="grid min-w-[880px] grid-cols-[1.8fr_repeat(4,minmax(0,1fr))_132px] gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <div>Tenant</div>
+                <div>RPM</div>
+                <div>Daily</div>
+                <div>Templates</div>
+                <div>Burst</div>
+                <div className="text-right">Actions</div>
               </div>
-            )}
-            {stats.rateLimits.tenantsNearingLimits.map((tenant) => {
-              const maxUsage = Math.max(
-                tenant.minuteUsagePct,
-                tenant.dailyUsagePct,
-                tenant.templateUsagePct,
-                tenant.burstUsagePct,
-              );
+              {stats.rateLimits.tenantsNearingLimits.map((tenant) => {
+                const maxUsage = Math.max(
+                  tenant.minuteUsagePct,
+                  tenant.dailyUsagePct,
+                  tenant.templateUsagePct,
+                  tenant.burstUsagePct,
+                );
 
-              return (
-                <div
-                  key={tenant.tenantId}
-                  className="rounded-3xl border border-slate-100 bg-slate-50 p-5"
-                >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                return (
+                  <div
+                    key={tenant.tenantId}
+                    className="grid min-w-[880px] grid-cols-[1.8fr_repeat(4,minmax(0,1fr))_132px] gap-3 border-b border-slate-100 px-5 py-4 text-sm last:border-b-0"
+                  >
                     <div>
-                      <p className="text-lg font-bold text-slate-900">{tenant.tenantName}</p>
-                      <p className="text-xs font-mono text-slate-500">{tenant.tenantId}</p>
+                      <p className="font-semibold text-slate-900">
+                        {tenant.tenantName}
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-slate-500">
+                        {tenant.tenantId}
+                      </p>
+                      <div className="mt-2">
+                        <StatusBadge tone={usageTone(maxUsage)}>
+                          Peak {maxUsage}%
+                        </StatusBadge>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="text-slate-600">
+                      <p>
+                        {tenant.minuteCount}/{tenant.minuteLimit}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {tenant.minuteUsagePct}% used
+                      </p>
+                    </div>
+                    <div className="text-slate-600">
+                      <p>
+                        {tenant.dailyCount}/{tenant.dailyLimit}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {tenant.dailyUsagePct}% used
+                      </p>
+                    </div>
+                    <div className="text-slate-600">
+                      <p>
+                        {tenant.templateCount}/{tenant.templateLimit}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {tenant.templateUsagePct}% used
+                      </p>
+                    </div>
+                    <div className="text-slate-600">
+                      <p>
+                        {tenant.burstCapacity - tenant.burstRemaining}/
+                        {tenant.burstCapacity}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {tenant.burstUsagePct}% used
+                      </p>
+                    </div>
+                    <div className="flex items-start justify-end">
                       <Link
                         href={`/tenants?tenantId=${tenant.tenantId}`}
-                        className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700"
                       >
-                        Open Tenant
-                      </Link>
-                      <Link
-                        href={`/limits?tenantId=${tenant.tenantId}`}
-                        className="rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
-                      >
-                        Adjust Limits
+                        Open
                       </Link>
                     </div>
                   </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-4">
-                    <p className="rounded-2xl bg-white px-3 py-3 text-sm text-slate-600">
-                      RPM <span className="font-bold text-slate-900">{tenant.minuteCount}/{tenant.minuteLimit}</span>
+                );
+              })}
+            </div>
+          )}
+        </Surface>
+
+        <div className="grid gap-4">
+          <Surface
+            title="Control Plane Status"
+            description="Platform-owned services and intervention queues."
+          >
+            <div className="grid gap-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Operational mailer
                     </p>
-                    <p className="rounded-2xl bg-white px-3 py-3 text-sm text-slate-600">
-                      Daily <span className="font-bold text-slate-900">{tenant.dailyCount}/{tenant.dailyLimit}</span>
-                    </p>
-                    <p className="rounded-2xl bg-white px-3 py-3 text-sm text-slate-600">
-                      Templates <span className="font-bold text-slate-900">{tenant.templateCount}/{tenant.templateLimit}</span>
-                    </p>
-                    <p className="rounded-2xl bg-white px-3 py-3 text-sm text-slate-600">
-                      Peak Usage <span className="font-bold text-slate-900">{maxUsage}%</span>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {stats.operationalMailer.provider || 'No provider configured'}
+                      {stats.operationalMailer.apiKeyLast4
+                        ? ` • key ending ${stats.operationalMailer.apiKeyLast4}`
+                        : ''}
                     </p>
                   </div>
+                  <StatusBadge
+                    tone={
+                      stats.operationalMailer.configured &&
+                      stats.operationalMailer.isActive
+                        ? 'success'
+                        : 'warning'
+                    }
+                  >
+                    {stats.operationalMailer.configured &&
+                    stats.operationalMailer.isActive
+                      ? 'Active'
+                      : 'Needs attention'}
+                  </StatusBadge>
                 </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">Operational Mailer</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Platform-owned onboarding delivery status.
-            </p>
-          </div>
-
-          <div className="mt-5 rounded-3xl border border-slate-100 bg-slate-50 p-5">
-            <p className="text-sm text-slate-500">Configuration</p>
-            <p className="mt-2 text-2xl font-black text-slate-900">
-              {stats.operationalMailer.configured ? stats.operationalMailer.provider : 'Not configured'}
-            </p>
-            <p className="mt-2 text-sm text-slate-600">
-              {stats.operationalMailer.configured
-                ? stats.operationalMailer.isActive
-                  ? `Active • key ending ${stats.operationalMailer.apiKeyLast4 || 'n/a'}`
-                  : 'Configured but inactive'
-                : 'Set up the operational mailer before sending welcome emails.'}
-            </p>
-            <Link href="/mail" className="mt-4 inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
-              Manage Mailer
-            </Link>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-1">
-            <div className="rounded-3xl border border-slate-100 bg-white p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                Pending Resets
-              </p>
-              <p className="mt-2 text-2xl font-black text-slate-900">
-                {stats.onboarding.mustResetPassword}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Tenant admins still required to complete first-login password reset.
-              </p>
-            </div>
-            <div className="rounded-3xl border border-slate-100 bg-white p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                Welcome Failures
-              </p>
-              <p className="mt-2 text-2xl font-black text-slate-900">
-                {stats.onboarding.welcomeFailed}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Welcome deliveries that failed and may need operator intervention.
-              </p>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-3">
-        <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900">DLQ by Tenant</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Backlog hotspots that need retry or cleanup.
-              </p>
-            </div>
-            <Link href="/dlq" className="text-sm font-semibold text-indigo-700">
-              Open DLQ
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {stats.dlq.backlogByTenant.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-slate-200 p-5 text-sm text-slate-400">
-                No tenant DLQ backlog right now.
               </div>
-            )}
-            {stats.dlq.backlogByTenant.map((entry) => (
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Welcome delivery queue
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {stats.onboarding.welcomePending} pending,{' '}
+                      {stats.onboarding.welcomeFailed} failed
+                    </p>
+                  </div>
+                  <StatusBadge
+                    tone={
+                      stats.onboarding.welcomeFailed > 0
+                        ? 'danger'
+                        : stats.onboarding.welcomePending > 0
+                          ? 'warning'
+                          : 'success'
+                    }
+                  >
+                    Review
+                  </StatusBadge>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Unread in-app notifications
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {stats.notifications.unreadInApp} unread of{' '}
+                      {stats.notifications.totalInApp} total in-app events
+                    </p>
+                  </div>
+                  <StatusBadge tone="indigo">Visibility</StatusBadge>
+                </div>
+              </div>
+            </div>
+          </Surface>
+
+          <Surface
+            title="DLQ Backlog by Tenant"
+            description="Queues most likely to require operator action."
+            action={
               <Link
-                key={entry.tenantId}
-                href={`/dlq?tenantId=${entry.tenantId}`}
-                className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
+                href="/dlq"
+                className="text-sm font-semibold text-indigo-700"
               >
-                <div>
-                  <p className="font-semibold text-slate-900">{entry.tenantName}</p>
-                  <p className="text-xs font-mono text-slate-500">{entry.tenantId}</p>
-                </div>
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                  {entry.count} items
-                </span>
+                Open delivery recovery
               </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900">Provider Failure Trends</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Recent provider references with repeated failed deliveries.
-              </p>
+            }
+          >
+            <div className="space-y-3">
+              {stats.dlq.backlogByTenant.length === 0 ? (
+                <EmptyPanel
+                  title="No DLQ hotspots"
+                  description="The dead-letter queue is currently clear across all tenants."
+                />
+              ) : (
+                stats.dlq.backlogByTenant.map((entry) => (
+                  <Link
+                    key={entry.tenantId}
+                    href={`/dlq?tenantId=${entry.tenantId}`}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-slate-300"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {entry.tenantName}
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-slate-500">
+                        {entry.tenantId}
+                      </p>
+                    </div>
+                    <StatusBadge tone={entry.count > 10 ? 'danger' : 'warning'}>
+                      {entry.count} queued
+                    </StatusBadge>
+                  </Link>
+                ))
+              )}
             </div>
-            <Link href="/logs?status=FAILED" className="text-sm font-semibold text-indigo-700">
-              Inspect failed logs
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {stats.providerFailureTrends.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-slate-200 p-5 text-sm text-slate-400">
-                No provider-linked failures detected in recent log history.
-              </div>
-            )}
-            {stats.providerFailureTrends.map((trend) => (
-              <div
-                key={trend.providerRef}
-                className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
-              >
-                <p className="truncate text-sm font-semibold text-slate-900">
-                  {trend.providerRef}
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {trend.count} recent failures
-                  {trend.latestSentAt
-                    ? ` • latest ${new Date(trend.latestSentAt).toLocaleString()}`
-                    : ''}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
+          </Surface>
+        </div>
+      </section>
 
-        <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900">Recent Activity</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Latest cross-tenant delivery events flowing through the platform.
-              </p>
-            </div>
+      <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <Surface
+          title="Recent Delivery Activity"
+          description="Latest notification events traversing the platform, with direct drill-down into tenant log context."
+          action={
             <Link href="/logs" className="text-sm font-semibold text-indigo-700">
-              Open logs
+              Open full event log
             </Link>
-          </div>
+          }
+          bodyClassName="p-0"
+        >
+          {stats.recentActivity.length === 0 ? (
+            <div className="p-5">
+              <EmptyPanel
+                title="No recent activity"
+                description="Recent delivery events will appear here once the runtime receives traffic."
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="grid min-w-[760px] grid-cols-[120px_120px_1.5fr_1.1fr_180px] gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <div>Channel</div>
+                <div>Status</div>
+                <div>Notification</div>
+                <div>Provider Ref</div>
+                <div>Timestamp</div>
+              </div>
+              {stats.recentActivity.slice(0, 8).map((item) => (
+                <Link
+                  key={item.notification_id}
+                  href={`/logs?tenantId=${item.tenant_id}`}
+                  className="grid min-w-[760px] grid-cols-[120px_120px_1.5fr_1.1fr_180px] gap-3 border-b border-slate-100 px-5 py-4 text-sm transition hover:bg-slate-50 last:border-b-0"
+                >
+                  <div className="font-semibold text-slate-900">{item.channel}</div>
+                  <div>
+                    <StatusBadge tone={statusTone(item.status)}>
+                      {item.status}
+                    </StatusBadge>
+                  </div>
+                  <div className="truncate font-mono text-xs text-slate-600">
+                    {item.notification_id}
+                  </div>
+                  <div className="truncate font-mono text-xs text-slate-500">
+                    {item.provider_ref || 'No provider ref'}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {formatDateTime(item.sent_at)}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Surface>
 
-          <div className="mt-4 space-y-3">
-            {stats.recentActivity.slice(0, 6).map((item) => (
-              <Link
-                key={item.notification_id}
-                href={`/logs?tenantId=${item.tenant_id}`}
-                className="block rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
-              >
-                <p className="text-sm font-semibold text-slate-900">
-                  {item.channel} • {item.status}
-                </p>
-                <p className="mt-1 truncate text-xs font-mono text-slate-500">
-                  {item.notification_id}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {item.sent_at ? new Date(item.sent_at).toLocaleString() : 'Pending timestamp'}
-                </p>
-              </Link>
-            ))}
+        <Surface
+          title="Provider Failure Trends"
+          description="Repeated provider references with recent failed deliveries."
+          action={
+            <Link
+              href="/logs?status=FAILED"
+              className="text-sm font-semibold text-indigo-700"
+            >
+              Filter failed logs
+            </Link>
+          }
+        >
+          <div className="space-y-3">
+            {stats.providerFailureTrends.length === 0 ? (
+              <EmptyPanel
+                title="No recurring provider failures"
+                description="Recent delivery history does not show repeated provider-linked failure clusters."
+              />
+            ) : (
+              stats.providerFailureTrends.map((trend, index) => (
+                <div
+                  key={trend.providerRef}
+                  className={cx(
+                    'rounded-xl border px-4 py-3',
+                    index === 0
+                      ? 'border-amber-200 bg-amber-50'
+                      : 'border-slate-200 bg-slate-50',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate font-mono text-xs text-slate-700">
+                      {trend.providerRef}
+                    </p>
+                    <StatusBadge tone={trend.count >= 5 ? 'danger' : 'warning'}>
+                      {trend.count} failures
+                    </StatusBadge>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Latest observed event: {formatDateTime(trend.latestSentAt)}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
-        </section>
-      </div>
+        </Surface>
+      </section>
     </div>
   );
 }
