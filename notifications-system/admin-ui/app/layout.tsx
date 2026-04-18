@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { unstable_noStore as noStore } from 'next/cache';
 import Script from 'next/script';
 import './globals.css';
 import { theme } from '../lib/theme-config';
@@ -14,10 +15,6 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
 });
 
-const runtimeConfig = {
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
-};
-
 export const metadata: Metadata = {
   title: `${theme.brandName} | ${theme.tagline}`,
   description: theme.description,
@@ -28,6 +25,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  noStore();
+
+  const runtimeConfig = {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
+  };
+
   return (
     <html lang="en">
       <body
